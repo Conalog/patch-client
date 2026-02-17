@@ -94,7 +94,7 @@ const client = new PatchClientV3({
     const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
     formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
 
-    const result = await client.uploadPlantFiles("your-plant-id", formData);
+    const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
     console.log("Successfully uploaded files:", result);
   } catch (err) {
     console.error("An error occurred:", err);
