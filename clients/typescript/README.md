@@ -64,8 +64,8 @@ import { PatchClientV3 } from "patch-client";
   - Node.js 18+에서는 기본 제공됩니다.
   - 구버전 Node.js에서는 `fetchFn`을 직접 주입하세요.
 - 파일 업로드 API(`uploadPlantFiles`)를 사용할 때는 `FormData`가 필요합니다.
-  - Node.js 18+에서는 기본 제공됩니다.
-  - 구버전 Node.js에서는 `form-data` 패키지를 설치한 후, 생성한 인스턴스를 `uploadPlantFiles` 메서드에 직접 전달하세요.
+  - Node.js 18+ 및 최신 브라우저 환경에서는 기본 제공됩니다.
+  - 구버전 Node.js 환경에서는 `form-data` 패키지를 설치한 후, 생성한 인스턴스를 `uploadPlantFiles` 메서드에 직접 전달해야 합니다.
 
 ### `FormData` 주입 예시 (구버전 Node.js)
 
