@@ -79,6 +79,7 @@ const { PatchClientV3 } = require("patch-client");
 
 const client = new PatchClientV3({
   accessToken: process.env.PATCH_TOKEN,
+  accountType: "manager",
   fetchFn: fetch,
 });
 ```
@@ -95,6 +96,7 @@ import { PatchClientV3 } from "patch-client";
 
 const client = new PatchClientV3({
   accessToken: process.env.PATCH_TOKEN,
+  accountType: "manager",
   fetchFn: fetch,
 });
 ```
@@ -112,7 +114,10 @@ const client = new PatchClientV3({
 import { PatchClientV3, PatchClientError } from "patch-client";
 
 try {
-  const client = new PatchClientV3({ accessToken: process.env.PATCH_TOKEN });
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+  });
   await client.getPlantList({ page: 0, size: 20 });
 } catch (err) {
   if (err instanceof PatchClientError) {
