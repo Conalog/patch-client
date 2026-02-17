@@ -47,13 +47,15 @@ const { PatchClientV3 } = require("patch-client");
 ```js
 import { PatchClientV3 } from "patch-client";
 
-const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
-  accountType: "manager",
-});
+(async () => {
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+  });
 
-const plants = await client.getPlantList({ page: 0, size: 20 });
-console.log("Successfully fetched plants:", plants);
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
+})();
 ```
 
 ## 런타임 요구사항
