@@ -38,7 +38,7 @@ const { PatchClientV3 } = require("patch-client");
   });
 
   const plants = await client.getPlantList({ page: 0, size: 20 });
-  console.log(plants);
+  console.log("Successfully fetched plants:", plants);
 })();
 ```
 
@@ -53,7 +53,7 @@ const client = new PatchClientV3({
 });
 
 const plants = await client.getPlantList({ page: 0, size: 20 });
-console.log(plants);
+console.log("Successfully fetched plants:", plants);
 ```
 
 ## 런타임 요구사항
