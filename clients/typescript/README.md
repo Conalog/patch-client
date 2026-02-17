@@ -77,6 +77,7 @@ npm install form-data node-fetch@2
 
 ```js
 const fs = require("fs");
+const path = require("path");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
 const { PatchClientV3 } = require("patch-client");
@@ -91,7 +92,7 @@ const client = new PatchClientV3({
   try {
     const formData = new FormData();
     const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
-    formData.append("file", fs.createReadStream(filePath), "file.csv");
+    formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
 
     const result = await client.uploadPlantFiles("your-plant-id", formData);
     console.log("Successfully uploaded files:", result);
