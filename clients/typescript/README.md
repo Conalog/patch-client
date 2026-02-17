@@ -69,6 +69,10 @@ import { PatchClientV3 } from "patch-client";
 
 ### `FormData` 주입 예시 (구버전 Node.js)
 
+`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
+
+**CommonJS (`node-fetch@2`)**
+
 `form-data`와 `node-fetch@2` 패키지를 설치하세요.
 
 ```bash
@@ -81,6 +85,41 @@ const path = require("path");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
 const { PatchClientV3 } = require("patch-client");
+
+const client = new PatchClientV3({
+  accessToken: process.env.PATCH_TOKEN,
+  accountType: "manager",
+  fetchFn: fetch,
+});
+
+(async () => {
+  try {
+    const formData = new FormData();
+    const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
+    formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
+
+    const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
+    console.log("Successfully uploaded files:", result);
+  } catch (err) {
+    console.error("An error occurred:", err);
+  }
+})();
+```
+
+**ESM (`node-fetch@3+`)**
+
+`form-data`와 `node-fetch` 패키지를 설치하세요.
+
+```bash
+npm install form-data node-fetch
+```
+
+```js
+import fs from "fs";
+import path from "path";
+import FormData from "form-data";
+import fetch from "node-fetch";
+import { PatchClientV3 } from "patch-client";
 
 const client = new PatchClientV3({
   accessToken: process.env.PATCH_TOKEN,
