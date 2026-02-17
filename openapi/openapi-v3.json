@@ -1,0 +1,4527 @@
+{
+  "components": {
+    "schemas": {
+      "AccountOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AccountOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
+          },
+          "name": {
+            "description": "The display name of the user.",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "organizations": {
+            "description": "List of organizations that the user has access to. Each organization represents a separate tenant or business entity within the system.",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationBody"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer",
+              "admin"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The username of the user. Only available for 'viewer' account types.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "organizations"
+        ],
+        "type": "object"
+      },
+      "AuthAccountBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AuthAccountBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "account": {
+            "description": "The user's account name or username used for authentication",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          },
+          "password": {
+            "description": "The user's password for authentication",
+            "examples": [
+              "securepassword123"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "type": "object"
+      },
+      "AuthBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AuthBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "The display name of the authenticated user",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "token": {
+            "description": "JWT authentication token issued upon successful login. Use this token in the Authorization header for subsequent API requests.",
+            "examples": [
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "token"
+        ],
+        "type": "object"
+      },
+      "AuthEmailBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AuthEmailBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The user's email address used for authentication",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "password": {
+            "description": "The user's password for authentication",
+            "examples": [
+              "securepassword123"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "AuthOutputV3Body": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AuthOutputV3Body.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
+          },
+          "name": {
+            "description": "The display name of the user.",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "organizations": {
+            "description": "List of organizations that the user has access to. Each organization represents a separate tenant or business entity within the system.",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationBody"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "token": {
+            "description": "JWT authentication token for the authenticated user. Use this token in the Authorization header for subsequent API requests.",
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer",
+              "admin"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The username of the user. Only available for 'viewer' account types.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "type",
+          "name",
+          "organizations"
+        ],
+        "type": "object"
+      },
+      "AuthWithPasswordBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AuthWithPasswordBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The user's email address. Required when authenticating as a 'manager' account type.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "password": {
+            "description": "The user's password for authentication",
+            "examples": [
+              "securepassword123"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "manager",
+            "description": "The type of account to authenticate. Determines the authentication method and access level.",
+            "enum": [
+              "manager",
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The user's username. Required when authenticating as a 'viewer' account type.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "password"
+        ],
+        "type": "object"
+      },
+      "BodyInverterDailyData": {
+        "additionalProperties": false,
+        "description": "Daily aggregated metrics for individual inverters at 1-day intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/InverterDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Inverter Daily Metrics",
+        "type": "object"
+      },
+      "BodyInverterData": {
+        "additionalProperties": false,
+        "description": "Time-series metrics for individual inverters at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/InverterData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Inverter Intraday Metrics",
+        "type": "object"
+      },
+      "BodyPanelDailyData": {
+        "additionalProperties": false,
+        "description": "Daily aggregated metrics for individual panels at 1-day intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/PanelDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Panel Daily Metrics",
+        "type": "object"
+      },
+      "BodyPanelData": {
+        "additionalProperties": false,
+        "description": "Time-series metrics for individual panels at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/PanelData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Panel Intraday Metrics",
+        "type": "object"
+      },
+      "BodyPlantDailyData": {
+        "additionalProperties": false,
+        "description": "Aggregated metrics for entire plant at 1-day, 1-month, and 1-year intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/PlantDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Plant Daily/Monthly/Yearly Metrics",
+        "type": "object"
+      },
+      "BodyPlantData": {
+        "additionalProperties": false,
+        "description": "Time-series metrics for entire plant at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/PlantData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Plant Intraday Metrics",
+        "type": "object"
+      },
+      "CreateAccountOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CreateAccountOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the user within the system.",
+            "examples": [
+              "user123"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
+          },
+          "name": {
+            "description": "The display name of the user.",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "organizations": {
+            "description": "List of organizations that the user has access to. Each organization represents a separate tenant or business entity within the system.",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationBody"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer",
+              "admin"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The username of the user. Only available for 'viewer' account types.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "organizations"
+        ],
+        "type": "object"
+      },
+      "CreatePlantInput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CreatePlantInput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {},
+            "description": "Additional metadata and configuration details for the plant. May include address, capacity, equipment counts, and custom properties.",
+            "examples": [
+              {
+                "address": "123 Solar Street, Green City",
+                "capacity": "100kW",
+                "inverters": 4,
+                "panels": 400
+              }
+            ],
+            "type": "object"
+          },
+          "name": {
+            "description": "Display name of the solar plant installation.",
+            "examples": [
+              "Green Energy Solar Farm"
+            ],
+            "type": "string"
+          },
+          "organizationId": {
+            "description": "Organization ID that owns or manages this plant installation. Must be exactly 15 characters in length.",
+            "examples": [
+              "org123456789012"
+            ],
+            "maxLength": 15,
+            "minLength": 15,
+            "patternDescription": "alphanum",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "organizationId"
+        ],
+        "type": "object"
+      },
+      "Create_org_memberRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/Create_org_memberRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "Email of the user. Required for manager/admin.",
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata for the user account."
+          },
+          "name": {
+            "description": "Display name of the user.",
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account for the new member.",
+            "enum": [
+              "manager",
+              "viewer",
+              "admin"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "Username of the user. Required for viewer.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "type": "object"
+      },
+      "Create_user_accountRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
+          },
+          "name": {
+            "description": "The display name of the user.",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "password": {
+            "description": "The user's password for authentication",
+            "examples": [
+              "securepassword123"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The username of the user. Only available for 'viewer' account types.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "password",
+          "name"
+        ],
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "description": "Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'",
+            "type": "string"
+          },
+          "message": {
+            "description": "Error message text",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value at the given location"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorModel": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/ErrorModel.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "detail": {
+            "description": "A human-readable explanation specific to this occurrence of the problem.",
+            "examples": [
+              "Property foo is required but is missing."
+            ],
+            "type": "string"
+          },
+          "errors": {
+            "description": "Optional list of individual error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "instance": {
+            "description": "A URI reference that identifies the specific occurrence of the problem.",
+            "examples": [
+              "https://example.com/error-log/abc123"
+            ],
+            "format": "uri",
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code",
+            "examples": [
+              400
+            ],
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "description": "A short, human-readable summary of the problem type. This value should not change between occurrences of the error.",
+            "examples": [
+              "Bad Request"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "description": "A URI reference to human-readable documentation for the error.",
+            "examples": [
+              "https://example.com/errors/example"
+            ],
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FileUploadResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/FileUploadResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "description": "Timestamp when the file was created",
+            "type": "string"
+          },
+          "filename": {
+            "description": "Original filename of the uploaded file",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier of the uploaded file record",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant ID associated with the uploaded file",
+            "type": "string"
+          },
+          "size": {
+            "description": "File size in bytes",
+            "format": "int64",
+            "type": "integer"
+          },
+          "updated": {
+            "description": "Timestamp when the file was last updated",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "plant_id",
+          "filename",
+          "size",
+          "created",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "HealthLevelBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/HealthLevelBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "best": {
+            "$ref": "#/components/schemas/HealthLevelCategory"
+          },
+          "caution": {
+            "$ref": "#/components/schemas/HealthLevelCategory"
+          },
+          "faulty": {
+            "$ref": "#/components/schemas/HealthLevelCategory"
+          }
+        },
+        "required": [
+          "best",
+          "caution",
+          "faulty"
+        ],
+        "type": "object"
+      },
+      "HealthLevelCategory": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "type": "object"
+      },
+      "InverterDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "Date of the data point in YYYY-MM-DD format",
+            "type": "string"
+          },
+          "energy": {
+            "description": "Total daily energy production (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Unique identifier for the inverter",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "energy"
+        ],
+        "type": "object"
+      },
+      "InverterData": {
+        "additionalProperties": false,
+        "properties": {
+          "energy": {
+            "description": "Energy production for the time interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Unique identifier for the inverter",
+            "type": "string"
+          },
+          "time": {
+            "description": "Time of the measurement in ISO 8601 format",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Unix timestamp of the measurement",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "energy",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "InverterDataBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "asset_type": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/InverterLatestData"
+          },
+          "edge_id": {
+            "type": "string"
+          },
+          "map_id": {
+            "type": "string"
+          },
+          "map_type": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "asset_id",
+          "asset_type",
+          "map_id",
+          "map_type",
+          "edge_id",
+          "plant_id",
+          "data",
+          "model"
+        ],
+        "type": "object"
+      },
+      "InverterLatestData": {
+        "additionalProperties": false,
+        "properties": {
+          "daily_energy": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/InverterLogItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "total_energy": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "logs",
+          "state",
+          "daily_energy",
+          "total_energy"
+        ],
+        "type": "object"
+      },
+      "InverterLogItem": {
+        "additionalProperties": false,
+        "properties": {
+          "inverterId": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/InverterLogMessage"
+          },
+          "plantId": {
+            "type": "string"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/InverterLogRawElement"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plantId",
+          "level",
+          "inverterId",
+          "timestamp",
+          "message",
+          "raw"
+        ],
+        "type": "object"
+      },
+      "InverterLogMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "ko": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "InverterLogRawElement": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "WIP",
+            "type": "string"
+          },
+          "lcd": {
+            "description": "WIP",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "value": {
+            "description": "WIP"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "InverterLogsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/InverterLogsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InverterLogItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "perPage": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalSizes": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalPages",
+          "totalSizes",
+          "page",
+          "perPage",
+          "items"
+        ],
+        "type": "object"
+      },
+      "LatestDeviceBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "asset_type": {
+            "type": "string"
+          },
+          "edge_id": {
+            "type": "string"
+          },
+          "map_id": {
+            "type": "string"
+          },
+          "map_type": {
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/LatestDeviceBodyMetricsStruct"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "state": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "asset_id",
+          "asset_type",
+          "map_id",
+          "map_type",
+          "plant_id",
+          "edge_id",
+          "metrics",
+          "state"
+        ],
+        "type": "object"
+      },
+      "LatestDeviceBodyMetricsStruct": {
+        "additionalProperties": false,
+        "properties": {
+          "i_out": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp": {
+            "format": "double",
+            "type": "number"
+          },
+          "v_in": {
+            "format": "double",
+            "type": "number"
+          },
+          "v_out": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "i_out",
+          "v_in",
+          "v_out",
+          "temp"
+        ],
+        "type": "object"
+      },
+      "OrgAddPermissionInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/OrgAddPermissionInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "User email to grant access for. Used when Role is manager",
+            "examples": [
+              "usr123456789012@conalog.com"
+            ],
+            "type": "string"
+          },
+          "plantId": {
+            "description": "Target plant ID to grant access to.",
+            "examples": [
+              "pln123456789012"
+            ],
+            "maxLength": 15,
+            "minLength": 15,
+            "type": "string"
+          },
+          "type": {
+            "description": "Account type of user.",
+            "enum": [
+              "viewer",
+              "manager"
+            ],
+            "examples": [
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "User username to grant access for. Used when Role is viewer",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plantId",
+          "type"
+        ],
+        "type": "object"
+      },
+      "OrgAddPermissionOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/OrgAddPermissionOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "User email to grant access for. Used when Role is manager",
+            "examples": [
+              "usr123456789012@conalog.com"
+            ],
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "User username to grant access for. Used when Role is viewer",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "type"
+        ],
+        "type": "object"
+      },
+      "OrgInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "icon": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "OrganizationBody": {
+        "additionalProperties": false,
+        "properties": {
+          "icon": {
+            "description": "URL to the organization's icon image. Used for small-scale branding in UI elements.",
+            "examples": [
+              "https://example.org/icon.png"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the organization within the system.",
+            "examples": [
+              "org123"
+            ],
+            "type": "string"
+          },
+          "logo": {
+            "description": "URL to the organization's logo image. Used for larger branding elements and official documentation.",
+            "examples": [
+              "https://example.org/logo.png"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name of the organization.",
+            "examples": [
+              "Solar Energy Corp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PanelDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "energy": {
+            "description": "Total daily energy production (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Unique identifier for the solar panel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "energy"
+        ],
+        "type": "object"
+      },
+      "PanelData": {
+        "additionalProperties": false,
+        "properties": {
+          "cumulative_energy": {
+            "description": "Cumulative energy production up to this point (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "description": "Date of the data point in YYYY-MM-DD format",
+            "type": "string"
+          },
+          "energy": {
+            "description": "Energy production for the time interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "i_out": {
+            "description": "Output current measurement (Amperes)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Unique identifier for the solar panel",
+            "type": "string"
+          },
+          "p": {
+            "description": "Power output measurement (Watts)",
+            "format": "double",
+            "type": "number"
+          },
+          "temp": {
+            "description": "Panel temperature measurement (Celsius)",
+            "format": "double",
+            "type": "number"
+          },
+          "timestamp": {
+            "description": "Unix timestamp of the measurement",
+            "format": "int64",
+            "type": "integer"
+          },
+          "v_in": {
+            "description": "Input voltage measurement (Volts)",
+            "format": "double",
+            "type": "number"
+          },
+          "v_out": {
+            "description": "Output voltage measurement (Volts)",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "timestamp",
+          "energy",
+          "cumulative_energy",
+          "i_out",
+          "p",
+          "v_in",
+          "v_out",
+          "temp"
+        ],
+        "type": "object"
+      },
+      "PlantBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PlantBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "description": "Timestamp when the plant record was created in the system. Uses ISO 8601 format with timezone information.",
+            "examples": [
+              "2025-01-01 00:00:00.000Z"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the solar plant installation. Must be exactly 15 characters in length.",
+            "examples": [
+              "ask123456789"
+            ],
+            "type": "string"
+          },
+          "images": {
+            "description": "Array of image URLs associated with the plant. These may include installation photos, aerial views, or equipment images.",
+            "examples": [
+              [
+                "https://example.org/plant1.jpg",
+                "https://example.org/plant2.jpg"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": {},
+            "description": "Additional metadata and configuration details for the plant. May include address, capacity, equipment counts, and custom properties.",
+            "examples": [
+              {
+                "address": "123 Solar Street, Green City",
+                "capacity": "100kW",
+                "inverters": 4,
+                "panels": 400
+              }
+            ],
+            "type": "object"
+          },
+          "name": {
+            "description": "Display name of the solar plant installation.",
+            "examples": [
+              "Green Energy Solar Farm"
+            ],
+            "type": "string"
+          },
+          "organization": {
+            "description": "Organization identifier that owns or manages this plant installation.",
+            "type": "string"
+          },
+          "organizationData": {
+            "$ref": "#/components/schemas/OrgInfo",
+            "description": "Detailed information about the organization associated with this plant, including name, contact details, and branding."
+          },
+          "updated": {
+            "description": "Timestamp when the plant record was last modified. Uses ISO 8601 format with timezone information.",
+            "examples": [
+              "2025-01-01 00:00:00.000Z"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "created",
+          "id",
+          "images",
+          "metadata",
+          "name",
+          "organization",
+          "organizationData",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "PlantBodyV3": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PlantBodyV3.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "description": "Timestamp when the plant record was created in the system. Uses ISO 8601 format with timezone information.",
+            "examples": [
+              "2025-01-01 00:00:00.000Z"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the solar plant installation. Must be exactly 15 characters in length.",
+            "examples": [
+              "ask123456789"
+            ],
+            "type": "string"
+          },
+          "images": {
+            "description": "Array of image URLs associated with the plant. These may include installation photos, aerial views, or equipment images.",
+            "examples": [
+              [
+                "https://example.org/plant1.jpg",
+                "https://example.org/plant2.jpg"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": {},
+            "description": "Additional metadata and configuration details for the plant. May include address, capacity, equipment counts, and custom properties.",
+            "examples": [
+              {
+                "address": "123 Solar Street, Green City",
+                "capacity": "100kW",
+                "inverters": 4,
+                "panels": 400
+              }
+            ],
+            "type": "object"
+          },
+          "name": {
+            "description": "Display name of the solar plant installation.",
+            "examples": [
+              "Green Energy Solar Farm"
+            ],
+            "type": "string"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrgInfo",
+            "description": "Detailed information about the organization that owns or manages this plant, including name, contact details, and branding."
+          },
+          "updated": {
+            "description": "Timestamp when the plant record was last modified. Uses ISO 8601 format with timezone information.",
+            "examples": [
+              "2025-01-01 00:00:00.000Z"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "created",
+          "id",
+          "images",
+          "metadata",
+          "name",
+          "organization",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "PlantDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "Date of the data point in YYYY-MM-DD format",
+            "type": "string"
+          },
+          "energy": {
+            "description": "Total daily energy production (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Plant identifier (optional for plant-level aggregation)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "energy",
+          "date"
+        ],
+        "type": "object"
+      },
+      "PlantData": {
+        "additionalProperties": false,
+        "properties": {
+          "cumulative_energy": {
+            "description": "Cumulative energy production up to this point (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "description": "Date of the data point in YYYY-MM-DD format",
+            "type": "string"
+          },
+          "energy": {
+            "description": "Total energy production for the time interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "timestamp": {
+            "description": "Unix timestamp of the measurement",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "energy",
+          "cumulative_energy",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "PlantsListV3OutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PlantsListV3OutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "description": "Array of plant installations for the current page",
+            "items": {
+              "$ref": "#/components/schemas/PlantBodyV3"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "description": "Current page number (1-based indexing)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "perPage": {
+            "description": "Number of items included per page",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalItems": {
+            "description": "Total number of plant installations available across all pages",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "description": "Total number of pages available based on the current page size",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalPages",
+          "totalItems",
+          "page",
+          "perPage",
+          "items"
+        ],
+        "type": "object"
+      },
+      "RegisterBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "description": "Unique identifier for the physical asset to be registered (e.g., device serial number, inverter ID)",
+            "examples": [
+              "DEV001234"
+            ],
+            "type": "string"
+          },
+          "asset_type": {
+            "description": "Classification of the physical asset being registered",
+            "enum": [
+              "device",
+              "inverter",
+              "edge"
+            ],
+            "examples": [
+              "device"
+            ],
+            "type": "string"
+          },
+          "map_id": {
+            "description": "Logical identifier that maps the asset to its position within the plant's system layout",
+            "examples": [
+              "STRING_01_PANEL_05"
+            ],
+            "type": "string"
+          },
+          "map_type": {
+            "description": "Type of logical mapping used to organize the asset within the plant hierarchy",
+            "enum": [
+              "device",
+              "string",
+              "edge",
+              "inverter",
+              "combiner",
+              "panel"
+            ],
+            "examples": [
+              "panel"
+            ],
+            "type": "string"
+          },
+          "registered": {
+            "description": "Timestamp when the asset should be considered registered. Must be in RFC3339 format.",
+            "examples": [
+              "2024-01-24T00:00:00Z"
+            ],
+            "format": "date-time",
+            "type": "string"
+          },
+          "registered_meta": {
+            "description": "Additional metadata associated with the registration event (JSON string or custom format)",
+            "examples": [
+              "{\"installer\": \"John Doe\", \"warranty\": \"2029-01-24\"}"
+            ],
+            "type": "string"
+          },
+          "tag": {
+            "description": "Optional descriptive tag or label for the asset (e.g., location, purpose, or custom identifier)",
+            "examples": [
+              "North Array Panel 5"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_type",
+          "map_id",
+          "map_type",
+          "registered"
+        ],
+        "type": "object"
+      },
+      "RegistryOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "description": "Unique identifier for the physical asset (device, inverter, etc.)",
+            "type": "string"
+          },
+          "asset_type": {
+            "description": "Type classification of the asset",
+            "enum": [
+              "device",
+              "inverter",
+              "edge"
+            ],
+            "type": "string"
+          },
+          "map_id": {
+            "description": "Logical mapping identifier within the plant's system layout",
+            "type": "string"
+          },
+          "map_type": {
+            "description": "Type of logical mapping used for the asset",
+            "enum": [
+              "device",
+              "string",
+              "edge",
+              "inverter",
+              "combiner",
+              "panel"
+            ],
+            "type": "string"
+          },
+          "registered": {
+            "description": "Timestamp when the asset was registered in RFC3339 format",
+            "type": "string"
+          },
+          "tag": {
+            "additionalProperties": {},
+            "description": "Additional metadata and tags associated with the asset registration",
+            "type": "object"
+          },
+          "unregistered": {
+            "description": "Timestamp when the asset was unregistered in RFC3339 format (empty if still registered)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_type",
+          "map_id",
+          "map_type",
+          "registered",
+          "tag",
+          "unregistered"
+        ],
+        "type": "object"
+      },
+      "UnregisterBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "description": "Unique identifier for the physical asset to be unregistered (must match the originally registered asset ID)",
+            "examples": [
+              "DEV001234"
+            ],
+            "type": "string"
+          },
+          "asset_type": {
+            "description": "Classification of the physical asset being unregistered (must match the originally registered asset type)",
+            "enum": [
+              "device",
+              "inverter",
+              "edge"
+            ],
+            "examples": [
+              "device"
+            ],
+            "type": "string"
+          },
+          "map_id": {
+            "description": "Logical identifier that maps the asset within the plant's system layout (must match the originally registered map ID)",
+            "examples": [
+              "STRING_01_PANEL_05"
+            ],
+            "type": "string"
+          },
+          "map_type": {
+            "description": "Type of logical mapping used for the asset (must match the originally registered map type)",
+            "enum": [
+              "device",
+              "string",
+              "edge",
+              "inverter",
+              "combiner",
+              "panel"
+            ],
+            "examples": [
+              "panel"
+            ],
+            "type": "string"
+          },
+          "tag": {
+            "description": "Optional descriptive tag or label for the asset (should match the originally registered tag if applicable)",
+            "examples": [
+              "North Array Panel 5"
+            ],
+            "type": "string"
+          },
+          "unregistered": {
+            "description": "Timestamp when the asset should be considered unregistered. Must be in RFC3339 format and should be after the original registration date.",
+            "examples": [
+              "2024-01-24T00:00:00Z"
+            ],
+            "format": "date-time",
+            "type": "string"
+          },
+          "unregistered_meta": {
+            "description": "Additional metadata associated with the unregistration event (JSON string or custom format)",
+            "examples": [
+              "{\"reason\": \"Equipment replacement\", \"technician\": \"Jane Smith\"}"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_type",
+          "map_id",
+          "map_type",
+          "unregistered"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "patch-client (v3)",
+    "version": "3.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v3/account/": {
+      "get": {
+        "description": "Retrieves comprehensive account information for the authenticated user. Includes account type, email/username, name, metadata, and associated organizations.",
+        "operationId": "get_account_info",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOutputBody",
+                  "description": "Response body containing complete account information"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Account Information",
+        "tags": [
+          "v3/account"
+        ]
+      }
+    },
+    "/api/v3/account/auth-with-password": {
+      "post": {
+        "description": "Authenticates users using either email (for managers) or username (for viewers) with password. The response includes an authentication token for subsequent API calls. This endpoint does not require the Authorization header.",
+        "operationId": "authenticate_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthWithPasswordBody",
+                "description": "Request body containing authentication credentials and account type"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOutputV3Body",
+                  "description": "Response body containing complete account information and authentication token"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Authentication",
+        "tags": [
+          "v3/account"
+        ]
+      }
+    },
+    "/api/v3/account/refresh-token": {
+      "post": {
+        "description": "Refreshes the authentication token for the user. Requires a valid existing token in the Authorization header. Returns a new JWT token for subsequent API calls.",
+        "operationId": "refresh_user_token",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthBody",
+                  "description": "Response body containing authentication details"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh Authentication Token",
+        "tags": [
+          "v3/account"
+        ]
+      }
+    },
+    "/api/v3/organizations/{organization_id}/members": {
+      "post": {
+        "description": "Creates a new user under the specified organization. Alias of POST /api/v3/account.",
+        "operationId": "create_org_member",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Organization ID to which the new member will be added.",
+            "example": "org123456789012",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Organization ID to which the new member will be added.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Create_org_memberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAccountOutputBody",
+                  "description": "Response body containing complete account information"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create organization member",
+        "tags": [
+          "v3/org"
+        ]
+      }
+    },
+    "/api/v3/organizations/{organization_id}/permissions": {
+      "post": {
+        "description": "Grants a user a specific role-based permission (viewer, user, temporary) to access a plant under the given organization.",
+        "operationId": "assign_plant_permission",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Organization ID that owns the target plant.",
+            "example": "org123456789012",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Organization ID that owns the target plant.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgAddPermissionInputBody",
+                "description": "Request body for assigning plant permission to a user"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgAddPermissionOutputBody",
+                  "description": "Response body with assignment result info"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign plant permission to a user",
+        "tags": [
+          "v3/org"
+        ]
+      }
+    },
+    "/api/v3/plants": {
+      "get": {
+        "description": "Retrieves a paginated list of all solar plants associated with the user's account. Includes plant ID, name, location, organization information, and other relevant details with pagination support.",
+        "operationId": "get_plant_list",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page number for pagination (1-based indexing). Determines which subset of results to return. Results from (page-1)*size to page*size will be returned.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "Page number for pagination (1-based indexing). Determines which subset of results to return. Results from (page-1)*size to page*size will be returned.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of items per page for pagination. Controls how many plant installations are returned in a single request. Maximum recommended value is 100.",
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "default": 30,
+              "description": "Number of items per page for pagination. Controls how many plant installations are returned in a single request. Maximum recommended value is 100.",
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantsListV3OutputBody",
+                  "description": "Response body containing paginated plant list with metadata"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant List with Pagination",
+        "tags": [
+          "v3/plants"
+        ]
+      },
+      "post": {
+        "description": "Creates a new solar plant associated with the user's account.",
+        "operationId": "create_plant",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlantInput",
+                "description": "Request body containing details for the new plant installation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantBody",
+                  "description": "Response body containing detailed plant installation information"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Plant",
+        "tags": [
+          "v3/plants"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}": {
+      "get": {
+        "description": "Retrieves comprehensive information about a specific solar plant using the plant ID. Includes plant metadata, images, organization details, and all relevant configuration information.",
+        "operationId": "get_plant_details",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch detailed information for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch detailed information for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantBodyV3",
+                  "description": "Response body containing detailed plant installation information in v3 format"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Specific Plant Details",
+        "tags": [
+          "v3/plants"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/blueprint": {
+      "get": {
+        "description": "Retrieves detailed blueprint information for a specific plant including system layout and component mapping. Returns essential blueprint data in binary format required for plant operations and maintenance. Authorization header and Account-Type header are required.",
+        "operationId": "get_plant_blueprint",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date for blueprint data retrieval. The date for which you want to retrieve the plant's blueprint configuration. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+            "example": "2024-01-24",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date for blueprint data retrieval. The date for which you want to retrieve the plant's blueprint configuration. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "contentEncoding": "base64",
+                  "description": "Binary blueprint data containing system layout and component mapping information",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "description": "MIME type of the returned blueprint data (e.g., application/json, application/octet-stream)",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Blueprint Data",
+        "tags": [
+          "v3/plants/blueprint"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/files": {
+      "post": {
+        "description": "Uploads files related to a specific plant including blueprints, images, and configuration files. Authorization header and Account-Type header are required.",
+        "operationId": "upload_plant_files",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload files for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload files for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "filename": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "filename of the file being uploaded",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "general purpose name for multipart form value",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileUploadResponse",
+                  "description": "Response body containing file upload details and metadata"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload Plant Files",
+        "tags": [
+          "v3/plants/files"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/health-level/{unit}": {
+      "get": {
+        "description": "Calculates and retrieves the health level of panels for a specific plant based on daily energy production. Panels are categorized as 'best', 'caution', or 'faulty'.",
+        "operationId": "get_asset_health_level",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "The ID of the plant to calculate health levels for.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "The ID of the plant to calculate health levels for.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unit to calculate health levels for (e.g., panel).",
+            "example": "panel",
+            "in": "path",
+            "name": "unit",
+            "required": true,
+            "schema": {
+              "default": "panel",
+              "description": "The unit to calculate health levels for (e.g., panel).",
+              "examples": [
+                "panel"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "The specific date for health level calculation (YYYY-MM-DD).",
+            "example": "2025-08-14",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "The specific date for health level calculation (YYYY-MM-DD).",
+              "examples": [
+                "2025-08-14"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The view type for the response (summary or detail).",
+            "example": "summary",
+            "explode": false,
+            "in": "query",
+            "name": "view",
+            "schema": {
+              "default": "summary",
+              "description": "The view type for the response (summary or detail).",
+              "enum": [
+                "summary",
+                "detail"
+              ],
+              "examples": [
+                "summary"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthLevelBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Panel Health Levels",
+        "tags": [
+          "v3/plants/indicator"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/seqnum": {
+      "get": {
+        "description": "Retrieves panel-level seq_num time-series at 5-minute interval.",
+        "operationId": "get_panel_seqnum",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "The ID of the plant.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "The ID of the plant.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date (YYYY-MM-DD).",
+            "example": "2025-08-14",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date (YYYY-MM-DD).",
+              "examples": [
+                "2025-08-14"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Panel SeqNum (5m avg)",
+        "tags": [
+          "v3/plants/indicator"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/logs/inverter": {
+      "get": {
+        "description": "Retrieves paginated log entries for all inverters within a plant. Includes status messages, error codes, timestamps, and raw log data with Korean message translations.",
+        "operationId": "list_inverter_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "example": "bsajtokt84s2byf",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "bsajtokt84s2byf"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "The page number for pagination. This allows the user to retrieve a specific subset of data from the total available records. The default value is 1, indicating the first page.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "The page number for pagination. This allows the user to retrieve a specific subset of data from the total available records. The default value is 1, indicating the first page.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The number of records to retrieve per page. This parameter allows for pagination, enabling the user to control the amount of data returned in each request. The default value is 100.",
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "default": 100,
+              "description": "The number of records to retrieve per page. This parameter allows for pagination, enabling the user to control the amount of data returned in each request. The default value is 100.",
+              "format": "int64",
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InverterLogsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Inverter Log List with Pagination",
+        "tags": [
+          "v3/plants/logs"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/logs/inverters/{inverter_id}": {
+      "get": {
+        "description": "Retrieves paginated log entries for a specific inverter within a plant. Includes status messages, error codes, timestamps, and raw log data with Korean message translations.",
+        "operationId": "list_inverter_logs_by_id",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "example": "bsajtokt84s2byf",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "bsajtokt84s2byf"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inverter ID.",
+            "in": "path",
+            "name": "inverter_id",
+            "required": true,
+            "schema": {
+              "description": "Inverter ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The page number for pagination. This allows the user to retrieve a specific subset of data from the total available records. The default value is 1, indicating the first page.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "The page number for pagination. This allows the user to retrieve a specific subset of data from the total available records. The default value is 1, indicating the first page.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The number of records to retrieve per page. This parameter allows for pagination, enabling the user to control the amount of data returned in each request. The default value is 100.",
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "default": 100,
+              "description": "The number of records to retrieve per page. This parameter allows for pagination, enabling the user to control the amount of data returned in each request. The default value is 100.",
+              "format": "int64",
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InverterLogsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Specific Inverter Logs",
+        "tags": [
+          "v3/plants/logs"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/metrics/device/latest": {
+      "get": {
+        "description": "Retrieves the most recent metrics data for all devices (panels) in the specified plant. Includes current, voltage, temperature, and status information.",
+        "operationId": "get_latest_device_metrics",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "includeState",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "The time range in minutes for filtering active devices. Only devices that have sent data within the last 'ago' minutes will be included in the response. This helps exclude inactive or unresponsive devices. The maximum allowed value is 600 minutes.",
+            "example": 15,
+            "explode": false,
+            "in": "query",
+            "name": "ago",
+            "schema": {
+              "default": 15,
+              "description": "The time range in minutes for filtering active devices. Only devices that have sent data within the last 'ago' minutes will be included in the response. This helps exclude inactive or unresponsive devices. The maximum allowed value is 600 minutes.",
+              "examples": [
+                15
+              ],
+              "format": "int64",
+              "maximum": 600,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LatestDeviceBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Latest Device Metrics",
+        "tags": [
+          "v3/plants/metrics"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/metrics/inverter/latest": {
+      "get": {
+        "description": "Retrieves the most recent metrics data for all inverters in the specified plant. Includes logs, status, daily/total energy production, and operational information.",
+        "operationId": "get_latest_inverter_metrics",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "example": "bsajtokt84s2byf",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "bsajtokt84s2byf"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InverterDataBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Latest Inverter Metrics",
+        "tags": [
+          "v3/plants/metrics"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/metrics/{source}/{unit}-{interval}": {
+      "get": {
+        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, and plant-level data aggregation across different time intervals.",
+        "operationId": "get_metrics_by_date",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch metrics data for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch metrics data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, while 'inverter' refers to inverter-level data collection.",
+            "example": "device",
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "default": "device",
+              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, while 'inverter' refers to inverter-level data collection.",
+              "enum": [
+                "device",
+                "inverter"
+              ],
+              "examples": [
+                "device"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'string' aggregates by string configuration, and 'plant' provides plant-wide aggregated data.",
+            "example": "plant",
+            "in": "path",
+            "name": "unit",
+            "required": true,
+            "schema": {
+              "default": "plant",
+              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'string' aggregates by string configuration, and 'plant' provides plant-wide aggregated data.",
+              "enum": [
+                "panel",
+                "inverter",
+                "string",
+                "plant"
+              ],
+              "examples": [
+                "plant"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year).",
+            "example": "5m",
+            "in": "path",
+            "name": "interval",
+            "required": true,
+            "schema": {
+              "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year).",
+              "enum": [
+                "5m",
+                "15m",
+                "1h",
+                "1d",
+                "1M",
+                "1y"
+              ],
+              "examples": [
+                "5m"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date for data retrieval. The specific date for which you want to retrieve solar plant metrics data. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+            "example": "2024-01-24",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date for data retrieval. The specific date for which you want to retrieve solar plant metrics data. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h).",
+            "example": 1,
+            "explode": false,
+            "in": "query",
+            "name": "before",
+            "schema": {
+              "default": 1,
+              "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h).",
+              "examples": [
+                1
+              ],
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Data fields selection. Specifies which metrics or parameters to include in the response. Use 'all' to retrieve all available measurement fields, or specify individual field names (e.g., 'i_out' for output current, 'p' for power, 'energy' for energy production).",
+            "example": [
+              "i_out",
+              "p"
+            ],
+            "explode": false,
+            "in": "query",
+            "name": "fields",
+            "schema": {
+              "default": [
+                "all"
+              ],
+              "description": "Data fields selection. Specifies which metrics or parameters to include in the response. Use 'all' to retrieve all available measurement fields, or specify individual field names (e.g., 'i_out' for output current, 'p' for power, 'energy' for energy production).",
+              "examples": [
+                [
+                  "i_out",
+                  "p"
+                ]
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "description": "Time-series metrics for individual panels at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/PanelData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Panel Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Daily aggregated metrics for individual panels at 1-day intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/PanelDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Panel Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Time-series metrics for individual inverters at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/InverterData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Inverter Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Daily aggregated metrics for individual inverters at 1-day intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/InverterDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Inverter Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Time-series metrics for entire plant at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/PlantData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Plant Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Aggregated metrics for entire plant at 1-day, 1-month, and 1-year intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/PlantDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Plant Daily/Monthly/Yearly Metrics",
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Successful response. The structure varies depending on the request parameters and will be one of the following schemas."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Time-Series Metrics Data",
+        "tags": [
+          "v3/plants/metrics"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry/{record_type}": {
+      "get": {
+        "description": "Retrieves asset registry information for a specific plant filtered by record type. Includes registration status, mapping information, and historical data for the specified asset type. Authorization header and Account-Type header are required.",
+        "operationId": "get_asset_registration_on_plant",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "example": "unw4id41ud2p0wt",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The type of data to retrieve. Possible values:'logs': Returns all records that have changed on the specified date., 'snapshots': Returns all records that can be evaluated as 'registered' on the specified date.",
+            "example": "logs",
+            "in": "path",
+            "name": "record_type",
+            "required": true,
+            "schema": {
+              "description": "The type of data to retrieve. Possible values:'logs': Returns all records that have changed on the specified date., 'snapshots': Returns all records that can be evaluated as 'registered' on the specified date.",
+              "enum": [
+                "logs",
+                "snapshots"
+              ],
+              "examples": [
+                "logs"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+            "example": "2024-01-24",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unique identifier for the asset.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "The unique identifier for the asset.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unique identifier for the map.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "The unique identifier for the map.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of asset registration records for the specified plant and date",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistryOutputBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Registry by Record Type",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://patch-api.conalog.com"
+    }
+  ]
+}
