@@ -69,20 +69,22 @@ import { PatchClientV3 } from "patch-client";
 
 ### `FormData` 주입 예시 (구버전 Node.js)
 
-`form-data` 패키지를 설치하세요.
+`form-data`와 `node-fetch@2` 패키지를 설치하세요.
 
 ```bash
-npm install form-data
+npm install form-data node-fetch@2
 ```
 
 ```js
 const fs = require("fs");
 const FormData = require("form-data");
+const fetch = require("node-fetch");
 const { PatchClientV3 } = require("patch-client");
 
 const client = new PatchClientV3({
   accessToken: process.env.PATCH_TOKEN,
   accountType: "manager",
+  fetchFn: fetch,
 });
 
 (async () => {
