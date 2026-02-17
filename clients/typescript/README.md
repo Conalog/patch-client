@@ -67,11 +67,59 @@ import { PatchClientV3 } from "patch-client";
   - Node.js 18+ 및 최신 브라우저 환경에서는 기본 제공됩니다.
   - 구버전 Node.js 환경에서는 `form-data` 패키지를 설치한 후, 생성한 인스턴스를 `uploadPlantFiles` 메서드에 직접 전달해야 합니다.
 
+### `fetchFn` 주입 예시 (구버전 Node.js)
+
+`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
+
+#### CommonJS (`node-fetch@2`)
+
+```bash
+npm install node-fetch@2
+```
+
+```js
+const fetch = require("node-fetch");
+const { PatchClientV3 } = require("patch-client");
+
+(async () => {
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+    fetchFn: fetch,
+  });
+
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
+})();
+```
+
+#### ESM (`node-fetch@3+`)
+
+```bash
+npm install node-fetch
+```
+
+```js
+import fetch from "node-fetch";
+import { PatchClientV3 } from "patch-client";
+
+(async () => {
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+    fetchFn: fetch,
+  });
+
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
+})();
+```
+
 ### `FormData` 주입 예시 (구버전 Node.js)
 
 `node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
 
-**CommonJS (`node-fetch@2`)**
+#### CommonJS (`node-fetch@2`)
 
 `form-data`와 `node-fetch@2` 패키지를 설치하세요.
 
@@ -106,7 +154,7 @@ const client = new PatchClientV3({
 })();
 ```
 
-**ESM (`node-fetch@3+`)**
+#### ESM (`node-fetch@3+`)
 
 `form-data`와 `node-fetch` 패키지를 설치하세요.
 
@@ -141,54 +189,6 @@ const client = new PatchClientV3({
 })();
 ```
 
-### `fetchFn` 주입 예시 (구버전 Node.js)
-
-`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
-
-**CommonJS (`node-fetch@2`)**
-
-```bash
-npm install node-fetch@2
-```
-
-```js
-const fetch = require("node-fetch");
-const { PatchClientV3 } = require("patch-client");
-
-(async () => {
-  const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
-    accountType: "manager",
-    fetchFn: fetch,
-  });
-
-  const plants = await client.getPlantList({ page: 0, size: 20 });
-  console.log("Successfully fetched plants:", plants);
-})();
-```
-
-**ESM (`node-fetch@3+`)**
-
-```bash
-npm install node-fetch
-```
-
-```js
-import fetch from "node-fetch";
-import { PatchClientV3 } from "patch-client";
-
-(async () => {
-  const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
-    accountType: "manager",
-    fetchFn: fetch,
-  });
-
-  const plants = await client.getPlantList({ page: 0, size: 20 });
-  console.log("Successfully fetched plants:", plants);
-})();
-```
-
 ## 인증/헤더
 
 - `accessToken`은 `Bearer <token>` 또는 raw token 모두 허용합니다.
@@ -198,7 +198,7 @@ import { PatchClientV3 } from "patch-client";
 
 요청 실패 시 `PatchClientError`가 발생하며, `status`와 `payload`를 확인할 수 있습니다.
 
-**CommonJS (`require`)**
+#### CommonJS (`require`)
 
 ```js
 const { PatchClientV3, PatchClientError } = require("patch-client");
@@ -221,7 +221,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 })();
 ```
 
-**ESM (`import`)**
+#### ESM (`import`)
 
 ```js
 import { PatchClientV3, PatchClientError } from "patch-client";
