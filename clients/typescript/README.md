@@ -62,6 +62,8 @@ console.log(plants);
   - Node.js 18+에서는 기본 제공됩니다.
   - 구버전 Node.js에서는 `fetchFn`을 직접 주입하세요.
 - 파일 업로드 API(`uploadPlantFiles`)를 사용할 때는 `FormData`가 필요합니다.
+  - Node.js 18+에서는 기본 제공됩니다.
+  - 구버전 Node.js에서는 `form-data`와 같은 패키지를 사용해야 할 수 있습니다.
 
 ### `fetchFn` 주입 예시 (구버전 Node.js)
 
@@ -118,7 +120,8 @@ try {
     accessToken: process.env.PATCH_TOKEN,
     accountType: "manager",
   });
-  await client.getPlantList({ page: 0, size: 20 });
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
 } catch (err) {
   if (err instanceof PatchClientError) {
     console.error(err.status, err.payload);
