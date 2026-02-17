@@ -116,11 +116,16 @@ npm install node-fetch@2
 const fetch = require("node-fetch");
 const { PatchClientV3 } = require("patch-client");
 
-const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
-  accountType: "manager",
-  fetchFn: fetch,
-});
+(async () => {
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+    fetchFn: fetch,
+  });
+
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
+})();
 ```
 
 **ESM (`node-fetch@3+`)**
@@ -133,11 +138,16 @@ npm install node-fetch
 import fetch from "node-fetch";
 import { PatchClientV3 } from "patch-client";
 
-const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
-  accountType: "manager",
-  fetchFn: fetch,
-});
+(async () => {
+  const client = new PatchClientV3({
+    accessToken: process.env.PATCH_TOKEN,
+    accountType: "manager",
+    fetchFn: fetch,
+  });
+
+  const plants = await client.getPlantList({ page: 0, size: 20 });
+  console.log("Successfully fetched plants:", plants);
+})();
 ```
 
 ## 인증/헤더
