@@ -106,11 +106,36 @@ const client = new PatchClientV3({
 ## 인증/헤더
 
 - `accessToken`은 `Bearer <token>` 또는 raw token 모두 허용합니다.
-- `accountType`은 `"viewer" | "manager" | "admin"` 중 하나를 사용하세요.
+- `accountType`은 `"viewer"`, `"manager"`, 또는 `"admin"` 중 하나를 사용하세요.
 
 ## 에러 처리
 
 요청 실패 시 `PatchClientError`가 발생하며, `status`와 `payload`를 확인할 수 있습니다.
+
+**CommonJS (`require`)**
+
+```js
+const { PatchClientV3, PatchClientError } = require("patch-client");
+
+(async () => {
+  try {
+    const client = new PatchClientV3({
+      accessToken: process.env.PATCH_TOKEN,
+      accountType: "manager",
+    });
+    const plants = await client.getPlantList({ page: 0, size: 20 });
+    console.log("Successfully fetched plants:", plants);
+  } catch (err) {
+    if (err instanceof PatchClientError) {
+      console.error(err.status, err.payload);
+    } else {
+      console.error(err);
+    }
+  }
+})();
+```
+
+**ESM (`import`)**
 
 ```js
 import { PatchClientV3, PatchClientError } from "patch-client";
