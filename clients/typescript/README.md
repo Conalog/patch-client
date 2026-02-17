@@ -65,6 +65,33 @@ console.log("Successfully fetched plants:", plants);
   - Node.js 18+에서는 기본 제공됩니다.
   - 구버전 Node.js에서는 `form-data` 패키지를 설치한 후, 생성한 인스턴스를 `uploadPlantFiles` 메서드에 직접 전달하세요.
 
+### `FormData` 주입 예시 (구버전 Node.js)
+
+`form-data` 패키지를 설치하세요.
+
+```bash
+npm install form-data
+```
+
+```js
+const fs = require("fs");
+const FormData = require("form-data");
+const { PatchClientV3 } = require("patch-client");
+
+const client = new PatchClientV3({
+  accessToken: process.env.PATCH_TOKEN,
+  accountType: "manager",
+});
+
+const formData = new FormData();
+formData.append("file", fs.createReadStream("/path/to/file.csv"), "file.csv");
+
+(async () => {
+  const result = await client.uploadPlantFiles("your-plant-id", formData);
+  console.log("Successfully uploaded files:", result);
+})();
+```
+
 ### `fetchFn` 주입 예시 (구버전 Node.js)
 
 `node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
