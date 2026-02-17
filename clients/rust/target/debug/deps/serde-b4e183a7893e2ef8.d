@@ -1,0 +1,14 @@
+/Users/cypark/Documents/work/patch-client/clients/rust/target/debug/deps/serde-b4e183a7893e2ef8.d: /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/cypark/Documents/work/patch-client/clients/rust/target/debug/build/serde-98acfcc476fba3cb/out/private.rs
+
+/Users/cypark/Documents/work/patch-client/clients/rust/target/debug/deps/libserde-b4e183a7893e2ef8.rlib: /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/cypark/Documents/work/patch-client/clients/rust/target/debug/build/serde-98acfcc476fba3cb/out/private.rs
+
+/Users/cypark/Documents/work/patch-client/clients/rust/target/debug/deps/libserde-b4e183a7893e2ef8.rmeta: /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/cypark/Documents/work/patch-client/clients/rust/target/debug/build/serde-98acfcc476fba3cb/out/private.rs
+
+/Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/cypark/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/cypark/Documents/work/patch-client/clients/rust/target/debug/build/serde-98acfcc476fba3cb/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/cypark/Documents/work/patch-client/clients/rust/target/debug/build/serde-98acfcc476fba3cb/out

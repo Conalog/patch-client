@@ -1,0 +1,16 @@
+{
+  "name": "patch-client",
+  "version": "0.1.0",
+  "description": "PATCH Plant Data API v3 client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
