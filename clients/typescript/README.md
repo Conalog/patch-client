@@ -85,13 +85,17 @@ const client = new PatchClientV3({
   accountType: "manager",
 });
 
-const formData = new FormData();
-const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
-formData.append("file", fs.createReadStream(filePath), "file.csv");
-
 (async () => {
-  const result = await client.uploadPlantFiles("your-plant-id", formData);
-  console.log("Successfully uploaded files:", result);
+  try {
+    const formData = new FormData();
+    const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
+    formData.append("file", fs.createReadStream(filePath), "file.csv");
+
+    const result = await client.uploadPlantFiles("your-plant-id", formData);
+    console.log("Successfully uploaded files:", result);
+  } catch (err) {
+    console.error("An error occurred:", err);
+  }
 })();
 ```
 
