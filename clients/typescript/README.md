@@ -132,7 +132,7 @@ const fs = require("fs");
 const path = require("path");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
-const { PatchClientV3 } = require("patch-client");
+const { PatchClientV3, PatchClientError } = require("patch-client");
 
 (async () => {
   try {
@@ -149,7 +149,11 @@ const { PatchClientV3 } = require("patch-client");
     const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
     console.log("Successfully uploaded files:", result);
   } catch (err) {
-    console.error("An error occurred:", err);
+    if (err instanceof PatchClientError) {
+      console.error("Upload failed with API error:", err.status, err.payload);
+    } else {
+      console.error("An error occurred:", err);
+    }
   }
 })();
 ```
@@ -167,7 +171,7 @@ import fs from "fs";
 import path from "path";
 import FormData from "form-data";
 import fetch from "node-fetch";
-import { PatchClientV3 } from "patch-client";
+import { PatchClientV3, PatchClientError } from "patch-client";
 
 (async () => {
   try {
@@ -184,7 +188,11 @@ import { PatchClientV3 } from "patch-client";
     const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
     console.log("Successfully uploaded files:", result);
   } catch (err) {
-    console.error("An error occurred:", err);
+    if (err instanceof PatchClientError) {
+      console.error("Upload failed with API error:", err.status, err.payload);
+    } else {
+      console.error("An error occurred:", err);
+    }
   }
 })();
 ```
