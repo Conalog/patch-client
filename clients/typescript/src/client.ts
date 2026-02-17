@@ -1,6 +1,12 @@
 export type AccountType = "viewer" | "manager" | "admin";
 
-export type QueryValue = string | number | boolean | null | undefined;
+export type QueryValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Array<string | number | boolean | null | undefined>;
 export type JsonObject = Record<string, unknown>;
 
 export interface ClientConfig {
@@ -43,7 +49,10 @@ export class PatchClientV3 {
   private accountType?: AccountType;
 
   constructor(config: ClientConfig = {}) {
-    this.baseUrl = (config.baseUrl ?? "https://patch-api.conalog.com").replace(/\/$/, "");
+    const normalizedBaseUrl = (config.baseUrl ?? "https://patch-api.conalog.com").replace(/\/$/, "");
+    // Validate base URL at construction time to fail fast on invalid config.
+    // URL instances are serialized back to string and used for path joining per request.
+    this.baseUrl = new URL(normalizedBaseUrl).toString().replace(/\/$/, "");
     this.accessToken = config.accessToken;
     this.accountType = config.accountType;
     this.defaultHeaders = { ...(config.defaultHeaders ?? {}) };
@@ -214,7 +223,7 @@ export class PatchClientV3 {
     unit: string,
     interval: string,
     date: string,
-    query?: { before?: string; fields?: string },
+    query?: { before?: string; fields?: string[] },
     options?: RequestOptions
   ): Promise<unknown> {
     return this.request(
@@ -248,7 +257,16 @@ export class PatchClientV3 {
     const url = new URL(`${this.baseUrl}${path}`);
     const query = input.query ?? {};
     for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item !== undefined && item !== null) {
+            url.searchParams.append(key, String(item));
+          }
+        }
+      } else {
         url.searchParams.set(key, String(value));
       }
     }
@@ -305,9 +323,16 @@ async function parseResponse(response: Response): Promise<unknown> {
   if (response.status === 204) {
     return null;
   }
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
   const text = await response.text();
-  return text.length > 0 ? text : null;
+  if (text.length === 0) {
+    return null;
+  }
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      return text;
+    }
+  }
+  return text;
 }

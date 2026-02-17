@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass
+from json import JSONDecodeError
 from typing import Any, Mapping, Optional
 from urllib import parse, request
 from urllib.error import HTTPError, URLError
@@ -263,8 +264,8 @@ class PatchClientV3:
     def get_latest_device_metrics(
         self,
         plant_id: str,
-        include_state: Optional[str] = None,
-        ago: Optional[str] = None,
+        include_state: Optional[bool] = None,
+        ago: Optional[int] = None,
         *,
         access_token: Optional[str] = None,
         account_type: Optional[AccountType] = None,
@@ -298,8 +299,8 @@ class PatchClientV3:
         unit: str,
         interval: str,
         date: str,
-        before: Optional[str] = None,
-        fields: Optional[str] = None,
+        before: Optional[int] = None,
+        fields: Optional[list[str]] = None,
         *,
         access_token: Optional[str] = None,
         account_type: Optional[AccountType] = None,
@@ -340,15 +341,24 @@ class PatchClientV3:
         path: str,
         *,
         query: Optional[Mapping[str, Any]] = None,
-        json_body: Optional[Mapping[str, Any]] = None,
+        json_body: Optional[Any] = None,
         raw_body: Optional[bytes] = None,
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
         url = f"{self.base_url}{path}"
         if query:
-            filtered_query = {k: str(v) for k, v in query.items() if v is not None}
-            if filtered_query:
-                url = f"{url}?{parse.urlencode(filtered_query)}"
+            query_items: list[tuple[str, str]] = []
+            for key, value in query.items():
+                if value is None:
+                    continue
+                if isinstance(value, (list, tuple)):
+                    for item in value:
+                        if item is not None:
+                            query_items.append((key, _serialize_query_value(item)))
+                else:
+                    query_items.append((key, _serialize_query_value(value)))
+            if query_items:
+                url = f"{url}?{parse.urlencode(query_items, doseq=True)}"
 
         merged_headers = {"Accept": "application/json", **self.default_headers, **(headers or {})}
         body: Optional[bytes] = raw_body
@@ -396,17 +406,22 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
     body = bytearray()
 
     for name, value in fields.items():
+        safe_name = _quote_header_value(name)
         body.extend(f"--{boundary}\r\n".encode("utf-8"))
-        body.extend(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("utf-8"))
+        body.extend(
+            f'Content-Disposition: form-data; name="{safe_name}"\r\n\r\n'.encode("utf-8")
+        )
         body.extend(value.encode("utf-8"))
         body.extend(b"\r\n")
 
     for name, file_part in files.items():
+        safe_name = _quote_header_value(name)
+        safe_filename = _quote_header_value(file_part.filename)
         body.extend(f"--{boundary}\r\n".encode("utf-8"))
         body.extend(
             (
-                f'Content-Disposition: form-data; name="{name}"; '
-                f'filename="{file_part.filename}"\r\n'
+                f'Content-Disposition: form-data; name="{safe_name}"; '
+                f'filename="{safe_filename}"\r\n'
             ).encode("utf-8")
         )
         body.extend(f"Content-Type: {file_part.content_type}\r\n\r\n".encode("utf-8"))
@@ -420,10 +435,25 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
 def _decode_response(payload: bytes, content_type: str) -> Any:
     if not payload:
         return None
-    if "application/json" in content_type:
-        return json.loads(payload.decode("utf-8"))
-    return payload.decode("utf-8", errors="replace")
+    if "json" in content_type:
+        try:
+            return json.loads(payload.decode("utf-8"))
+        except JSONDecodeError:
+            return payload.decode("utf-8", errors="replace")
+    if content_type.startswith("text/") or "xml" in content_type or "html" in content_type:
+        return payload.decode("utf-8", errors="replace")
+    return payload
 
 
 def _encode_path(value: str) -> str:
     return parse.quote(value, safe="")
+
+
+def _serialize_query_value(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _quote_header_value(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')

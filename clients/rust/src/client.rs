@@ -568,7 +568,7 @@ impl Client {
         date: &str,
         before: Option<i64>,
         fields: Option<&[String]>,
-    ) -> Result<()> {
+    ) -> Result<serde_json::Value> {
         let path = format!(
             "api/v2/metrics/plants/{}/{}/{}-{}",
             Self::encode_path_segment(plant_id),
@@ -586,7 +586,7 @@ impl Client {
             }
         }
         let url = self.url_with_query(&path, &q)?;
-        self.execute_no_content(Method::GET, url).await
+        self.execute_json(Method::GET, url, Option::<&()>::None).await
     }
 
     /// v2 metrics endpoint (typed).

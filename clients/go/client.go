@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -37,17 +38,23 @@ type FilePart struct {
 type Client struct {
 	BaseURL        string
 	HTTPClient     *http.Client
+	mu             sync.RWMutex
 	AccessToken    string
 	AccountType    AccountType
 	DefaultHeaders map[string]string
 }
 
 type PatchClientError struct {
+	Method     string
+	URL        string
 	StatusCode int
 	Body       string
 }
 
 func (e *PatchClientError) Error() string {
+	if e.Method != "" && e.URL != "" {
+		return fmt.Sprintf("PATCH API request failed: %s %s returned status %d", e.Method, e.URL, e.StatusCode)
+	}
 	return fmt.Sprintf("PATCH API request failed with status %d", e.StatusCode)
 }
 
@@ -63,10 +70,14 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) SetAccessToken(token string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.AccessToken = token
 }
 
 func (c *Client) SetAccountType(accountType AccountType) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.AccountType = accountType
 }
 
@@ -112,7 +123,11 @@ func (c *Client) GetPlantBlueprint(ctx context.Context, plantID string, date str
 
 func (c *Client) UploadPlantFiles(ctx context.Context, plantID string, fields map[string]string, files map[string]FilePart, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/files", encodePath(plantID))
-	contentType, payload, err := encodeMultipart(fields, files)
+	normalizedFields, normalizedFiles, err := normalizeUploadPayload(fields, files)
+	if err != nil {
+		return nil, err
+	}
+	contentType, payload, err := encodeMultipart(normalizedFields, normalizedFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +258,12 @@ func (c *Client) doJSON(
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &PatchClientError{StatusCode: resp.StatusCode, Body: string(payload)}
+		return nil, &PatchClientError{
+			Method:     method,
+			URL:        target,
+			StatusCode: resp.StatusCode,
+			Body:       string(payload),
+		}
 	}
 
 	if len(payload) == 0 {
@@ -280,12 +300,17 @@ func (c *Client) buildURL(path string, query map[string]string) (string, error) 
 }
 
 func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
+	c.mu.RLock()
+	defaultHeaders := cloneMap(c.DefaultHeaders)
+	token := c.AccessToken
+	accountType := c.AccountType
+	c.mu.RUnlock()
+
 	headers := map[string]string{}
-	for k, v := range c.DefaultHeaders {
+	for k, v := range defaultHeaders {
 		headers[k] = v
 	}
 
-	token := c.AccessToken
 	if opts != nil && opts.AccessToken != "" {
 		token = opts.AccessToken
 	}
@@ -293,7 +318,6 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 		headers["Authorization"] = asBearer(token)
 	}
 
-	accountType := c.AccountType
 	if opts != nil && opts.AccountType != "" {
 		accountType = opts.AccountType
 	}
@@ -324,6 +348,32 @@ func withContentType(opts *RequestOptions, contentType string) *RequestOptions {
 	}
 	out.Headers["Content-Type"] = contentType
 	return out
+}
+
+func normalizeUploadPayload(fields map[string]string, files map[string]FilePart) (map[string]string, map[string]FilePart, error) {
+	outFields := cloneMap(fields)
+	outFiles := cloneFileMap(files)
+
+	// OpenAPI schema defines multipart keys as "name" and "filename".
+	if _, ok := outFiles["filename"]; !ok {
+		if len(outFiles) != 1 {
+			return nil, nil, fmt.Errorf("upload files must include 'filename' field")
+		}
+		for _, file := range outFiles {
+			outFiles = map[string]FilePart{"filename": file}
+			break
+		}
+	}
+
+	if _, ok := outFields["name"]; !ok {
+		if file, ok := outFiles["filename"]; ok && file.Filename != "" {
+			outFields["name"] = file.Filename
+		} else {
+			outFields["name"] = "file"
+		}
+	}
+
+	return outFields, outFiles, nil
 }
 
 func encodeMultipart(fields map[string]string, files map[string]FilePart) (string, []byte, error) {
@@ -380,6 +430,17 @@ func cloneMap(in map[string]string) map[string]string {
 		return map[string]string{}
 	}
 	out := make(map[string]string, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func cloneFileMap(in map[string]FilePart) map[string]FilePart {
+	if len(in) == 0 {
+		return map[string]FilePart{}
+	}
+	out := make(map[string]FilePart, len(in))
 	for k, v := range in {
 		out[k] = v
 	}
