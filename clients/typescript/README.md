@@ -140,18 +140,20 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 ```js
 import { PatchClientV3, PatchClientError } from "patch-client";
 
-try {
-  const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
-    accountType: "manager",
-  });
-  const plants = await client.getPlantList({ page: 0, size: 20 });
-  console.log("Successfully fetched plants:", plants);
-} catch (err) {
-  if (err instanceof PatchClientError) {
-    console.error(err.status, err.payload);
-  } else {
-    console.error(err);
+(async () => {
+  try {
+    const client = new PatchClientV3({
+      accessToken: process.env.PATCH_TOKEN,
+      accountType: "manager",
+    });
+    const plants = await client.getPlantList({ page: 0, size: 20 });
+    console.log("Successfully fetched plants:", plants);
+  } catch (err) {
+    if (err instanceof PatchClientError) {
+      console.error(err.status, err.payload);
+    } else {
+      console.error(err);
+    }
   }
-}
+})();
 ```
