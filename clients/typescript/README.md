@@ -65,14 +65,29 @@ console.log(plants);
 
 ### `fetchFn` 주입 예시 (구버전 Node.js)
 
-`node-fetch`를 사용하려면 먼저 설치가 필요합니다.
+`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
+
+**CommonJS (`node-fetch@2`)**
+
+```bash
+npm install node-fetch@2
+```
+
+```js
+const fetch = require("node-fetch");
+const { PatchClientV3 } = require("patch-client");
+
+const client = new PatchClientV3({
+  accessToken: process.env.PATCH_TOKEN,
+  fetchFn: fetch,
+});
+```
+
+**ESM (`node-fetch@3+`)**
 
 ```bash
 npm install node-fetch
 ```
-
-`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경이라면 `node-fetch@2`를 설치해
-`const fetch = require("node-fetch");` 형태로 사용하세요.
 
 ```js
 import fetch from "node-fetch";
