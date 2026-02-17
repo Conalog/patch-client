@@ -134,14 +134,14 @@ const FormData = require("form-data");
 const fetch = require("node-fetch");
 const { PatchClientV3 } = require("patch-client");
 
-const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
-  accountType: "manager",
-  fetchFn: fetch,
-});
-
 (async () => {
   try {
+    const client = new PatchClientV3({
+      accessToken: process.env.PATCH_TOKEN,
+      accountType: "manager",
+      fetchFn: fetch,
+    });
+
     const formData = new FormData();
     const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
     formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
@@ -169,14 +169,14 @@ import FormData from "form-data";
 import fetch from "node-fetch";
 import { PatchClientV3 } from "patch-client";
 
-const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
-  accountType: "manager",
-  fetchFn: fetch,
-});
-
 (async () => {
   try {
+    const client = new PatchClientV3({
+      accessToken: process.env.PATCH_TOKEN,
+      accountType: "manager",
+      fetchFn: fetch,
+    });
+
     const formData = new FormData();
     const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
     formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
