@@ -150,9 +150,9 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
     console.log("Successfully uploaded files:", result);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("Upload failed with API error:", err.status, err.payload);
+      console.error("파일 업로드 API 오류:", err.status, err.payload);
     } else {
-      console.error("An error occurred:", err);
+      console.error("파일 업로드 중 오류가 발생했습니다:", err);
     }
   }
 })();
@@ -189,9 +189,9 @@ import { PatchClientV3, PatchClientError } from "patch-client";
     console.log("Successfully uploaded files:", result);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("Upload failed with API error:", err.status, err.payload);
+      console.error("파일 업로드 API 오류:", err.status, err.payload);
     } else {
-      console.error("An error occurred:", err);
+      console.error("파일 업로드 중 오류가 발생했습니다:", err);
     }
   }
 })();
@@ -221,9 +221,9 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error(err.status, err.payload);
+      console.error("플랜트 목록 조회 API 오류:", err.status, err.payload);
     } else {
-      console.error(err);
+      console.error("플랜트 목록 조회 중 오류가 발생했습니다:", err);
     }
   }
 })();
@@ -244,9 +244,9 @@ import { PatchClientV3, PatchClientError } from "patch-client";
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error(err.status, err.payload);
+      console.error("플랜트 목록 조회 API 오류:", err.status, err.payload);
     } else {
-      console.error(err);
+      console.error("플랜트 목록 조회 중 오류가 발생했습니다:", err);
     }
   }
 })();
