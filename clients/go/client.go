@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -36,12 +37,15 @@ type FilePart struct {
 }
 
 type Client struct {
-	BaseURL        string
-	HTTPClient     *http.Client
-	mu             sync.RWMutex
-	AccessToken    string
-	AccountType    AccountType
-	DefaultHeaders map[string]string
+	BaseURL    string
+	HTTPClient *http.Client
+	mu         sync.RWMutex
+
+	AccessToken string
+	AccountType AccountType
+
+	defaultHeaders   map[string]string
+	maxResponseBytes int64
 }
 
 type PatchClientError struct {
@@ -50,6 +54,10 @@ type PatchClientError struct {
 	StatusCode int
 	Body       string
 }
+
+const defaultMaxResponseBytes int64 = 10 << 20
+
+var fallbackHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func (e *PatchClientError) Error() string {
 	if e.Method != "" && e.URL != "" {
@@ -63,9 +71,10 @@ func NewClient(baseURL string) *Client {
 		baseURL = "https://patch-api.conalog.com"
 	}
 	return &Client{
-		BaseURL:        strings.TrimRight(baseURL, "/"),
-		HTTPClient:     &http.Client{Timeout: 30 * time.Second},
-		DefaultHeaders: map[string]string{},
+		BaseURL:          strings.TrimRight(baseURL, "/"),
+		HTTPClient:       &http.Client{Timeout: 30 * time.Second},
+		defaultHeaders:   map[string]string{},
+		maxResponseBytes: defaultMaxResponseBytes,
 	}
 }
 
@@ -79,6 +88,37 @@ func (c *Client) SetAccountType(accountType AccountType) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.AccountType = accountType
+}
+
+func (c *Client) SetDefaultHeader(key string, value string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.defaultHeaders == nil {
+		c.defaultHeaders = map[string]string{}
+	}
+	c.defaultHeaders[key] = value
+}
+
+func (c *Client) SetDefaultHeaders(headers map[string]string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.defaultHeaders = cloneMap(headers)
+}
+
+func (c *Client) GetDefaultHeaders() map[string]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return cloneMap(c.defaultHeaders)
+}
+
+func (c *Client) SetMaxResponseBytes(limit int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if limit <= 0 {
+		c.maxResponseBytes = defaultMaxResponseBytes
+		return
+	}
+	c.maxResponseBytes = limit
 }
 
 func (c *Client) AuthenticateUser(ctx context.Context, payload any) (any, error) {
@@ -231,7 +271,7 @@ func (c *Client) doJSON(
 		body = bytes.NewReader(rawBody)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, target, body)
+	req, err := http.NewRequestWithContext(nonNilContext(ctx), method, target, body)
 	if err != nil {
 		return nil, err
 	}
@@ -246,13 +286,14 @@ func (c *Client) doJSON(
 		req.Header.Set(k, v)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	client := c.httpClient()
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	payload, err := io.ReadAll(resp.Body)
+	payload, err := readBodyWithLimit(resp.Body, c.responseLimit())
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +311,7 @@ func (c *Client) doJSON(
 		return nil, nil
 	}
 
-	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+	if isJSONContentType(resp.Header.Get("Content-Type")) {
 		var out any
 		if err := json.Unmarshal(payload, &out); err != nil {
 			return nil, err
@@ -299,7 +340,7 @@ func (c *Client) buildURL(path string, query map[string]string) (string, error) 
 
 func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 	c.mu.RLock()
-	defaultHeaders := cloneMap(c.DefaultHeaders)
+	defaultHeaders := cloneMap(c.defaultHeaders)
 	token := c.AccessToken
 	accountType := c.AccountType
 	c.mu.RUnlock()
@@ -448,4 +489,50 @@ func cloneFileMap(in map[string]FilePart) map[string]FilePart {
 func escapeQuotes(v string) string {
 	replacer := strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 	return replacer.Replace(v)
+}
+
+func (c *Client) httpClient() *http.Client {
+	client := c.HTTPClient
+	if client == nil {
+		return fallbackHTTPClient
+	}
+	return client
+}
+
+func (c *Client) responseLimit() int64 {
+	c.mu.RLock()
+	limit := c.maxResponseBytes
+	c.mu.RUnlock()
+	if limit <= 0 {
+		return defaultMaxResponseBytes
+	}
+	return limit
+}
+
+func nonNilContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
+}
+
+func readBodyWithLimit(body io.Reader, limit int64) ([]byte, error) {
+	reader := io.LimitReader(body, limit+1)
+	payload, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(payload)) > limit {
+		return nil, fmt.Errorf("response body exceeds %d bytes", limit)
+	}
+	return payload, nil
+}
+
+func isJSONContentType(contentType string) bool {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		mediaType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	}
+	mediaType = strings.ToLower(mediaType)
+	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
 }
