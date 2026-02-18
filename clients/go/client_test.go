@@ -168,10 +168,15 @@ func TestDoJSONFailsWhenResponseExceedsLimit(t *testing.T) {
 }
 
 func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
-	var gotAccept string
+	var (
+		mu        sync.Mutex
+		gotAccept string
+	)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		gotAccept = r.Header.Get("Accept")
+		mu.Unlock()
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer srv.Close()
@@ -187,6 +192,8 @@ func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
 		t.Fatalf("GetPlantList returned error: %v", err)
 	}
 
+	mu.Lock()
+	defer mu.Unlock()
 	if gotAccept != "text/plain" {
 		t.Fatalf("unexpected Accept header: %s", gotAccept)
 	}
@@ -235,7 +242,7 @@ func TestAsBearerAcceptsLowercasePrefix(t *testing.T) {
 	}
 }
 
-func TestPatchClientErrorIncludesBodyMessage(t *testing.T) {
+func TestPatchClientErrorOmitsBodyInErrorString(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte("invalid request payload"))
@@ -248,7 +255,16 @@ func TestPatchClientErrorIncludesBodyMessage(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "invalid request payload") {
-		t.Fatalf("error message does not include response body: %v", err)
+	if strings.Contains(err.Error(), "invalid request payload") {
+		t.Fatalf("error message unexpectedly includes response body: %v", err)
+	}
+}
+
+func TestPatchClientErrorBodySnippetTruncatesByRune(t *testing.T) {
+	err := &PatchClientError{Body: "가나다라마바사아자차카타파하"}
+	got := err.BodySnippet(5)
+	want := "가나다라마..."
+	if got != want {
+		t.Fatalf("unexpected snippet: got %q want %q", got, want)
 	}
 }

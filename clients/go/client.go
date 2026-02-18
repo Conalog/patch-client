@@ -60,27 +60,23 @@ const defaultMaxResponseBytes int64 = 10 << 20
 var fallbackHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func (e *PatchClientError) Error() string {
-	body := strings.TrimSpace(e.Body)
-	if len(body) > 200 {
-		body = body[:200] + "..."
-	}
-
 	if e.Method != "" && e.URL != "" {
-		if body != "" {
-			return fmt.Sprintf(
-				"PATCH API request failed: %s %s returned status %d: %s",
-				e.Method,
-				e.URL,
-				e.StatusCode,
-				body,
-			)
-		}
 		return fmt.Sprintf("PATCH API request failed: %s %s returned status %d", e.Method, e.URL, e.StatusCode)
 	}
-	if body != "" {
-		return fmt.Sprintf("PATCH API request failed with status %d: %s", e.StatusCode, body)
-	}
 	return fmt.Sprintf("PATCH API request failed with status %d", e.StatusCode)
+}
+
+func (e *PatchClientError) BodySnippet(maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+
+	body := strings.TrimSpace(e.Body)
+	runes := []rune(body)
+	if len(runes) <= maxRunes {
+		return body
+	}
+	return string(runes[:maxRunes]) + "..."
 }
 
 func NewClient(baseURL string) *Client {
