@@ -14,5 +14,5 @@ pip install patch-client
 from patch_client import PatchClientV3
 
 client = PatchClientV3(access_token="token", account_type="manager")
-plants = client.get_plant_list(page=0, size=20)
+plants = client.get_plant_list(page=1, size=20)
 ```
