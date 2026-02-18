@@ -204,7 +204,7 @@ export class PatchClientV3 {
 
   async getLatestDeviceMetrics(
     plantId: string,
-    query?: { includeState?: string; ago?: string },
+    query?: { includeState?: boolean; ago?: number },
     options?: RequestOptions
   ): Promise<unknown> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/metrics/device/latest`, {
@@ -225,7 +225,7 @@ export class PatchClientV3 {
     unit: string,
     interval: string,
     date: string,
-    query?: { before?: string; fields?: string[] },
+    query?: { before?: number; fields?: string[] },
     options?: RequestOptions
   ): Promise<unknown> {
     return this.request(
@@ -329,7 +329,7 @@ async function parseResponse(response: Response): Promise<unknown> {
   if (text.length === 0) {
     return null;
   }
-  if (contentType.includes("application/json")) {
+  if (contentType.includes("application/json") || contentType.includes("+json")) {
     try {
       return JSON.parse(text) as unknown;
     } catch {
