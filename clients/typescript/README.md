@@ -8,13 +8,32 @@ Handwritten TypeScript client for PATCH Plant Data API v3.
 npm install patch-client
 ```
 
+## Get a Token First (Login)
+
+`<issued-jwt-token>` in examples means a token returned by `authenticateUser`.
+If you store tokens in env vars, load that issued token from `process.env.PATCH_TOKEN`.
+
+```ts
+import { PatchClientV3 } from "patch-client";
+
+const authClient = new PatchClientV3();
+const auth = (await authClient.authenticateUser({
+  type: "manager",
+  email: process.env.PATCH_EMAIL,
+  password: process.env.PATCH_PASSWORD,
+})) as { token: string };
+
+const token = auth.token;
+authClient.setAccessToken(token);
+```
+
 ## Quick Start (TypeScript)
 
 ```ts
 import { PatchClientV3 } from "patch-client";
 
 const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
+  accessToken: "<issued-jwt-token>",
   accountType: "manager",
 });
 
@@ -33,7 +52,7 @@ const { PatchClientV3 } = require("patch-client");
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
   });
 
@@ -49,7 +68,7 @@ import { PatchClientV3 } from "patch-client";
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
   });
 
@@ -84,7 +103,7 @@ const { PatchClientV3 } = require("patch-client");
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
     fetchFn: fetch,
   });
@@ -106,7 +125,7 @@ import { PatchClientV3 } from "patch-client";
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
     fetchFn: fetch,
   });
@@ -130,7 +149,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
 
@@ -172,7 +191,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
       fetchFn: fetch,
     });
@@ -211,7 +230,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
       fetchFn: fetch,
     });
@@ -234,6 +253,9 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 
 ## Authentication / Headers
 
+- The package does not auto-issue tokens from environment variables.
+- Issue a token with `authenticateUser(...)`, then pass it via `accessToken` (or `setAccessToken(...)`).
+- Refresh an existing token with `refreshUserToken(...)` and update the client with the returned token.
 - `accessToken` accepts either `Bearer <token>` or a raw token.
 - `accountType` should be one of `"viewer"`, `"manager"`, or `"admin"`.
 
@@ -249,7 +271,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
     const plants = await client.getPlantList({ page: 0, size: 20 });
@@ -272,7 +294,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
     const plants = await client.getPlantList({ page: 0, size: 20 });
