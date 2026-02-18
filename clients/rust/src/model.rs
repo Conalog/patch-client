@@ -472,27 +472,9 @@ impl<'de> Deserialize<'de> for MetricsBody {
             (Some("plant"), Some("day")) => serde_json::from_value(value)
                 .map(MetricsBody::PlantAggregated)
                 .map_err(de::Error::custom),
-            _ => {
-                if let Ok(v) = serde_json::from_value::<BodyPanelData>(value.clone()) {
-                    return Ok(MetricsBody::PanelIntraday(v));
-                }
-                if let Ok(v) = serde_json::from_value::<BodyPanelDailyData>(value.clone()) {
-                    return Ok(MetricsBody::PanelDaily(v));
-                }
-                if let Ok(v) = serde_json::from_value::<BodyInverterData>(value.clone()) {
-                    return Ok(MetricsBody::InverterIntraday(v));
-                }
-                if let Ok(v) = serde_json::from_value::<BodyInverterDailyData>(value.clone()) {
-                    return Ok(MetricsBody::InverterDaily(v));
-                }
-                if let Ok(v) = serde_json::from_value::<BodyPlantData>(value.clone()) {
-                    return Ok(MetricsBody::PlantIntraday(v));
-                }
-                if let Ok(v) = serde_json::from_value::<BodyPlantDailyData>(value) {
-                    return Ok(MetricsBody::PlantAggregated(v));
-                }
-                Err(de::Error::custom("invalid metrics payload"))
-            }
+            _ => Err(de::Error::custom(
+                "missing or invalid metrics discriminants (unit/interval)",
+            )),
         }
     }
 }

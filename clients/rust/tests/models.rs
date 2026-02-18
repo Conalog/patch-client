@@ -75,3 +75,31 @@ fn metrics_body_uses_plant_aggregated_variant_for_plant_day_payload() {
         "plant/day payload should deserialize to PlantAggregated"
     );
 }
+
+#[test]
+fn metrics_body_rejects_unknown_discriminants() {
+    let json = r#"{
+        "plant_id": "p1",
+        "unit": "unknown",
+        "source": "device",
+        "date": "2026-01-01",
+        "interval": "5m",
+        "data": [
+            {
+                "id": "a1",
+                "date": "2026-01-01",
+                "timestamp": 1,
+                "energy": 1.0,
+                "cumulative_energy": 2.0,
+                "i_out": 3.0,
+                "p": 4.0,
+                "v_in": 5.0,
+                "v_out": 6.0,
+                "temp": 7.0
+            }
+        ]
+    }"#;
+
+    let err = serde_json::from_str::<MetricsBody>(json).expect_err("must reject unknown unit/interval");
+    assert!(err.to_string().contains("missing or invalid"));
+}
