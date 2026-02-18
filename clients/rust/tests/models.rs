@@ -51,3 +51,27 @@ fn error_model_deserializes_problem_json() {
     assert_eq!(model.detail.as_deref(), Some("invalid input"));
     assert!(model.errors.as_ref().unwrap().len() == 1);
 }
+
+#[test]
+fn metrics_body_uses_plant_aggregated_variant_for_plant_day_payload() {
+    let json = r#"{
+        "plant_id": "p1",
+        "unit": "plant",
+        "source": "summary",
+        "date": "2026-01-01",
+        "interval": "day",
+        "data": [
+            {
+                "id": "daily-1",
+                "date": "2026-01-01",
+                "energy": 42.0
+            }
+        ]
+    }"#;
+
+    let body: MetricsBody = serde_json::from_str(json).unwrap();
+    assert!(
+        matches!(body, MetricsBody::PlantAggregated(_)),
+        "plant/day payload should deserialize to PlantAggregated"
+    );
+}
