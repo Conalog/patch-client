@@ -492,7 +492,9 @@ func escapeQuotes(v string) string {
 }
 
 func (c *Client) httpClient() *http.Client {
+	c.mu.RLock()
 	client := c.HTTPClient
+	c.mu.RUnlock()
 	if client == nil {
 		return fallbackHTTPClient
 	}
