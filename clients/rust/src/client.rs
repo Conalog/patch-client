@@ -14,6 +14,8 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use url::Url;
 
+const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
+
 #[derive(Clone, Debug)]
 struct AuthState {
     token: String,
@@ -41,7 +43,8 @@ impl Client {
     }
 
     pub fn new(base_url: &str) -> Result<Self> {
-        Self::new_with_timeout(base_url, Duration::from_secs(30))
+        // Keep default timeout aligned with Go/Python clients.
+        Self::new_with_timeout(base_url, DEFAULT_HTTP_TIMEOUT)
     }
 
     pub fn new_with_timeout(base_url: &str, timeout: Duration) -> Result<Self> {
@@ -170,6 +173,9 @@ impl Client {
             Ok(())
         } else {
             let status = res.status();
+            if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+                return Err(Error::Unauthorized);
+            }
             let body = res.text().await.unwrap_or_default();
             Err(Self::api_error(status, body))
         }
@@ -834,10 +840,13 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::ErrorKind;
     use std::io::{Read, Write};
-    use std::net::TcpListener;
+    use std::net::{TcpListener, TcpStream};
     use std::thread;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
+
+    const TEST_ACCEPT_TIMEOUT: Duration = Duration::from_secs(30);
 
     struct MockStep {
         method: &'static str,
@@ -857,17 +866,41 @@ mod tests {
         match status {
             200 => "OK",
             401 => "Unauthorized",
+            403 => "Forbidden",
             500 => "Internal Server Error",
             _ => "Unknown",
         }
     }
 
+    fn accept_with_timeout(listener: &TcpListener, timeout: Duration) -> TcpStream {
+        let deadline = Instant::now() + timeout;
+        loop {
+            match listener.accept() {
+                Ok((stream, _)) => return stream,
+                Err(err) if err.kind() == ErrorKind::WouldBlock => {
+                    if Instant::now() >= deadline {
+                        panic!("timed out waiting for test client connection");
+                    }
+                    thread::sleep(Duration::from_millis(10));
+                }
+                Err(err) => panic!("accept request: {err}"),
+            }
+        }
+    }
+
     fn spawn_mock_server(steps: Vec<MockStep>) -> MockServer {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
         let addr = listener.local_addr().expect("read local addr");
         let handle = thread::spawn(move || {
             for step in steps {
-                let (mut stream, _) = listener.accept().expect("accept request");
+                let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+                stream.set_nonblocking(false).expect("set blocking stream");
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .expect("set read timeout");
                 let mut req_buf = [0_u8; 8192];
                 let n = stream.read(&mut req_buf).expect("read request");
                 let req = String::from_utf8_lossy(&req_buf[..n]);
@@ -904,11 +937,18 @@ mod tests {
 
     fn spawn_hanging_server(hang_for: Duration) -> MockServer {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
         let addr = listener.local_addr().expect("read local addr");
         let handle = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .expect("set read timeout");
             let mut req_buf = [0_u8; 1024];
-            let _ = stream.read(&mut req_buf).expect("read request");
+            let _ = stream.read(&mut req_buf);
             thread::sleep(hang_for);
         });
         MockServer {
@@ -1107,6 +1147,53 @@ mod tests {
             }
             _ => panic!("expected refresh API failure cause to be preserved"),
         }
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn unauthorized_refresh_maps_to_unauthorized_error() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"old-token",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "GET",
+                path_prefix: "/api/v3/account/",
+                status: 401,
+                content_type: "text/plain",
+                body: "unauthorized",
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/refresh-token",
+                status: 401,
+                content_type: "text/plain",
+                body: "refresh unauthorized",
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let err = client.get_account().await.expect_err("must return unauthorized");
+        assert!(matches!(err, Error::Unauthorized));
         server.handle.join().expect("join mock server");
     }
 
