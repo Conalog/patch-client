@@ -10,8 +10,8 @@ npm install patch-client
 
 ## Get a Token First (Login)
 
-`process.env.PATCH_TOKEN` in examples is only a storage/loading pattern.
-Token issuance itself is done by calling `authenticateUser`.
+`<issued-jwt-token>` in examples means a token returned by `authenticateUser`.
+If you store tokens in env vars, load that issued token from `process.env.PATCH_TOKEN`.
 
 ```ts
 import { PatchClientV3 } from "patch-client";
@@ -51,7 +51,7 @@ const { PatchClientV3 } = require("patch-client");
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
   });
 
@@ -67,7 +67,7 @@ import { PatchClientV3 } from "patch-client";
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
   });
 
@@ -102,7 +102,7 @@ const { PatchClientV3 } = require("patch-client");
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
     fetchFn: fetch,
   });
@@ -124,7 +124,7 @@ import { PatchClientV3 } from "patch-client";
 
 (async () => {
   const client = new PatchClientV3({
-    accessToken: process.env.PATCH_TOKEN,
+    accessToken: "<issued-jwt-token>",
     accountType: "manager",
     fetchFn: fetch,
   });
@@ -148,7 +148,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
 
@@ -190,7 +190,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
       fetchFn: fetch,
     });
@@ -229,7 +229,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
       fetchFn: fetch,
     });
@@ -270,7 +270,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
     const plants = await client.getPlantList({ page: 0, size: 20 });
@@ -293,7 +293,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 (async () => {
   try {
     const client = new PatchClientV3({
-      accessToken: process.env.PATCH_TOKEN,
+      accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
     const plants = await client.getPlantList({ page: 0, size: 20 });
