@@ -182,6 +182,8 @@ class PatchClientV3:
         account_type: Optional[AccountType] = None,
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
+        if not files:
+            raise ValueError("files must not be empty")
         content_type, body = _encode_multipart(fields or {}, files)
         merged_headers = self._merge_headers(headers, access_token, account_type)
         merged_headers["Content-Type"] = content_type
@@ -406,7 +408,7 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
     body = bytearray()
 
     for name, value in fields.items():
-        safe_name = _quote_header_value(name)
+        safe_name = _quote_header_value(_reject_crlf(name, "multipart field name"))
         body.extend(f"--{boundary}\r\n".encode("utf-8"))
         body.extend(
             f'Content-Disposition: form-data; name="{safe_name}"\r\n\r\n'.encode("utf-8")
@@ -415,8 +417,9 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
         body.extend(b"\r\n")
 
     for name, file_part in files.items():
-        safe_name = _quote_header_value(name)
-        safe_filename = _quote_header_value(file_part.filename)
+        safe_name = _quote_header_value(_reject_crlf(name, "multipart file field name"))
+        safe_filename = _quote_header_value(_reject_crlf(file_part.filename, "multipart filename"))
+        safe_content_type = _reject_crlf(file_part.content_type, "multipart content type")
         body.extend(f"--{boundary}\r\n".encode("utf-8"))
         body.extend(
             (
@@ -424,7 +427,7 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
                 f'filename="{safe_filename}"\r\n'
             ).encode("utf-8")
         )
-        body.extend(f"Content-Type: {file_part.content_type}\r\n\r\n".encode("utf-8"))
+        body.extend(f"Content-Type: {safe_content_type}\r\n\r\n".encode("utf-8"))
         body.extend(file_part.content)
         body.extend(b"\r\n")
 
@@ -435,12 +438,18 @@ def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) 
 def _decode_response(payload: bytes, content_type: str) -> Any:
     if not payload:
         return None
-    if "json" in content_type:
+    normalized_content_type = content_type.lower()
+    if "json" in normalized_content_type:
+        text = payload.decode("utf-8", errors="replace")
         try:
-            return json.loads(payload.decode("utf-8"))
+            return json.loads(text)
         except JSONDecodeError:
-            return payload.decode("utf-8", errors="replace")
-    if content_type.startswith("text/") or "xml" in content_type or "html" in content_type:
+            return text
+    if (
+        normalized_content_type.startswith("text/")
+        or "xml" in normalized_content_type
+        or "html" in normalized_content_type
+    ):
         return payload.decode("utf-8", errors="replace")
     return payload
 
@@ -457,3 +466,9 @@ def _serialize_query_value(value: Any) -> str:
 
 def _quote_header_value(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _reject_crlf(value: str, field_name: str) -> str:
+    if "\r" in value or "\n" in value:
+        raise ValueError(f"{field_name} must not contain CR or LF characters")
+    return value
