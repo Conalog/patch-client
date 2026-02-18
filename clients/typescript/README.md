@@ -1,14 +1,14 @@
 # patch-client (TypeScript)
 
-PATCH Plant Data API v3용 수작업 TypeScript 클라이언트입니다.
+Handwritten TypeScript client for PATCH Plant Data API v3.
 
-## 설치
+## Installation
 
 ```bash
 npm install patch-client
 ```
 
-## 빠른 시작 (TypeScript)
+## Quick Start (TypeScript)
 
 ```ts
 import { PatchClientV3 } from "patch-client";
@@ -21,10 +21,10 @@ const client = new PatchClientV3({
 const plants = await client.getPlantList({ page: 0, size: 20 });
 ```
 
-## JavaScript에서도 사용 가능
+## Also Usable from JavaScript
 
-이 패키지는 TypeScript로 작성되었지만, 배포물은 JavaScript(`dist/*.js`)이므로
-TypeScript 없이도 사용할 수 있습니다.
+This package is authored in TypeScript, but distributed as JavaScript (`dist/*.js`),
+so you can use it without TypeScript.
 
 ### CommonJS (`require`)
 
@@ -58,18 +58,18 @@ import { PatchClientV3 } from "patch-client";
 })();
 ```
 
-## 런타임 요구사항
+## Runtime Requirements
 
-- `fetch`가 필요합니다.
-  - Node.js 18+에서는 기본 제공됩니다.
-  - 구버전 Node.js에서는 `fetchFn`을 직접 주입하세요.
-- 파일 업로드 API(`uploadPlantFiles`)를 사용할 때는 `FormData`가 필요합니다.
-  - Node.js 18+ 및 최신 브라우저 환경에서는 기본 제공됩니다.
-  - 구버전 Node.js 환경에서는 `form-data` 패키지를 설치한 후, 생성한 인스턴스를 `uploadPlantFiles` 메서드에 직접 전달해야 합니다.
+- `fetch` is required.
+  - Node.js 18+ provides it by default.
+  - For older Node.js versions, inject `fetchFn` manually.
+- `FormData` is required when using the file upload API (`uploadPlantFiles`).
+  - Node.js 18+ and modern browsers provide it by default.
+  - In older Node.js environments, install `form-data` and pass the created instance directly to `uploadPlantFiles`.
 
-### `fetchFn` 주입 예시 (구버전 Node.js)
+### `fetchFn` Injection Example (Legacy Node.js)
 
-`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
+`node-fetch` v3 is ESM-only. In CommonJS, use `node-fetch@2`.
 
 #### CommonJS (`node-fetch@2`)
 
@@ -115,13 +115,13 @@ import { PatchClientV3 } from "patch-client";
 })();
 ```
 
-### `FormData` 주입 예시 (구버전 Node.js)
+### `FormData` Injection Example (Legacy Node.js)
 
-`node-fetch` v3는 ESM만 지원합니다. CommonJS 환경에서는 `node-fetch@2`를 사용해야 합니다.
+`node-fetch` v3 is ESM-only. In CommonJS, use `node-fetch@2`.
 
 #### CommonJS (`node-fetch@2`)
 
-`form-data`와 `node-fetch@2` 패키지를 설치하세요.
+Install `form-data` and `node-fetch@2`.
 
 ```bash
 npm install form-data node-fetch@2
@@ -143,16 +143,16 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
     });
 
     const formData = new FormData();
-    const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
+    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
     formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
 
-    const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
+    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
     console.log("Successfully uploaded files:", result);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("파일 업로드 API 오류:", err.status, err.payload);
+      console.error("File upload API error:", err.status, err.payload);
     } else {
-      console.error("파일 업로드 중 오류가 발생했습니다:", err);
+      console.error("Error while uploading files:", err);
     }
   }
 })();
@@ -160,7 +160,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 
 #### ESM (`node-fetch@3+`)
 
-`form-data`와 `node-fetch` 패키지를 설치하세요.
+Install `form-data` and `node-fetch`.
 
 ```bash
 npm install form-data node-fetch
@@ -182,29 +182,29 @@ import { PatchClientV3, PatchClientError } from "patch-client";
     });
 
     const formData = new FormData();
-    const filePath = "/path/to/your/actual/file.csv"; // 실제 파일 경로로 변경하세요.
+    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
     formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
 
-    const result = await client.uploadPlantFiles("your-plant-id", formData); // 실제 플랜트 ID로 변경하세요.
+    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
     console.log("Successfully uploaded files:", result);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("파일 업로드 API 오류:", err.status, err.payload);
+      console.error("File upload API error:", err.status, err.payload);
     } else {
-      console.error("파일 업로드 중 오류가 발생했습니다:", err);
+      console.error("Error while uploading files:", err);
     }
   }
 })();
 ```
 
-## 인증/헤더
+## Authentication / Headers
 
-- `accessToken`은 `Bearer <token>` 또는 raw token 모두 허용합니다.
-- `accountType`은 `"viewer"`, `"manager"`, 또는 `"admin"` 중 하나를 사용하세요.
+- `accessToken` accepts either `Bearer <token>` or a raw token.
+- `accountType` should be one of `"viewer"`, `"manager"`, or `"admin"`.
 
-## 에러 처리
+## Error Handling
 
-요청 실패 시 `PatchClientError`가 발생하며, `status`와 `payload`를 확인할 수 있습니다.
+When a request fails, `PatchClientError` is thrown. You can inspect `status` and `payload`.
 
 #### CommonJS (`require`)
 
@@ -221,9 +221,9 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("플랜트 목록 조회 API 오류:", err.status, err.payload);
+      console.error("Plant list API error:", err.status, err.payload);
     } else {
-      console.error("플랜트 목록 조회 중 오류가 발생했습니다:", err);
+      console.error("Error while fetching plant list:", err);
     }
   }
 })();
@@ -244,9 +244,9 @@ import { PatchClientV3, PatchClientError } from "patch-client";
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {
-      console.error("플랜트 목록 조회 API 오류:", err.status, err.payload);
+      console.error("Plant list API error:", err.status, err.payload);
     } else {
-      console.error("플랜트 목록 조회 중 오류가 발생했습니다:", err);
+      console.error("Error while fetching plant list:", err);
     }
   }
 })();
