@@ -1,14 +1,14 @@
 # patch-client (Python)
 
-PATCH Plant Data API v3용 수작업 Python 클라이언트입니다.
+Handwritten Python client for PATCH Plant Data API v3.
 
-## 설치
+## Installation
 
 ```bash
 pip install patch-client
 ```
 
-## 사용
+## Usage
 
 ```python
 from patch_client import PatchClientV3

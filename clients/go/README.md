@@ -1,8 +1,8 @@
 # patch-client (Go)
 
-PATCH Plant Data API v3용 수작업 Go 클라이언트입니다.
+Handwritten Go client for PATCH Plant Data API v3.
 
-## 사용
+## Usage
 
 ```go
 client := patchclient.NewClient("https://patch-api.conalog.com")

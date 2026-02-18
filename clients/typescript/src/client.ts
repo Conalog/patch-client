@@ -23,10 +23,12 @@ export interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+type UploadFormData = FormData | { append(name: string, value: unknown, fileName?: string): unknown };
+
 interface RequestInput {
   query?: Record<string, QueryValue>;
   body?: unknown;
-  formData?: FormData;
+  formData?: UploadFormData;
   options?: RequestOptions;
 }
 
@@ -140,7 +142,7 @@ export class PatchClientV3 {
 
   async uploadPlantFiles(
     plantId: string,
-    formData: FormData,
+    formData: UploadFormData,
     options?: RequestOptions
   ): Promise<unknown> {
     return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/files`, {
@@ -281,7 +283,7 @@ export class PatchClientV3 {
     const init: RequestInit = { method, headers };
 
     if (input.formData) {
-      init.body = input.formData;
+      init.body = input.formData as unknown as BodyInit;
       delete headers["Content-Type"];
     } else if (input.body !== undefined) {
       headers["Content-Type"] = "application/json";

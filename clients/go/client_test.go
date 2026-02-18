@@ -45,3 +45,31 @@ func TestGetPlantListBuildsV3PathAndHeaders(t *testing.T) {
 		t.Fatalf("unexpected Account-Type header: %s", gotAccountType)
 	}
 }
+
+func TestGetPlantDetailsPreservesEscapedPathSegment(t *testing.T) {
+	var gotRequestURI string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequestURI = r.RequestURI
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	_, err := client.GetPlantDetails(context.Background(), "unit/a", nil)
+	if err != nil {
+		t.Fatalf("GetPlantDetails returned error: %v", err)
+	}
+
+	if gotRequestURI != "/api/v3/plants/unit%2Fa" {
+		t.Fatalf("unexpected request URI: %s", gotRequestURI)
+	}
+}
+
+func TestEscapeQuotesUsesSingleBackslashForDoubleQuotes(t *testing.T) {
+	got := escapeQuotes("a\"b\\c")
+	want := "a\\\"b\\\\c"
+	if got != want {
+		t.Fatalf("unexpected escaped value: got %q want %q", got, want)
+	}
+}

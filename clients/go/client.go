@@ -282,21 +282,19 @@ func (c *Client) doJSON(
 }
 
 func (c *Client) buildURL(path string, query map[string]string) (string, error) {
-	base, err := url.Parse(c.BaseURL)
+	target, err := url.Parse(strings.TrimRight(c.BaseURL, "/") + path)
 	if err != nil {
 		return "", err
 	}
 
-	base.Path = strings.TrimRight(base.Path, "/") + path
-
-	params := base.Query()
+	params := target.Query()
 	for k, v := range query {
 		if v != "" {
 			params.Set(k, v)
 		}
 	}
-	base.RawQuery = params.Encode()
-	return base.String(), nil
+	target.RawQuery = params.Encode()
+	return target.String(), nil
 }
 
 func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
@@ -448,6 +446,6 @@ func cloneFileMap(in map[string]FilePart) map[string]FilePart {
 }
 
 func escapeQuotes(v string) string {
-	replacer := strings.NewReplacer("\\", "\\\\", `"`, `\\"`)
+	replacer := strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 	return replacer.Replace(v)
 }
