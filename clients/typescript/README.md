@@ -24,6 +24,7 @@ const auth = (await authClient.authenticateUser({
 })) as { token: string };
 
 const token = auth.token;
+authClient.setAccessToken(token);
 ```
 
 ## Quick Start (TypeScript)
