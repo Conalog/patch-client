@@ -8,13 +8,31 @@ Handwritten TypeScript client for PATCH Plant Data API v3.
 npm install patch-client
 ```
 
+## Get a Token First (Login)
+
+`process.env.PATCH_TOKEN` in examples is only a storage/loading pattern.
+Token issuance itself is done by calling `authenticateUser`.
+
+```ts
+import { PatchClientV3 } from "patch-client";
+
+const authClient = new PatchClientV3();
+const auth = (await authClient.authenticateUser({
+  type: "manager",
+  email: process.env.PATCH_EMAIL,
+  password: process.env.PATCH_PASSWORD,
+})) as { token: string };
+
+const token = auth.token;
+```
+
 ## Quick Start (TypeScript)
 
 ```ts
 import { PatchClientV3 } from "patch-client";
 
 const client = new PatchClientV3({
-  accessToken: process.env.PATCH_TOKEN,
+  accessToken: "<issued-jwt-token>",
   accountType: "manager",
 });
 
@@ -234,6 +252,9 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 
 ## Authentication / Headers
 
+- The package does not auto-issue tokens from environment variables.
+- Issue a token with `authenticateUser(...)`, then pass it via `accessToken` (or `setAccessToken(...)`).
+- Refresh an existing token with `refreshUserToken(...)` and update the client with the returned token.
 - `accessToken` accepts either `Bearer <token>` or a raw token.
 - `accountType` should be one of `"viewer"`, `"manager"`, or `"admin"`.
 
