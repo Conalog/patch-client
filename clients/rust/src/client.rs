@@ -10,8 +10,11 @@ use percent_encoding::{percent_decode_str, percent_encode_byte};
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use url::Url;
+
+const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Debug)]
 struct AuthState {
@@ -40,10 +43,16 @@ impl Client {
     }
 
     pub fn new(base_url: &str) -> Result<Self> {
+        // Keep default timeout aligned with Go/Python clients.
+        Self::new_with_timeout(base_url, DEFAULT_HTTP_TIMEOUT)
+    }
+
+    pub fn new_with_timeout(base_url: &str, timeout: Duration) -> Result<Self> {
         let base_url = Url::parse(base_url)?;
+        let http = HttpClient::builder().timeout(timeout).build()?;
         Ok(Self {
             base_url,
-            http: HttpClient::new(),
+            http,
             auth: Arc::new(RwLock::new(None)),
         })
     }
@@ -164,6 +173,9 @@ impl Client {
             Ok(())
         } else {
             let status = res.status();
+            if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+                return Err(Error::Unauthorized);
+            }
             let body = res.text().await.unwrap_or_default();
             Err(Self::api_error(status, body))
         }
@@ -183,7 +195,7 @@ impl Client {
         }
         Error::Api {
             status: status.as_u16(),
-            message: body,
+            message: "upstream error body omitted".to_string(),
         }
     }
 
@@ -216,10 +228,8 @@ impl Client {
 
             if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
                 retries -= 1;
-                if self.refresh_token().await.is_ok() {
-                    continue;
-                }
-                return Err(Error::Unauthorized);
+                self.refresh_token().await?;
+                continue;
             }
 
             if status.is_success() {
@@ -251,10 +261,8 @@ impl Client {
 
             if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
                 retries -= 1;
-                if self.refresh_token().await.is_ok() {
-                    continue;
-                }
-                return Err(Error::Unauthorized);
+                self.refresh_token().await?;
+                continue;
             }
 
             if status.is_success() {
@@ -445,11 +453,17 @@ impl Client {
             .await?;
 
         match metrics {
-            MetricsBody::PanelIntraday(body) => Ok(PanelIntradayMetrics {
-                data: body.data.unwrap_or_default(),
-                plant_id: body.plant_id,
-                date: body.date,
-            }),
+            MetricsBody::PanelIntraday(body) => {
+                let data = body.data.ok_or_else(|| Error::Api {
+                    status: 500,
+                    message: "missing metrics data in panel metrics response".to_string(),
+                })?;
+                Ok(PanelIntradayMetrics {
+                    data,
+                    plant_id: body.plant_id,
+                    date: body.date,
+                })
+            }
             _ => Err(Error::Api {
                 status: 500,
                 message: "unexpected metrics body variant".to_string(),
@@ -753,10 +767,8 @@ impl Client {
 
             if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
                 retries -= 1;
-                if self.refresh_token().await.is_ok() {
-                    continue;
-                }
-                return Err(Error::Unauthorized);
+                self.refresh_token().await?;
+                continue;
             }
 
             if status.is_success() {
@@ -828,6 +840,122 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::ErrorKind;
+    use std::io::{Read, Write};
+    use std::net::{TcpListener, TcpStream};
+    use std::thread;
+    use std::time::{Duration, Instant};
+
+    const TEST_ACCEPT_TIMEOUT: Duration = Duration::from_secs(30);
+
+    struct MockStep {
+        method: &'static str,
+        path_prefix: &'static str,
+        status: u16,
+        content_type: &'static str,
+        body: &'static str,
+        stall_before_response: Option<Duration>,
+    }
+
+    struct MockServer {
+        base_url: String,
+        handle: thread::JoinHandle<()>,
+    }
+
+    fn reason_phrase(status: u16) -> &'static str {
+        match status {
+            200 => "OK",
+            401 => "Unauthorized",
+            403 => "Forbidden",
+            500 => "Internal Server Error",
+            _ => "Unknown",
+        }
+    }
+
+    fn accept_with_timeout(listener: &TcpListener, timeout: Duration) -> TcpStream {
+        let deadline = Instant::now() + timeout;
+        loop {
+            match listener.accept() {
+                Ok((stream, _)) => return stream,
+                Err(err) if err.kind() == ErrorKind::WouldBlock => {
+                    if Instant::now() >= deadline {
+                        panic!("timed out waiting for test client connection");
+                    }
+                    thread::sleep(Duration::from_millis(10));
+                }
+                Err(err) => panic!("accept request: {err}"),
+            }
+        }
+    }
+
+    fn spawn_mock_server(steps: Vec<MockStep>) -> MockServer {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            for step in steps {
+                let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+                stream.set_nonblocking(false).expect("set blocking stream");
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .expect("set read timeout");
+                let mut req_buf = [0_u8; 8192];
+                let n = stream.read(&mut req_buf).expect("read request");
+                let req = String::from_utf8_lossy(&req_buf[..n]);
+                let req_line = req.lines().next().unwrap_or_default();
+                let expected = format!("{} {}", step.method, step.path_prefix);
+                assert!(
+                    req_line.starts_with(&expected),
+                    "unexpected request line. expected prefix `{expected}`, got `{req_line}`"
+                );
+
+                if let Some(d) = step.stall_before_response {
+                    thread::sleep(d);
+                }
+
+                let response = format!(
+                    "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    step.status,
+                    reason_phrase(step.status),
+                    step.content_type,
+                    step.body.len(),
+                    step.body
+                );
+                stream
+                    .write_all(response.as_bytes())
+                    .expect("write response");
+                stream.flush().expect("flush response");
+            }
+        });
+        MockServer {
+            base_url: format!("http://{addr}"),
+            handle,
+        }
+    }
+
+    fn spawn_hanging_server(hang_for: Duration) -> MockServer {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .expect("set read timeout");
+            let mut req_buf = [0_u8; 1024];
+            let _ = stream.read(&mut req_buf);
+            thread::sleep(hang_for);
+        });
+        MockServer {
+            base_url: format!("http://{addr}"),
+            handle,
+        }
+    }
 
     #[test]
     fn metrics_path_uses_compound_unit_interval_segment() {
@@ -915,5 +1043,176 @@ mod tests {
     fn encode_path_segment_escapes_dot_segments() {
         assert_eq!(Client::encode_path_segment(".."), "%2E%2E");
         assert_eq!(Client::encode_path_segment("./x"), "%2E%2Fx");
+    }
+
+    #[test]
+    fn api_error_redacts_raw_error_body_for_non_problem_json() {
+        let raw = "secret=very-sensitive-token";
+        let err = Client::api_error(StatusCode::INTERNAL_SERVER_ERROR, raw.to_string());
+        match err {
+            Error::Api { status, message } => {
+                assert_eq!(status, 500);
+                assert!(
+                    !message.contains(raw),
+                    "error message should not include raw upstream payload"
+                );
+            }
+            _ => panic!("expected Api error"),
+        }
+    }
+
+    #[tokio::test]
+    async fn get_panel_metrics_rejects_missing_data() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "plant_id":"p1",
+                "unit":"panel",
+                "source":"device",
+                "date":"2026-01-01",
+                "interval":"5m",
+                "data": null
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let err = client
+            .get_panel_metrics("p1", "2026-01-01")
+            .await
+            .expect_err("missing data must be treated as an error");
+        match err {
+            Error::Api { status, message } => {
+                assert_eq!(status, 500);
+                assert!(message.contains("missing metrics data"));
+            }
+            _ => panic!("expected Api error for missing panel metrics data"),
+        }
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn unauthorized_request_keeps_refresh_failure_cause() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"old-token",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "GET",
+                path_prefix: "/api/v3/account/",
+                status: 401,
+                content_type: "text/plain",
+                body: "unauthorized",
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/refresh-token",
+                status: 500,
+                content_type: "application/json",
+                body: r#"{"title":"refresh failed","detail":"backend down"}"#,
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let err = client
+            .get_account()
+            .await
+            .expect_err("refresh failure should not collapse to Unauthorized");
+        match err {
+            Error::ApiProblem { status, title, .. } => {
+                assert_eq!(status, 500);
+                assert_eq!(title, "refresh failed");
+            }
+            _ => panic!("expected refresh API failure cause to be preserved"),
+        }
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn unauthorized_refresh_maps_to_unauthorized_error() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"old-token",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "GET",
+                path_prefix: "/api/v3/account/",
+                status: 401,
+                content_type: "text/plain",
+                body: "unauthorized",
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/refresh-token",
+                status: 401,
+                content_type: "text/plain",
+                body: "refresh unauthorized",
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let err = client.get_account().await.expect_err("must return unauthorized");
+        assert!(matches!(err, Error::Unauthorized));
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_client_with_timeout_enforces_request_deadline() {
+        let server = spawn_hanging_server(Duration::from_millis(300));
+        let client = Client::new_with_timeout(&server.base_url, Duration::from_millis(50))
+            .expect("create client");
+
+        let result = tokio::time::timeout(Duration::from_millis(500), client.get_account())
+            .await
+            .expect("request should terminate via client timeout");
+        let err = result.expect_err("request should fail with timeout");
+        match err {
+            Error::Request(req_err) => {
+                assert!(req_err.is_timeout(), "request error should be timeout");
+            }
+            _ => panic!("expected request timeout error"),
+        }
+        server.handle.join().expect("join hanging server");
     }
 }

@@ -1,3 +1,4 @@
+use serde::de::{self, Deserializer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -433,8 +434,7 @@ pub struct BodyInverterDailyData {
     pub before: Option<i64>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-#[serde(untagged)]
+#[derive(Debug, Clone)]
 pub enum MetricsBody {
     PanelIntraday(BodyPanelData),
     PanelDaily(BodyPanelDailyData),
@@ -442,6 +442,41 @@ pub enum MetricsBody {
     InverterDaily(BodyInverterDailyData),
     PlantIntraday(BodyPlantData),
     PlantAggregated(BodyPlantDailyData),
+}
+
+impl<'de> Deserialize<'de> for MetricsBody {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        let unit = value.get("unit").and_then(Value::as_str);
+        let interval = value.get("interval").and_then(Value::as_str);
+
+        match (unit, interval) {
+            (Some("panel"), Some("5m")) => serde_json::from_value(value)
+                .map(MetricsBody::PanelIntraday)
+                .map_err(de::Error::custom),
+            (Some("panel"), Some("day")) => serde_json::from_value(value)
+                .map(MetricsBody::PanelDaily)
+                .map_err(de::Error::custom),
+            (Some("inverter"), Some("5m")) => serde_json::from_value(value)
+                .map(MetricsBody::InverterIntraday)
+                .map_err(de::Error::custom),
+            (Some("inverter"), Some("day")) => serde_json::from_value(value)
+                .map(MetricsBody::InverterDaily)
+                .map_err(de::Error::custom),
+            (Some("plant"), Some("5m")) => serde_json::from_value(value)
+                .map(MetricsBody::PlantIntraday)
+                .map_err(de::Error::custom),
+            (Some("plant"), Some("day")) => serde_json::from_value(value)
+                .map(MetricsBody::PlantAggregated)
+                .map_err(de::Error::custom),
+            _ => Err(de::Error::custom(
+                "missing or invalid metrics discriminants (unit/interval)",
+            )),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
