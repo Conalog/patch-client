@@ -1,5 +1,6 @@
 clients/typescript/node_modules/
 clients/typescript/dist/
+target/
 clients/rust/target/
 __pycache__/
 *.pyc

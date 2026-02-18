@@ -2,6 +2,7 @@
 name = "patch-client"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls-native-roots"] }
