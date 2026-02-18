@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -163,5 +164,107 @@ func TestDoJSONFailsWhenResponseExceedsLimit(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "response body exceeds") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
+	var (
+		mu        sync.Mutex
+		gotAccept string
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		gotAccept = r.Header.Get("Accept")
+		mu.Unlock()
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"Accept": "text/plain",
+		},
+	}
+	_, err := client.GetPlantList(context.Background(), nil, opts)
+	if err != nil {
+		t.Fatalf("GetPlantList returned error: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if gotAccept != "text/plain" {
+		t.Fatalf("unexpected Accept header: %s", gotAccept)
+	}
+}
+
+func TestRequestOptionsLowercaseAcceptHeaderOverridesDefaultDeterministically(t *testing.T) {
+	var (
+		mu      sync.Mutex
+		accepts []string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		accepts = append(accepts, r.Header.Get("Accept"))
+		mu.Unlock()
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"accept": "text/plain",
+		},
+	}
+
+	for i := 0; i < 20; i++ {
+		_, err := client.GetPlantList(context.Background(), nil, opts)
+		if err != nil {
+			t.Fatalf("GetPlantList returned error: %v", err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	for _, got := range accepts {
+		if got != "text/plain" {
+			t.Fatalf("unexpected Accept header: %s", got)
+		}
+	}
+}
+
+func TestAsBearerAcceptsLowercasePrefix(t *testing.T) {
+	got := asBearer("bearer token-value")
+	if got != "bearer token-value" {
+		t.Fatalf("unexpected bearer token: %q", got)
+	}
+}
+
+func TestPatchClientErrorOmitsBodyInErrorString(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("invalid request payload"))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	_, err := client.GetPlantList(context.Background(), nil, nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if strings.Contains(err.Error(), "invalid request payload") {
+		t.Fatalf("error message unexpectedly includes response body: %v", err)
+	}
+}
+
+func TestPatchClientErrorBodySnippetTruncatesByRune(t *testing.T) {
+	err := &PatchClientError{Body: "가나다라마바사아자차카타파하"}
+	got := err.BodySnippet(5)
+	want := "가나다라마..."
+	if got != want {
+		t.Fatalf("unexpected snippet: got %q want %q", got, want)
 	}
 }

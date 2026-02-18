@@ -66,6 +66,19 @@ func (e *PatchClientError) Error() string {
 	return fmt.Sprintf("PATCH API request failed with status %d", e.StatusCode)
 }
 
+func (e *PatchClientError) BodySnippet(maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+
+	body := strings.TrimSpace(e.Body)
+	runes := []rune(body)
+	if len(runes) <= maxRunes {
+		return body
+	}
+	return string(runes[:maxRunes]) + "..."
+}
+
 func NewClient(baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = "https://patch-api.conalog.com"
@@ -277,7 +290,9 @@ func (c *Client) doJSON(
 	}
 
 	headers := c.mergeHeaders(opts)
-	headers["Accept"] = "application/json"
+	if headers["Accept"] == "" {
+		headers["Accept"] = "application/json"
+	}
 	if contentType != "" {
 		headers["Content-Type"] = contentType
 	}
@@ -347,7 +362,10 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 
 	headers := map[string]string{}
 	for k, v := range defaultHeaders {
-		headers[k] = v
+		ck := canonicalHeaderKey(k)
+		if ck != "" {
+			headers[ck] = v
+		}
 	}
 
 	if opts != nil && opts.AccessToken != "" {
@@ -366,7 +384,10 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 
 	if opts != nil {
 		for k, v := range opts.Headers {
-			headers[k] = v
+			ck := canonicalHeaderKey(k)
+			if ck != "" {
+				headers[ck] = v
+			}
 		}
 	}
 
@@ -454,7 +475,7 @@ func encodeMultipart(fields map[string]string, files map[string]FilePart) (strin
 }
 
 func asBearer(token string) string {
-	if strings.HasPrefix(token, "Bearer ") {
+	if len(token) >= len("Bearer ") && strings.EqualFold(token[:len("Bearer ")], "Bearer ") {
 		return token
 	}
 	return "Bearer " + token
@@ -489,6 +510,14 @@ func cloneFileMap(in map[string]FilePart) map[string]FilePart {
 func escapeQuotes(v string) string {
 	replacer := strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 	return replacer.Replace(v)
+}
+
+func canonicalHeaderKey(k string) string {
+	k = strings.TrimSpace(k)
+	if k == "" {
+		return ""
+	}
+	return textproto.CanonicalMIMEHeaderKey(k)
 }
 
 func (c *Client) httpClient() *http.Client {
