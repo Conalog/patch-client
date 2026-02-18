@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -188,6 +189,42 @@ func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
 
 	if gotAccept != "text/plain" {
 		t.Fatalf("unexpected Accept header: %s", gotAccept)
+	}
+}
+
+func TestRequestOptionsLowercaseAcceptHeaderOverridesDefaultDeterministically(t *testing.T) {
+	var (
+		mu      sync.Mutex
+		accepts []string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		accepts = append(accepts, r.Header.Get("Accept"))
+		mu.Unlock()
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"accept": "text/plain",
+		},
+	}
+
+	for i := 0; i < 20; i++ {
+		_, err := client.GetPlantList(context.Background(), nil, opts)
+		if err != nil {
+			t.Fatalf("GetPlantList returned error: %v", err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	for _, got := range accepts {
+		if got != "text/plain" {
+			t.Fatalf("unexpected Accept header: %s", got)
+		}
 	}
 }
 
