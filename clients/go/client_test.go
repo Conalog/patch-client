@@ -165,3 +165,53 @@ func TestDoJSONFailsWhenResponseExceedsLimit(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
+	var gotAccept string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAccept = r.Header.Get("Accept")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"Accept": "text/plain",
+		},
+	}
+	_, err := client.GetPlantList(context.Background(), nil, opts)
+	if err != nil {
+		t.Fatalf("GetPlantList returned error: %v", err)
+	}
+
+	if gotAccept != "text/plain" {
+		t.Fatalf("unexpected Accept header: %s", gotAccept)
+	}
+}
+
+func TestAsBearerAcceptsLowercasePrefix(t *testing.T) {
+	got := asBearer("bearer token-value")
+	if got != "bearer token-value" {
+		t.Fatalf("unexpected bearer token: %q", got)
+	}
+}
+
+func TestPatchClientErrorIncludesBodyMessage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("invalid request payload"))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	_, err := client.GetPlantList(context.Background(), nil, nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "invalid request payload") {
+		t.Fatalf("error message does not include response body: %v", err)
+	}
+}

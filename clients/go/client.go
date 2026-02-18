@@ -60,8 +60,25 @@ const defaultMaxResponseBytes int64 = 10 << 20
 var fallbackHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func (e *PatchClientError) Error() string {
+	body := strings.TrimSpace(e.Body)
+	if len(body) > 200 {
+		body = body[:200] + "..."
+	}
+
 	if e.Method != "" && e.URL != "" {
+		if body != "" {
+			return fmt.Sprintf(
+				"PATCH API request failed: %s %s returned status %d: %s",
+				e.Method,
+				e.URL,
+				e.StatusCode,
+				body,
+			)
+		}
 		return fmt.Sprintf("PATCH API request failed: %s %s returned status %d", e.Method, e.URL, e.StatusCode)
+	}
+	if body != "" {
+		return fmt.Sprintf("PATCH API request failed with status %d: %s", e.StatusCode, body)
 	}
 	return fmt.Sprintf("PATCH API request failed with status %d", e.StatusCode)
 }
@@ -277,7 +294,9 @@ func (c *Client) doJSON(
 	}
 
 	headers := c.mergeHeaders(opts)
-	headers["Accept"] = "application/json"
+	if headers["Accept"] == "" {
+		headers["Accept"] = "application/json"
+	}
 	if contentType != "" {
 		headers["Content-Type"] = contentType
 	}
@@ -454,7 +473,7 @@ func encodeMultipart(fields map[string]string, files map[string]FilePart) (strin
 }
 
 func asBearer(token string) string {
-	if strings.HasPrefix(token, "Bearer ") {
+	if len(token) >= len("Bearer ") && strings.EqualFold(token[:len("Bearer ")], "Bearer ") {
 		return token
 	}
 	return "Bearer " + token
