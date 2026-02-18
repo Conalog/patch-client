@@ -65,7 +65,8 @@ import { PatchClientV3 } from "patch-client";
   - For older Node.js versions, inject `fetchFn` manually.
 - `FormData` is required when using the file upload API (`uploadPlantFiles`).
   - Node.js 18+ and modern browsers provide it by default.
-  - In older Node.js environments, install `form-data` and pass the created instance directly to `uploadPlantFiles`.
+  - Native `FormData` expects `Blob`/`File` values (not `fs.createReadStream`).
+  - In older Node.js environments, install `form-data` and pass the created instance to `uploadPlantFiles`.
 
 ### `fetchFn` Injection Example (Legacy Node.js)
 
@@ -115,9 +116,43 @@ import { PatchClientV3 } from "patch-client";
 })();
 ```
 
-### `FormData` Injection Example (Legacy Node.js)
+### File Upload Examples
 
-`node-fetch` v3 is ESM-only. In CommonJS, use `node-fetch@2`.
+### Native `FormData` Example (Node.js 18+)
+
+Use this when you rely on Node's built-in `fetch` and `FormData`.
+
+```js
+const fs = require("fs/promises");
+const path = require("path");
+const { PatchClientV3, PatchClientError } = require("patch-client");
+
+(async () => {
+  try {
+    const client = new PatchClientV3({
+      accessToken: process.env.PATCH_TOKEN,
+      accountType: "manager",
+    });
+
+    const formData = new FormData();
+    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
+    const bytes = await fs.readFile(filePath);
+    const blob = new Blob([bytes], { type: "text/csv" });
+    formData.append("file", blob, path.basename(filePath));
+
+    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
+    console.log("Successfully uploaded files:", result);
+  } catch (err) {
+    if (err instanceof PatchClientError) {
+      console.error("File upload API error:", err.status, err.payload);
+    } else {
+      console.error("Error while uploading files:", err);
+    }
+  }
+})();
+```
+
+### `form-data` Injection Example (Legacy Node.js)
 
 #### CommonJS (`node-fetch@2`)
 
