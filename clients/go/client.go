@@ -8,9 +8,11 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -44,8 +46,10 @@ type Client struct {
 	AccessToken string
 	AccountType AccountType
 
-	defaultHeaders   map[string]string
-	maxResponseBytes int64
+	defaultHeaders    map[string]string
+	maxResponseBytes  int64
+	maxMultipartBytes int64
+	allowInsecureHTTP bool
 }
 
 type PatchClientError struct {
@@ -56,6 +60,8 @@ type PatchClientError struct {
 }
 
 const defaultMaxResponseBytes int64 = 10 << 20
+const defaultMaxMultipartBytes int64 = 20 << 20
+const maxInt64 = int64(^uint64(0) >> 1)
 
 var fallbackHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -83,11 +89,13 @@ func NewClient(baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = "https://patch-api.conalog.com"
 	}
+	baseURL = normalizeBaseURL(baseURL)
 	return &Client{
-		BaseURL:          strings.TrimRight(baseURL, "/"),
-		HTTPClient:       &http.Client{Timeout: 30 * time.Second},
-		defaultHeaders:   map[string]string{},
-		maxResponseBytes: defaultMaxResponseBytes,
+		BaseURL:           strings.TrimRight(baseURL, "/"),
+		HTTPClient:        &http.Client{Timeout: 30 * time.Second},
+		defaultHeaders:    map[string]string{},
+		maxResponseBytes:  defaultMaxResponseBytes,
+		maxMultipartBytes: defaultMaxMultipartBytes,
 	}
 }
 
@@ -132,6 +140,22 @@ func (c *Client) SetMaxResponseBytes(limit int64) {
 		return
 	}
 	c.maxResponseBytes = limit
+}
+
+func (c *Client) SetMaxMultipartBytes(limit int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if limit <= 0 {
+		c.maxMultipartBytes = defaultMaxMultipartBytes
+		return
+	}
+	c.maxMultipartBytes = limit
+}
+
+func (c *Client) SetAllowInsecureHTTP(allow bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.allowInsecureHTTP = allow
 }
 
 func (c *Client) AuthenticateUser(ctx context.Context, payload any) (any, error) {
@@ -180,7 +204,7 @@ func (c *Client) UploadPlantFiles(ctx context.Context, plantID string, fields ma
 	if err != nil {
 		return nil, err
 	}
-	contentType, payload, err := encodeMultipart(normalizedFields, normalizedFiles)
+	contentType, payload, err := encodeMultipart(normalizedFields, normalizedFiles, c.multipartLimit())
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +297,7 @@ func (c *Client) doJSON(
 
 	var body io.Reader
 	contentType := ""
+	hasBody := false
 	if jsonBody != nil {
 		encoded, marshalErr := json.Marshal(jsonBody)
 		if marshalErr != nil {
@@ -280,8 +305,10 @@ func (c *Client) doJSON(
 		}
 		body = bytes.NewReader(encoded)
 		contentType = "application/json"
+		hasBody = true
 	} else if rawBody != nil {
 		body = bytes.NewReader(rawBody)
+		hasBody = true
 	}
 
 	req, err := http.NewRequestWithContext(nonNilContext(ctx), method, target, body)
@@ -301,14 +328,24 @@ func (c *Client) doJSON(
 		req.Header.Set(k, v)
 	}
 
+	if c.shouldBlockInsecureRequest(target) {
+		return nil, fmt.Errorf("refusing to send request over insecure transport")
+	}
+
 	client := c.httpClient()
+	if shouldDisableRedirects(headers, hasBody) {
+		client = withRedirectsDisabled(client)
+	} else {
+		client = withRedirectSecurityChecks(client, c.shouldBlockInsecureRequest)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	payload, err := readBodyWithLimit(resp.Body, c.responseLimit())
+	limit := c.responseLimit()
+	payload, overflowed, err := readBodyWithLimit(resp.Body, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -320,6 +357,9 @@ func (c *Client) doJSON(
 			StatusCode: resp.StatusCode,
 			Body:       string(payload),
 		}
+	}
+	if overflowed {
+		return nil, fmt.Errorf("response body exceeds %d bytes", limit)
 	}
 
 	if len(payload) == 0 {
@@ -361,7 +401,8 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 	c.mu.RUnlock()
 
 	headers := map[string]string{}
-	for k, v := range defaultHeaders {
+	for _, k := range sortedHeaderKeys(defaultHeaders) {
+		v := defaultHeaders[k]
 		ck := canonicalHeaderKey(k)
 		if ck != "" {
 			headers[ck] = v
@@ -383,7 +424,8 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 	}
 
 	if opts != nil {
-		for k, v := range opts.Headers {
+		for _, k := range sortedHeaderKeys(opts.Headers) {
+			v := opts.Headers[k]
 			ck := canonicalHeaderKey(k)
 			if ck != "" {
 				headers[ck] = v
@@ -405,6 +447,11 @@ func withContentType(opts *RequestOptions, contentType string) *RequestOptions {
 	}
 	if out.Headers == nil {
 		out.Headers = map[string]string{}
+	}
+	for k := range out.Headers {
+		if strings.EqualFold(k, "Content-Type") {
+			delete(out.Headers, k)
+		}
 	}
 	out.Headers["Content-Type"] = contentType
 	return out
@@ -436,39 +483,70 @@ func normalizeUploadPayload(fields map[string]string, files map[string]FilePart)
 	return outFields, outFiles, nil
 }
 
-func encodeMultipart(fields map[string]string, files map[string]FilePart) (string, []byte, error) {
+func encodeMultipart(fields map[string]string, files map[string]FilePart, limit int64) (string, []byte, error) {
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
+	if limit <= 0 {
+		limit = defaultMaxMultipartBytes
+	}
 
 	for k, v := range fields {
-		if err := writer.WriteField(k, v); err != nil {
+		safeName, err := rejectCRLF(k, "multipart field name")
+		if err != nil {
 			return "", nil, err
+		}
+		if err := writer.WriteField(safeName, v); err != nil {
+			return "", nil, err
+		}
+		if int64(buf.Len()) > limit {
+			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
 		}
 	}
 
 	for fieldName, filePart := range files {
-		header := textproto.MIMEHeader{}
-		header.Set(
-			"Content-Disposition",
-			fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(fieldName), escapeQuotes(filePart.Filename)),
-		)
+		safeFieldName, err := rejectCRLF(fieldName, "multipart file field name")
+		if err != nil {
+			return "", nil, err
+		}
+		safeFilename, err := rejectCRLF(filePart.Filename, "multipart filename")
+		if err != nil {
+			return "", nil, err
+		}
 		contentType := filePart.ContentType
 		if contentType == "" {
 			contentType = "application/octet-stream"
 		}
-		header.Set("Content-Type", contentType)
+		safeContentType, err := rejectCRLF(contentType, "multipart content type")
+		if err != nil {
+			return "", nil, err
+		}
+		header := textproto.MIMEHeader{}
+		header.Set(
+			"Content-Disposition",
+			fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(safeFieldName), escapeQuotes(safeFilename)),
+		)
+		header.Set("Content-Type", safeContentType)
 
 		part, err := writer.CreatePart(header)
 		if err != nil {
 			return "", nil, err
 		}
+		if int64(buf.Len())+int64(len(filePart.Content)) > limit {
+			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
+		}
 		if _, err := part.Write(filePart.Content); err != nil {
 			return "", nil, err
+		}
+		if int64(buf.Len()) > limit {
+			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
 		}
 	}
 
 	if err := writer.Close(); err != nil {
 		return "", nil, err
+	}
+	if int64(buf.Len()) > limit {
+		return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
 	}
 
 	return writer.FormDataContentType(), buf.Bytes(), nil
@@ -520,6 +598,15 @@ func canonicalHeaderKey(k string) string {
 	return textproto.CanonicalMIMEHeaderKey(k)
 }
 
+func sortedHeaderKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func (c *Client) httpClient() *http.Client {
 	c.mu.RLock()
 	client := c.HTTPClient
@@ -540,6 +627,102 @@ func (c *Client) responseLimit() int64 {
 	return limit
 }
 
+func (c *Client) multipartLimit() int64 {
+	c.mu.RLock()
+	limit := c.maxMultipartBytes
+	c.mu.RUnlock()
+	if limit <= 0 {
+		return defaultMaxMultipartBytes
+	}
+	return limit
+}
+
+func (c *Client) shouldBlockInsecureRequest(target string) bool {
+	c.mu.RLock()
+	allowInsecure := c.allowInsecureHTTP
+	c.mu.RUnlock()
+	if allowInsecure {
+		return false
+	}
+	u, err := url.Parse(target)
+	if err != nil {
+		return true
+	}
+	if strings.EqualFold(u.Scheme, "https") {
+		return false
+	}
+	host := u.Hostname()
+	if host == "" {
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback() == false
+	}
+	return !strings.EqualFold(host, "localhost")
+}
+
+func shouldDisableRedirects(headers map[string]string, hasBody bool) bool {
+	if hasBody || hasAuthorizationHeader(headers) {
+		return true
+	}
+	for k, v := range headers {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		if strings.EqualFold(k, "Accept") || strings.EqualFold(k, "Content-Type") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func normalizeBaseURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return strings.TrimRight(raw, "/")
+	}
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return strings.TrimRight(parsed.String(), "/")
+}
+
+func hasAuthorizationHeader(headers map[string]string) bool {
+	for k, v := range headers {
+		if strings.EqualFold(k, "Authorization") && strings.TrimSpace(v) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func withRedirectsDisabled(in *http.Client) *http.Client {
+	out := *in
+	out.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &out
+}
+
+func withRedirectSecurityChecks(in *http.Client, shouldBlock func(string) bool) *http.Client {
+	out := *in
+	previous := in.CheckRedirect
+	out.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		// Match net/http default redirect ceiling.
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 redirects")
+		}
+		if shouldBlock(req.URL.String()) {
+			return fmt.Errorf("refusing to send request over insecure transport")
+		}
+		if previous != nil {
+			return previous(req, via)
+		}
+		return nil
+	}
+	return &out
+}
+
 func nonNilContext(ctx context.Context) context.Context {
 	if ctx == nil {
 		return context.Background()
@@ -547,16 +730,28 @@ func nonNilContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func readBodyWithLimit(body io.Reader, limit int64) ([]byte, error) {
-	reader := io.LimitReader(body, limit+1)
+func readBodyWithLimit(body io.Reader, limit int64) ([]byte, bool, error) {
+	readLimit := limit
+	canDetectOverflow := limit < maxInt64
+	if canDetectOverflow {
+		readLimit = limit + 1
+	}
+	reader := io.LimitReader(body, readLimit)
 	payload, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	if int64(len(payload)) > limit {
-		return nil, fmt.Errorf("response body exceeds %d bytes", limit)
+	if canDetectOverflow && int64(len(payload)) > limit {
+		return payload[:limit], true, nil
 	}
-	return payload, nil
+	return payload, false, nil
+}
+
+func rejectCRLF(value string, fieldName string) (string, error) {
+	if strings.ContainsAny(value, "\r\n") {
+		return "", fmt.Errorf("%s must not contain CR or LF characters", fieldName)
+	}
+	return value, nil
 }
 
 func isJSONContentType(contentType string) bool {
