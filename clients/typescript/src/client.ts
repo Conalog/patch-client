@@ -256,42 +256,17 @@ export class PatchClientV3 {
   }
 
   private async request(method: string, path: string, input: RequestInput = {}): Promise<unknown> {
-    const url = new URL(`${this.baseUrl}${path}`);
-    const query = input.query ?? {};
-    for (const [key, value] of Object.entries(query)) {
-      if (value === undefined || value === null) {
-        continue;
-      }
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          if (item !== undefined && item !== null) {
-            url.searchParams.append(key, String(item));
-          }
-        }
-      } else {
-        url.searchParams.set(key, String(value));
-      }
-    }
+    const requestUrl = buildRequestUrl(this.baseUrl, path, input.query);
+    const headers = buildRequestHeaders(
+      this.defaultHeaders,
+      this.accessToken,
+      this.accountType,
+      input.options
+    );
+    const body = buildRequestBody(input, headers);
 
-    const headers: Record<string, string> = {
-      Accept: "application/json",
-      ...this.defaultHeaders,
-      ...this.authHeaders(input.options),
-      ...(input.options?.headers ?? {}),
-    };
-
-    const init: RequestInit = { method, headers };
-
-    if (input.formData) {
-      init.body = input.formData as unknown as BodyInit;
-      delete headers["Content-Type"];
-    } else if (input.body !== undefined) {
-      headers["Content-Type"] = "application/json";
-      init.body = JSON.stringify(input.body);
-    }
-
-    const response = await this.fetchFn(url.toString(), init);
-    const payload = await parseResponse(response);
+    const response = await this.fetchFn(requestUrl, { method, headers, body });
+    const payload = await parseResponsePayload(response);
 
     if (!response.ok) {
       throw new PatchClientError(response.status, payload);
@@ -299,42 +274,111 @@ export class PatchClientV3 {
 
     return payload;
   }
+}
 
-  private authHeaders(options?: RequestOptions): Record<string, string> {
-    const headers: Record<string, string> = {};
-    const token = options?.accessToken ?? this.accessToken;
-    const accountType = options?.accountType ?? this.accountType;
+function buildRequestUrl(baseUrl: string, path: string, query?: Record<string, QueryValue>): string {
+  const url = new URL(`${baseUrl}${path}`);
+  appendQueryParams(url, query ?? {});
+  return url.toString();
+}
 
-    if (token) {
-      headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+function appendQueryParams(url: URL, query: Record<string, QueryValue>): void {
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) {
+      continue;
     }
-    if (accountType) {
-      headers["Account-Type"] = accountType;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null) {
+          url.searchParams.append(key, String(item));
+        }
+      }
+      continue;
     }
-
-    return headers;
+    url.searchParams.set(key, String(value));
   }
+}
+
+function buildRequestHeaders(
+  defaultHeaders: Record<string, string>,
+  accessToken: string | undefined,
+  accountType: AccountType | undefined,
+  options?: RequestOptions
+): Record<string, string> {
+  return {
+    Accept: "application/json",
+    ...defaultHeaders,
+    ...buildAuthHeaders(options, accessToken, accountType),
+    ...(options?.headers ?? {}),
+  };
+}
+
+function buildAuthHeaders(
+  options: RequestOptions | undefined,
+  accessToken: string | undefined,
+  accountType: AccountType | undefined
+): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const token = options?.accessToken ?? accessToken;
+  const resolvedAccountType = options?.accountType ?? accountType;
+
+  if (token) {
+    headers.Authorization = hasBearerPrefix(token) ? token : `Bearer ${token}`;
+  }
+  if (resolvedAccountType) {
+    headers["Account-Type"] = resolvedAccountType;
+  }
+
+  return headers;
+}
+
+function buildRequestBody(input: RequestInput, headers: Record<string, string>): BodyInit | undefined {
+  if (input.formData) {
+    delete headers["Content-Type"];
+    return input.formData as unknown as BodyInit;
+  }
+
+  if (input.body === undefined) {
+    return undefined;
+  }
+
+  headers["Content-Type"] = "application/json";
+  return JSON.stringify(input.body);
 }
 
 function encodePath(value: string): string {
   return encodeURIComponent(value);
 }
 
-async function parseResponse(response: Response): Promise<unknown> {
-  const contentType = response.headers.get("content-type") ?? "";
+async function parseResponsePayload(response: Response): Promise<unknown> {
   if (response.status === 204) {
     return null;
   }
+
   const text = await response.text();
   if (text.length === 0) {
     return null;
   }
-  if (contentType.includes("application/json") || contentType.includes("+json")) {
-    try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      return text;
-    }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!isJsonContentType(contentType)) {
+    return text;
   }
-  return text;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function isJsonContentType(contentType: string): boolean {
+  const normalizedContentType = contentType.toLowerCase();
+  return (
+    normalizedContentType.includes("application/json") || normalizedContentType.includes("+json")
+  );
+}
+
+function hasBearerPrefix(token: string): boolean {
+  return token.length >= 7 && token.slice(0, 7).toLowerCase() === "bearer ";
 }
