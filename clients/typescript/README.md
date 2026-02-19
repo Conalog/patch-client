@@ -82,6 +82,10 @@ import { PatchClientV3 } from "patch-client";
 - `fetch` is required.
   - Node.js 18+ provides it by default.
   - For older Node.js versions, inject `fetchFn` manually.
+  - When `maxResponseBytes` is set, the injected `fetchFn` should expose a streaming response body
+    (`ReadableStream.getReader()` or async-iterable body) so byte limits can be enforced safely.
+  - If your runtime cannot expose streaming response bodies, set `maxResponseBytes: Infinity` to
+    opt out of response-size enforcement.
 - `FormData` is required when using the file upload API (`uploadPlantFiles`).
   - Node.js 18+ and modern browsers provide it by default.
   - Native `FormData` expects `Blob`/`File` values (not `fs.createReadStream`).
@@ -157,7 +161,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
     const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
     const bytes = await fs.readFile(filePath);
     const blob = new Blob([bytes], { type: "text/csv" });
-    formData.append("file", blob, path.basename(filePath));
+    formData.append("filename", blob, path.basename(filePath));
 
     const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
     console.log("Successfully uploaded files:", result);
@@ -198,7 +202,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
 
     const formData = new FormData();
     const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
-    formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
+    formData.append("filename", fs.createReadStream(filePath), path.basename(filePath));
 
     const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
     console.log("Successfully uploaded files:", result);
@@ -237,7 +241,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 
     const formData = new FormData();
     const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
-    formData.append("file", fs.createReadStream(filePath), path.basename(filePath));
+    formData.append("filename", fs.createReadStream(filePath), path.basename(filePath));
 
     const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
     console.log("Successfully uploaded files:", result);
