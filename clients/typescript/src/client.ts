@@ -306,7 +306,7 @@ export class PatchClientV3 {
     const accountType = options?.accountType ?? this.accountType;
 
     if (token) {
-      headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      headers.Authorization = hasBearerPrefix(token) ? token : `Bearer ${token}`;
     }
     if (accountType) {
       headers["Account-Type"] = accountType;
@@ -321,7 +321,7 @@ function encodePath(value: string): string {
 }
 
 async function parseResponse(response: Response): Promise<unknown> {
-  const contentType = response.headers.get("content-type") ?? "";
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
   if (response.status === 204) {
     return null;
   }
@@ -337,4 +337,8 @@ async function parseResponse(response: Response): Promise<unknown> {
     }
   }
   return text;
+}
+
+function hasBearerPrefix(token: string): boolean {
+  return token.toLowerCase().startsWith("bearer ");
 }

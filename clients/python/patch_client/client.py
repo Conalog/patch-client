@@ -394,7 +394,7 @@ class PatchClientV3:
         if resolved_token:
             headers["Authorization"] = (
                 resolved_token
-                if resolved_token.startswith("Bearer ")
+                if _has_bearer_prefix(resolved_token)
                 else f"Bearer {resolved_token}"
             )
         if resolved_account_type:
@@ -462,6 +462,10 @@ def _serialize_query_value(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)
+
+
+def _has_bearer_prefix(value: str) -> bool:
+    return value.lower().startswith("bearer ")
 
 
 def _quote_header_value(value: str) -> str:
