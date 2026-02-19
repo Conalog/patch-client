@@ -9,17 +9,44 @@ use crate::model::{
 use percent_encoding::{percent_decode_str, percent_encode_byte};
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client as HttpClient, Method, StatusCode};
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use url::Url;
 
 const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
+const DEFAULT_MAX_RESPONSE_BYTES: usize = 10 << 20;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct AuthState {
     token: String,
     account_type: String,
+}
+
+impl std::fmt::Debug for AuthState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AuthState")
+            .field("token", &"<redacted>")
+            .field("account_type", &self.account_type)
+            .finish()
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+enum CreatePlantV3Response {
+    V3(PlantBodyV3),
+    Legacy(PlantBody),
+}
+
+impl CreatePlantV3Response {
+    fn into_v3(self) -> PlantBodyV3 {
+        match self {
+            Self::V3(v3) => v3,
+            Self::Legacy(v2) => v2.into(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -48,13 +75,52 @@ impl Client {
     }
 
     pub fn new_with_timeout(base_url: &str, timeout: Duration) -> Result<Self> {
-        let base_url = Url::parse(base_url)?;
-        let http = HttpClient::builder().timeout(timeout).build()?;
+        let mut base_url = Url::parse(base_url)?;
+        Self::validate_base_url(&base_url)?;
+        Self::normalize_base_url(&mut base_url);
+        let http = HttpClient::builder()
+            .timeout(timeout)
+            .redirect(reqwest::redirect::Policy::none())
+            .build()?;
         Ok(Self {
             base_url,
             http,
             auth: Arc::new(RwLock::new(None)),
         })
+    }
+
+    fn validate_base_url(base_url: &Url) -> Result<()> {
+        if base_url.query().is_some() || base_url.fragment().is_some() {
+            return Err(Error::InvalidPath(
+                "base_url must not include query or fragment".to_string(),
+            ));
+        }
+        let host = base_url.host_str().unwrap_or_default();
+        if host.is_empty() {
+            return Err(Error::InvalidPath("base_url must include host".to_string()));
+        }
+        match base_url.scheme() {
+            "https" => Ok(()),
+            "http" if Self::is_loopback_host(base_url.host_str()) => Ok(()),
+            _ => Err(Error::InsecureBaseUrl(base_url.to_string())),
+        }
+    }
+
+    fn is_loopback_host(host: Option<&str>) -> bool {
+        match host {
+            Some(h) if h.eq_ignore_ascii_case("localhost") => true,
+            Some(h) => h
+                .parse::<IpAddr>()
+                .map(|ip| ip.is_loopback())
+                .unwrap_or(false),
+            None => false,
+        }
+    }
+
+    fn normalize_base_url(base_url: &mut Url) {
+        if !base_url.path().ends_with('/') {
+            base_url.set_path(&format!("{}/", base_url.path()));
+        }
     }
 
     fn url(&self, path: &str) -> Result<Url> {
@@ -90,13 +156,20 @@ impl Client {
             }
         };
 
-        let auth: AuthOutputV3Body = self
-            .execute_json(
+        let auth: AuthOutputV3Body = match self
+            .execute_json_unauth_no_refresh(
                 Method::POST,
                 self.url("api/v3/account/auth-with-password")?,
                 Some(&body),
             )
-            .await?;
+            .await
+        {
+            Ok(v) => v,
+            Err(err) => {
+                self.clear_auth_on_login_failure(&err).await;
+                return Err(err);
+            }
+        };
         let mut lock = self.auth.write().await;
         *lock = Some(AuthState {
             token: auth.token.clone(),
@@ -110,13 +183,20 @@ impl Client {
             email: email.to_string(),
             password: password.map(|s| s.to_string()),
         };
-        let auth: AuthBody = self
-            .execute_json(
+        let auth: AuthBody = match self
+            .execute_json_unauth_no_refresh(
                 Method::POST,
                 self.url("api/v2/manager/auth-with-password")?,
                 Some(&body),
             )
-            .await?;
+            .await
+        {
+            Ok(v) => v,
+            Err(err) => {
+                self.clear_auth_on_login_failure(&err).await;
+                return Err(err);
+            }
+        };
         let mut lock = self.auth.write().await;
         *lock = Some(AuthState {
             token: auth.token.clone(),
@@ -130,19 +210,40 @@ impl Client {
             account: account.to_string(),
             password: password.map(|s| s.to_string()),
         };
-        let auth: AuthBody = self
-            .execute_json(
+        let auth: AuthBody = match self
+            .execute_json_unauth_no_refresh(
                 Method::POST,
                 self.url("api/v2/viewer/auth-with-password")?,
                 Some(&body),
             )
-            .await?;
+            .await
+        {
+            Ok(v) => v,
+            Err(err) => {
+                self.clear_auth_on_login_failure(&err).await;
+                return Err(err);
+            }
+        };
         let mut lock = self.auth.write().await;
         *lock = Some(AuthState {
             token: auth.token.clone(),
             account_type: "viewer".to_string(),
         });
         Ok(auth)
+    }
+
+    async fn clear_auth_on_login_failure(&self, err: &Error) {
+        let should_clear = match err {
+            Error::Api { status, .. } | Error::ApiProblem { status, .. } => {
+                *status == 401 || *status == 403
+            }
+            Error::Unauthorized => true,
+            _ => false,
+        };
+        if should_clear {
+            let mut lock = self.auth.write().await;
+            *lock = None;
+        }
     }
 
     pub async fn refresh_token(&self) -> Result<()> {
@@ -165,7 +266,8 @@ impl Client {
             .await?;
 
         if res.status().is_success() {
-            let new_auth: AuthBody = res.json().await?;
+            let bytes = Self::read_body_limited(res).await?;
+            let new_auth: AuthBody = serde_json::from_slice(&bytes)?;
             let mut lock = self.auth.write().await;
             if let Some(auth) = &mut *lock {
                 auth.token = new_auth.token;
@@ -176,7 +278,7 @@ impl Client {
             if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
                 return Err(Error::Unauthorized);
             }
-            let body = res.text().await.unwrap_or_default();
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             Err(Self::api_error(status, body))
         }
     }
@@ -205,13 +307,37 @@ impl Client {
         url: Url,
         body: Option<&B>,
     ) -> Result<T> {
+        self.execute_json_internal(method, url, body, true, true)
+            .await
+    }
+
+    async fn execute_json_unauth_no_refresh<T: serde::de::DeserializeOwned, B: serde::Serialize>(
+        &self,
+        method: Method,
+        url: Url,
+        body: Option<&B>,
+    ) -> Result<T> {
+        self.execute_json_internal(method, url, body, false, false)
+            .await
+    }
+
+    async fn execute_json_internal<T: serde::de::DeserializeOwned, B: serde::Serialize>(
+        &self,
+        method: Method,
+        url: Url,
+        body: Option<&B>,
+        allow_refresh_on_401: bool,
+        include_auth: bool,
+    ) -> Result<T> {
         let mut retries = 1;
         loop {
             let mut req = self.http.request(method.clone(), url.clone());
 
-            let (auth, authed) = {
+            let (auth, authed) = if include_auth {
                 let lock = self.auth.read().await;
                 ((*lock).clone(), lock.is_some())
+            } else {
+                (None, false)
             };
             if let Some(auth) = auth {
                 req = req
@@ -226,22 +352,28 @@ impl Client {
             let res = req.send().await?;
             let status = res.status();
 
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
+            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
                 retries -= 1;
                 self.refresh_token().await?;
                 continue;
             }
 
             if status.is_success() {
-                return Ok(res.json().await?);
+                let body_bytes = Self::read_body_limited(res).await?;
+                return Ok(serde_json::from_slice::<T>(&body_bytes)?);
             }
 
-            let body = res.text().await.unwrap_or_default();
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             return Err(Self::api_error(status, body));
         }
     }
 
-    async fn execute_no_content(&self, method: Method, url: Url) -> Result<()> {
+    async fn execute_text(
+        &self,
+        method: Method,
+        url: Url,
+        decode_json_string: bool,
+    ) -> Result<String> {
         let mut retries = 1;
         loop {
             let mut req = self.http.request(method.clone(), url.clone());
@@ -258,20 +390,42 @@ impl Client {
 
             let res = req.send().await?;
             let status = res.status();
-
             if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
                 retries -= 1;
                 self.refresh_token().await?;
                 continue;
             }
-
             if status.is_success() {
-                return Ok(());
+                let content_type = res
+                    .headers()
+                    .get(reqwest::header::CONTENT_TYPE)
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+                let body = Self::read_body_limited(res).await?;
+                if decode_json_string
+                    && (content_type.contains("application/json") || content_type.contains("+json"))
+                {
+                    if let Ok(text) = serde_json::from_slice::<String>(&body) {
+                        return Ok(text);
+                    }
+                }
+                return Ok(String::from_utf8_lossy(&body).into_owned());
             }
-
-            let body = res.text().await.unwrap_or_default();
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             return Err(Self::api_error(status, body));
         }
+    }
+
+    async fn read_body_limited(mut res: reqwest::Response) -> Result<Vec<u8>> {
+        let mut body = Vec::new();
+        while let Some(chunk) = res.chunk().await? {
+            if body.len() + chunk.len() > DEFAULT_MAX_RESPONSE_BYTES {
+                return Err(Error::ResponseTooLarge(DEFAULT_MAX_RESPONSE_BYTES));
+            }
+            body.extend_from_slice(&chunk);
+        }
+        Ok(body)
     }
 
     fn url_with_query(&self, path: &str, query: &[(&str, String)]) -> Result<Url> {
@@ -283,6 +437,14 @@ impl Client {
             }
         }
         Ok(url)
+    }
+
+    fn push_fields_csv_query(q: &mut Vec<(&str, String)>, fields: Option<&[String]>) {
+        if let Some(fs) = fields {
+            if !fs.is_empty() {
+                q.push(("fields", fs.join(",")));
+            }
+        }
     }
 
     pub async fn get_account(&self) -> Result<AccountOutputBody> {
@@ -352,9 +514,11 @@ impl Client {
             .await
     }
 
-    pub async fn create_plant_v3(&self, input: &CreatePlantInput) -> Result<PlantBody> {
-        self.execute_json(Method::POST, self.url("api/v3/plants")?, Some(input))
-            .await
+    pub async fn create_plant_v3(&self, input: &CreatePlantInput) -> Result<PlantBodyV3> {
+        let out: CreatePlantV3Response = self
+            .execute_json(Method::POST, self.url("api/v3/plants")?, Some(input))
+            .await?;
+        Ok(out.into_v3())
     }
 
     pub async fn get_blueprint_text_v3(&self, plant_id: &str, date: &str) -> Result<String> {
@@ -363,8 +527,7 @@ impl Client {
             Self::encode_path_segment(plant_id)
         );
         let url = self.url_with_query(&path, &[("date", date.to_string())])?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
+        self.execute_text(Method::GET, url, true).await
     }
 
     pub async fn get_blueprint_text_v2(&self, plant_id: &str, date: &str) -> Result<String> {
@@ -373,8 +536,7 @@ impl Client {
             Self::encode_path_segment(plant_id)
         );
         let url = self.url_with_query(&path, &[("date", date.to_string())])?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
+        self.execute_text(Method::GET, url, false).await
     }
 
     pub async fn get_blueprint(&self, plant_id: &str, date: &str) -> Result<serde_json::Value> {
@@ -562,11 +724,7 @@ impl Client {
         if let Some(v) = before {
             q.push(("before", v.to_string()));
         }
-        if let Some(fs) = fields {
-            for f in fs {
-                q.push(("fields", f.to_string()));
-            }
-        }
+        Self::push_fields_csv_query(&mut q, fields);
         let url = self.url_with_query(&path, &q)?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
             .await
@@ -594,13 +752,10 @@ impl Client {
         if let Some(v) = before {
             q.push(("before", v.to_string()));
         }
-        if let Some(fs) = fields {
-            for f in fs {
-                q.push(("fields", f.to_string()));
-            }
-        }
+        Self::push_fields_csv_query(&mut q, fields);
         let url = self.url_with_query(&path, &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None).await
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
     }
 
     /// v2 metrics endpoint (typed).
@@ -630,11 +785,7 @@ impl Client {
         if let Some(v) = before {
             q.push(("before", v.to_string()));
         }
-        if let Some(fs) = fields {
-            for f in fs {
-                q.push(("fields", f.to_string()));
-            }
-        }
+        Self::push_fields_csv_query(&mut q, fields);
         let url = self.url_with_query(&path, &q)?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
             .await
@@ -772,10 +923,11 @@ impl Client {
             }
 
             if status.is_success() {
-                return Ok(res.json().await?);
+                let body = Self::read_body_limited(res).await?;
+                return Ok(serde_json::from_slice::<FileUploadResponse>(&body)?);
             }
 
-            let body = res.text().await.unwrap_or_default();
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             return Err(Self::api_error(status, body));
         }
     }
@@ -801,13 +953,18 @@ impl Client {
             .await
     }
 
-    pub async fn get_panel_seqnum_v3(&self, plant_id: &str, date: &str) -> Result<()> {
+    pub async fn get_panel_seqnum_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+    ) -> Result<serde_json::Value> {
         let path = format!(
             "api/v3/plants/{}/indicator/seqnum",
             Self::encode_path_segment(plant_id)
         );
         let url = self.url_with_query(&path, &[("date", date.to_string())])?;
-        self.execute_no_content(Method::GET, url).await
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
     }
 
     pub async fn create_org_member_v3(
@@ -1004,6 +1161,31 @@ mod tests {
     }
 
     #[test]
+    fn new_rejects_non_loopback_http_base_url() {
+        match Client::new("http://example.com") {
+            Err(Error::InsecureBaseUrl(_)) => {}
+            _ => panic!("non-loopback http must be rejected"),
+        }
+    }
+
+    #[test]
+    fn new_rejects_hostless_https_base_url() {
+        assert!(
+            Client::new("https:///").is_err(),
+            "hostless https base URL must be rejected"
+        );
+    }
+
+    #[test]
+    fn base_url_path_prefix_is_preserved_without_trailing_slash() {
+        let client = Client::new("https://example.com/proxy").expect("valid base");
+        let url = client
+            .url("api/v3/account/")
+            .expect("url should include configured prefix");
+        assert_eq!(url.as_str(), "https://example.com/proxy/api/v3/account/");
+    }
+
+    #[test]
     fn url_rejects_parent_path_segments() {
         let client = Client::new("https://example.com/").expect("valid base");
         let err = client
@@ -1062,6 +1244,81 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_metrics_by_date_v3_serializes_fields_as_csv_query() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix:
+                "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01&fields=i_out%2Cp",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "plant_id":"p1",
+                "unit":"panel",
+                "source":"device",
+                "date":"2026-01-01",
+                "interval":"5m",
+                "data":[
+                  {
+                    "id":"x1",
+                    "date":"2026-01-01",
+                    "timestamp":1,
+                    "energy":1.0,
+                    "cumulative_energy":2.0,
+                    "i_out":3.0,
+                    "p":4.0,
+                    "v_in":5.0,
+                    "v_out":6.0,
+                    "temp":7.0
+                  }
+                ]
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let fields = vec!["i_out".to_string(), "p".to_string()];
+        let out = client
+            .get_metrics_by_date_v3(
+                "p1",
+                "device",
+                "panel",
+                "5m",
+                "2026-01-01",
+                None,
+                Some(&fields),
+            )
+            .await
+            .expect("metrics request should succeed");
+        assert!(matches!(out, MetricsBody::PanelIntraday(_)));
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_panel_seqnum_v3_returns_payload() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/indicator/seqnum?date=2026-01-01",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"items":[{"timestamp":1,"seq_num":3}]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .get_panel_seqnum_v3("p1", "2026-01-01")
+            .await
+            .expect("seqnum request should succeed");
+        assert_eq!(
+            out.get("items")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(1)
+        );
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
     async fn get_panel_metrics_rejects_missing_data() {
         let server = spawn_mock_server(vec![MockStep {
             method: "GET",
@@ -1091,6 +1348,186 @@ mod tests {
             }
             _ => panic!("expected Api error for missing panel metrics data"),
         }
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn login_does_not_refresh_on_login_endpoint_unauthorized() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"old-token",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 401,
+                content_type: "application/json",
+                body: r#"{"title":"invalid credentials","detail":"wrong password"}"#,
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("first login should succeed");
+        let err = client
+            .login("manager@example.com", "wrong")
+            .await
+            .expect_err("second login should fail with login endpoint error");
+        match err {
+            Error::ApiProblem { status, title, .. } => {
+                assert_eq!(status, 401);
+                assert_eq!(title, "invalid credentials");
+            }
+            _ => panic!("expected 401 login error without refresh"),
+        }
+        let auth_lock = client.auth.read().await;
+        assert!(
+            auth_lock.is_none(),
+            "failed login must clear stale authentication context"
+        );
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn login_endpoints_do_not_send_stale_authorization_header() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let bodies = [
+                r#"{"token":"first","type":"manager","name":"m","email":"m@example.com","username":null,"organizations":null,"metadata":null}"#,
+                r#"{"token":"second","type":"manager","name":"m2","email":"m2@example.com","username":null,"organizations":null,"metadata":null}"#,
+            ];
+            for body in bodies {
+                let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+                stream.set_nonblocking(false).expect("set blocking stream");
+                let mut req_buf = [0_u8; 8192];
+                let n = stream.read(&mut req_buf).expect("read request");
+                let req = String::from_utf8_lossy(&req_buf[..n]);
+                let req_line = req.lines().next().unwrap_or_default();
+                assert!(
+                    req_line.starts_with("POST /api/v3/account/auth-with-password"),
+                    "unexpected request line `{req_line}`"
+                );
+                let req_lower = req.to_ascii_lowercase();
+                assert!(
+                    !req_lower.contains("\nauthorization:"),
+                    "login request must not carry stale Authorization header"
+                );
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                stream
+                    .write_all(response.as_bytes())
+                    .expect("write response");
+                stream.flush().expect("flush response");
+            }
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        client
+            .login("m@example.com", "pw")
+            .await
+            .expect("first login should succeed");
+        client
+            .login("m2@example.com", "pw2")
+            .await
+            .expect("second login should succeed");
+
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_blueprint_text_accepts_plain_text_response() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/blueprint?date=2026-01-01",
+            status: 200,
+            content_type: "text/plain",
+            body: "raw-blueprint-content",
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let text = client
+            .get_blueprint_text_v3("p1", "2026-01-01")
+            .await
+            .expect("plain text blueprint should be accepted");
+        assert_eq!(text, "raw-blueprint-content");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_blueprint_text_decodes_json_string_payload() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/blueprint?date=2026-01-01",
+            status: 200,
+            content_type: "application/json",
+            body: r#""aGVsbG8=""#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let text = client
+            .get_blueprint_text_v3("p1", "2026-01-01")
+            .await
+            .expect("json string blueprint should be decoded");
+        assert_eq!(text, "aGVsbG8=");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn create_plant_v3_accepts_legacy_response_shape() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "POST",
+            path_prefix: "/api/v3/plants",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "id":"p1",
+                "name":"Plant One",
+                "organization":"org-1",
+                "organizationData":{"id":"org-1","name":"Org One","icon":null,"logo":null,"owner":null},
+                "created":"2026-01-01T00:00:00Z",
+                "updated":"2026-01-01T00:00:00Z",
+                "metadata":{},
+                "images":null
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let created = client
+            .create_plant_v3(&CreatePlantInput {
+                name: "Plant One".to_string(),
+                organization_id: "org-1".to_string(),
+                metadata: None,
+            })
+            .await
+            .expect("legacy create response should deserialize");
+        assert_eq!(created.id, "p1");
+        assert_eq!(created.organization.id, "org-1");
         server.handle.join().expect("join mock server");
     }
 
@@ -1192,7 +1629,10 @@ mod tests {
             .login("manager@example.com", "pw")
             .await
             .expect("login should succeed");
-        let err = client.get_account().await.expect_err("must return unauthorized");
+        let err = client
+            .get_account()
+            .await
+            .expect_err("must return unauthorized");
         assert!(matches!(err, Error::Unauthorized));
         server.handle.join().expect("join mock server");
     }

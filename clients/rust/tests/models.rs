@@ -1,4 +1,6 @@
-use patch_client::model::{ErrorModel, MetricsBody};
+use patch_client::model::{
+    AuthBody, AuthWithPasswordBody, ErrorModel, MetricsBody, OrgAddPermissionOutputBody,
+};
 
 #[test]
 fn metrics_body_deserializes_panel_intraday() {
@@ -91,7 +93,7 @@ fn metrics_body_uses_plant_aggregated_variant_for_plant_day_payload() {
 }
 
 #[test]
-fn metrics_body_rejects_unknown_discriminants() {
+fn metrics_body_preserves_unknown_discriminants() {
     let json = r#"{
         "plant_id": "p1",
         "unit": "unknown",
@@ -114,8 +116,21 @@ fn metrics_body_rejects_unknown_discriminants() {
         ]
     }"#;
 
-    let err = serde_json::from_str::<MetricsBody>(json).expect_err("must reject unknown unit/interval");
-    assert!(err.to_string().contains("missing or invalid"));
+    let body =
+        serde_json::from_str::<MetricsBody>(json).expect("must preserve unknown unit/interval");
+    match body {
+        MetricsBody::Unknown(raw) => {
+            assert_eq!(
+                raw.get("unit").and_then(serde_json::Value::as_str),
+                Some("unknown")
+            );
+            assert_eq!(
+                raw.get("interval").and_then(serde_json::Value::as_str),
+                Some("5m")
+            );
+        }
+        _ => panic!("expected Unknown metrics variant"),
+    }
 }
 
 #[test]
@@ -312,9 +327,57 @@ fn metrics_body_inverter_intraday_rejects_string_timestamp() {
         ]
     }"#;
 
-    let err =
-        serde_json::from_str::<MetricsBody>(json).expect_err("string timestamp must fail");
+    let err = serde_json::from_str::<MetricsBody>(json).expect_err("string timestamp must fail");
     assert!(err.to_string().contains("invalid type"));
+}
+
+#[test]
+fn auth_models_redact_secrets_in_debug_output() {
+    let login = AuthWithPasswordBody {
+        account_type: "manager".to_string(),
+        password: "pw-123".to_string(),
+        email: Some("manager@example.com".to_string()),
+        username: None,
+    };
+    let login_dbg = format!("{login:?}");
+    assert!(!login_dbg.contains("pw-123"));
+    assert!(login_dbg.contains("<redacted>"));
+
+    let auth = AuthBody {
+        token: "tok-xyz".to_string(),
+        name: "manager".to_string(),
+    };
+    let auth_dbg = format!("{auth:?}");
+    assert!(!auth_dbg.contains("tok-xyz"));
+    assert!(auth_dbg.contains("<redacted>"));
+}
+
+#[test]
+fn org_permission_output_accepts_plant_id_alias() {
+    let raw = r#"{
+        "plantId": "plant-1",
+        "type": "viewer",
+        "email": "viewer@example.com",
+        "username": null
+    }"#;
+    let model: OrgAddPermissionOutputBody =
+        serde_json::from_str(raw).expect("must parse plantId alias");
+    assert_eq!(model.plant_id, "plant-1");
+    assert_eq!(model.account_type, "viewer");
+}
+
+#[test]
+fn org_permission_output_accepts_snake_case_plant_id() {
+    let raw = r#"{
+        "plant_id": "plant-2",
+        "type": "manager",
+        "email": "manager@example.com",
+        "username": null
+    }"#;
+    let model: OrgAddPermissionOutputBody =
+        serde_json::from_str(raw).expect("must parse plant_id field");
+    assert_eq!(model.plant_id, "plant-2");
+    assert_eq!(model.account_type, "manager");
 }
 
 #[test]
@@ -354,7 +417,7 @@ fn metrics_body_plant_intraday_rejects_missing_cumulative_energy() {
         ]
     }"#;
 
-    let err = serde_json::from_str::<MetricsBody>(json)
-        .expect_err("missing cumulative_energy must fail");
+    let err =
+        serde_json::from_str::<MetricsBody>(json).expect_err("missing cumulative_energy must fail");
     assert!(err.to_string().contains("cumulative_energy"));
 }
