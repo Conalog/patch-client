@@ -263,7 +263,8 @@ export class PatchClientV3 {
       this.accountType,
       input.options
     );
-    const body = buildRequestBody(input, headers);
+    const body = buildRequestBody(input);
+    applyRequestBodyHeaders(headers, input);
 
     const response = await this.fetchFn(requestUrl, { method, headers, body });
     const payload = await parseResponsePayload(response);
@@ -332,9 +333,8 @@ function buildAuthHeaders(
   return headers;
 }
 
-function buildRequestBody(input: RequestInput, headers: Record<string, string>): BodyInit | undefined {
+function buildRequestBody(input: RequestInput): BodyInit | undefined {
   if (input.formData) {
-    delete headers["Content-Type"];
     return input.formData as unknown as BodyInit;
   }
 
@@ -342,8 +342,17 @@ function buildRequestBody(input: RequestInput, headers: Record<string, string>):
     return undefined;
   }
 
-  headers["Content-Type"] = "application/json";
   return JSON.stringify(input.body);
+}
+
+function applyRequestBodyHeaders(headers: Record<string, string>, input: RequestInput): void {
+  if (input.formData) {
+    delete headers["Content-Type"];
+    return;
+  }
+  if (input.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
 }
 
 function encodePath(value: string): string {
