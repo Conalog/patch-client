@@ -340,5 +340,5 @@ async function parseResponse(response: Response): Promise<unknown> {
 }
 
 function hasBearerPrefix(token: string): boolean {
-  return token.length >= 7 && token.slice(0, 7).toLowerCase() === "bearer ";
+  return token.toLowerCase().startsWith("bearer ");
 }

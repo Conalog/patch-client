@@ -465,7 +465,7 @@ def _serialize_query_value(value: Any) -> str:
 
 
 def _has_bearer_prefix(value: str) -> bool:
-    return len(value) >= 7 and value[:7].lower() == "bearer "
+    return value.lower().startswith("bearer ")
 
 
 def _quote_header_value(value: str) -> str:
