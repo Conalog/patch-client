@@ -44,6 +44,11 @@ class ClientSafetyTests(unittest.TestCase):
             client.upload_plant_files("plant-id", {})
         self.assertFalse(client.called)
 
+    def test_merge_headers_preserves_lowercase_bearer_prefix(self) -> None:
+        client = PatchClientV3(access_token="bearer token-value")
+        headers = client._merge_headers(None, None, None)
+        self.assertEqual(headers.get("Authorization"), "bearer token-value")
+
 
 if __name__ == "__main__":
     unittest.main()
