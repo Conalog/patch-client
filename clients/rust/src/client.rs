@@ -406,9 +406,7 @@ impl Client {
                 if decode_json_string
                     && (content_type.contains("application/json") || content_type.contains("+json"))
                 {
-                    if let Ok(text) = serde_json::from_slice::<String>(&body) {
-                        return Ok(text);
-                    }
+                    return Ok(serde_json::from_slice::<String>(&body)?);
                 }
                 return Ok(String::from_utf8_lossy(&body).into_owned());
             }
@@ -1494,6 +1492,26 @@ mod tests {
             .await
             .expect("json string blueprint should be decoded");
         assert_eq!(text, "aGVsbG8=");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_blueprint_text_rejects_unexpected_json_shape() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/blueprint?date=2026-01-01",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"value":"aGVsbG8="}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let err = client
+            .get_blueprint_text_v3("p1", "2026-01-01")
+            .await
+            .expect_err("unexpected json shape should fail");
+        assert!(matches!(err, Error::Serialization(_)));
         server.handle.join().expect("join mock server");
     }
 
