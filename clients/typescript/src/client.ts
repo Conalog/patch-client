@@ -384,12 +384,14 @@ export class PatchClientV3 {
     }
 
     try {
-      const response = await this.fetchWithTimeout(
-        url.toString(),
-        init,
-        input.options?.timeoutMs,
-        timeoutSupported
-      );
+      const hasTimeout =
+        typeof input.options?.timeoutMs === "number" &&
+        Number.isFinite(input.options.timeoutMs) &&
+        input.options.timeoutMs > 0;
+      if (hasTimeout && !timeoutSupported) {
+        throw new Error("timeoutMs requires AbortController support in this runtime");
+      }
+      const response = await this.fetchFn(url.toString(), init);
       let payload: unknown;
       try {
         payload = await parseResponse(response, this.maxResponseBytes);
@@ -434,44 +436,6 @@ export class PatchClientV3 {
     } finally {
       cleanup();
     }
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: FetchInit,
-    timeoutMs?: number,
-    timeoutSupported = true
-  ): Promise<FetchResponse> {
-    const hasTimeout = typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0;
-    if (!hasTimeout) {
-      return this.fetchFn(url, init);
-    }
-    if (!timeoutSupported) {
-      throw new Error("timeoutMs requires AbortController support in this runtime");
-    }
-    return await new Promise<FetchResponse>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`request timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-      let fetchPromise: Promise<FetchResponse>;
-      try {
-        fetchPromise = Promise.resolve(this.fetchFn(url, init));
-      } catch (err) {
-        clearTimeout(timer);
-        reject(err);
-        return;
-      }
-      fetchPromise.then(
-        (resp) => {
-          clearTimeout(timer);
-          resolve(resp);
-        },
-        (err) => {
-          clearTimeout(timer);
-          reject(err);
-        }
-      );
-    });
   }
 
   private authHeaders(options?: RequestOptions): Record<string, string> {
