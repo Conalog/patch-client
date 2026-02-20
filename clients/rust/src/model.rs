@@ -2,8 +2,9 @@ use serde::de::{self, Deserializer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::fmt;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 pub struct AuthWithPasswordBody {
     #[serde(rename = "type")]
     pub account_type: String,
@@ -14,18 +15,47 @@ pub struct AuthWithPasswordBody {
     pub username: Option<String>,
 }
 
-#[derive(Serialize, Debug)]
+impl fmt::Debug for AuthWithPasswordBody {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthWithPasswordBody")
+            .field("account_type", &self.account_type)
+            .field("password", &"<redacted>")
+            .field("email", &self.email)
+            .field("username", &self.username)
+            .finish()
+    }
+}
+
+#[derive(Serialize)]
 pub struct AuthAccountBody {
     pub account: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
 }
 
-#[derive(Serialize, Debug)]
+impl fmt::Debug for AuthAccountBody {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthAccountBody")
+            .field("account", &self.account)
+            .field("password", &"<redacted>")
+            .finish()
+    }
+}
+
+#[derive(Serialize)]
 pub struct AuthEmailBody {
     pub email: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+}
+
+impl fmt::Debug for AuthEmailBody {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthEmailBody")
+            .field("email", &self.email)
+            .field("password", &"<redacted>")
+            .finish()
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -39,7 +69,7 @@ pub struct OrgInfo {
 
 pub type OrganizationBody = OrgInfo;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct AuthOutputV3Body {
     pub token: String,
     #[serde(rename = "type")]
@@ -51,10 +81,33 @@ pub struct AuthOutputV3Body {
     pub metadata: Option<Value>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+impl fmt::Debug for AuthOutputV3Body {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthOutputV3Body")
+            .field("token", &"<redacted>")
+            .field("account_type", &self.account_type)
+            .field("name", &self.name)
+            .field("email", &self.email)
+            .field("username", &self.username)
+            .field("organizations", &self.organizations)
+            .field("metadata", &self.metadata)
+            .finish()
+    }
+}
+
+#[derive(Deserialize, Clone)]
 pub struct AuthBody {
     pub token: String,
     pub name: String,
+}
+
+impl fmt::Debug for AuthBody {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthBody")
+            .field("token", &"<redacted>")
+            .field("name", &self.name)
+            .finish()
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -96,7 +149,7 @@ pub struct CreateOrgMemberRequest {
 #[allow(non_camel_case_types)]
 pub type Create_org_memberRequest = CreateOrgMemberRequest;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 pub struct CreateUserAccountRequest {
     #[serde(rename = "type")]
     pub account_type: String,
@@ -108,6 +161,19 @@ pub struct CreateUserAccountRequest {
     pub username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
+}
+
+impl fmt::Debug for CreateUserAccountRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CreateUserAccountRequest")
+            .field("account_type", &self.account_type)
+            .field("name", &self.name)
+            .field("password", &"<redacted>")
+            .field("email", &self.email)
+            .field("username", &self.username)
+            .field("metadata", &self.metadata)
+            .finish()
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -127,6 +193,7 @@ pub struct OrgAddPermissionInputBody {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct OrgAddPermissionOutputBody {
+    #[serde(rename = "plant_id", alias = "plantId")]
     pub plant_id: String,
     #[serde(rename = "type")]
     pub account_type: String,
@@ -165,6 +232,20 @@ pub struct PlantBodyV3 {
     pub updated: String,
     pub metadata: Value,
     pub images: Option<Vec<String>>,
+}
+
+impl From<PlantBody> for PlantBodyV3 {
+    fn from(value: PlantBody) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            organization: value.organization_data,
+            created: value.created,
+            updated: value.updated,
+            metadata: value.metadata,
+            images: value.images,
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -442,6 +523,7 @@ pub enum MetricsBody {
     InverterDaily(BodyInverterDailyData),
     PlantIntraday(BodyPlantData),
     PlantAggregated(BodyPlantDailyData),
+    Unknown(Value),
 }
 
 impl<'de> Deserialize<'de> for MetricsBody {
@@ -472,9 +554,7 @@ impl<'de> Deserialize<'de> for MetricsBody {
             (Some("plant"), Some("day")) => serde_json::from_value(value)
                 .map(MetricsBody::PlantAggregated)
                 .map_err(de::Error::custom),
-            _ => Err(de::Error::custom(
-                "missing or invalid metrics discriminants (unit/interval)",
-            )),
+            _ => Ok(MetricsBody::Unknown(value)),
         }
     }
 }

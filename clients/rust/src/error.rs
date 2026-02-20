@@ -25,6 +25,10 @@ pub enum Error {
     Url(#[from] url::ParseError),
     #[error("Invalid URL path: {0}")]
     InvalidPath(String),
+    #[error("Insecure base URL is not allowed: {0}")]
+    InsecureBaseUrl(String),
+    #[error("Response body exceeds {0} bytes")]
+    ResponseTooLarge(usize),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
