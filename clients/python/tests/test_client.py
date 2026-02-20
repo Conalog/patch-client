@@ -279,6 +279,28 @@ class ClientSafetyTests(unittest.TestCase):
         )
         self.assertIsNone(redirected)
 
+    def test_safe_redirect_handler_allows_post_redirect_get(self) -> None:
+        from urllib import request
+
+        handler = _SafeRedirectHandler()
+        req = request.Request(
+            "https://example.com/api/v3/account/auth-with-password",
+            data=b'{"password":"pw"}',
+            headers={"Content-Type": "application/json"},
+        )
+        redirected = handler.redirect_request(
+            req=req,
+            fp=None,
+            code=302,
+            msg="Found",
+            headers={"Location": "https://example.com/next"},
+            newurl="https://example.com/next",
+        )
+        self.assertIsNotNone(redirected)
+        assert redirected is not None
+        self.assertEqual(redirected.get_method(), "GET")
+        self.assertIsNone(redirected.data)
+
     def test_encode_multipart_does_not_over_reject_small_valid_payload(self) -> None:
         content_type, payload = _encode_multipart(
             {},

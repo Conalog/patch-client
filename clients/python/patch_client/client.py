@@ -588,19 +588,22 @@ class _SafeRedirectHandler(request.HTTPRedirectHandler):
         new_url = parse.urlsplit(newurl)
         if new_url.scheme not in {"http", "https"}:
             return None
-        # Do not replay auth-bearing or body-bearing requests through redirects.
-        if _has_non_empty_header(req.headers, "Authorization") or req.data is not None:
+        # Never follow HTTPS->HTTP downgrades.
+        is_downgrade = old_url.scheme == "https" and new_url.scheme != "https"
+        if is_downgrade:
             return None
-        # Never forward auth headers across origin changes or HTTPS->HTTP downgrade.
+        # Never follow cross-origin redirects.
         same_host = (
             old_url.hostname == new_url.hostname
             and _normalized_port(old_url) == _normalized_port(new_url)
         )
-        is_downgrade = old_url.scheme == "https" and new_url.scheme != "https"
         if not same_host:
             return None
-        # Never follow HTTPS->HTTP downgrades, even in insecure base-url mode.
-        if is_downgrade:
+        # Do not follow redirects for auth-bearing requests.
+        if _has_non_empty_header(req.headers, "Authorization"):
+            return None
+        # For redirects that preserve method/body (307/308), do not replay body-bearing requests.
+        if code in {307, 308} and req.data is not None:
             return None
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         if redirected is None:
