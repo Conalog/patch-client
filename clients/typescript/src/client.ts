@@ -556,7 +556,7 @@ export class PatchClientV3 {
    * @param interval Metric interval segment used in the API path.
    * @param date Date string expected by the API.
    * @param query Optional filters.
-   * @param query.before Optional lookback window accepted by the endpoint.
+   * @param query.before Number of historical intervals to include before the specified date.
    * @param query.fields Field names to include. Sent as a comma-separated list.
    * @param options Optional request overrides.
    * @returns API response body.
