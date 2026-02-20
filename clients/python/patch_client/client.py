@@ -81,9 +81,7 @@ class PatchClientV3:
             max_multipart_bytes if max_multipart_bytes > 0 else DEFAULT_MAX_MULTIPART_BYTES
         )
         if follow_redirects:
-            self._opener = request.build_opener(
-                _SafeRedirectHandler(allow_insecure_http=allow_insecure_http)
-            )
+            self._opener = request.build_opener(_SafeRedirectHandler())
         else:
             self._opener = request.build_opener(_NoRedirectHandler())
 
@@ -585,10 +583,6 @@ class _NoRedirectHandler(request.HTTPRedirectHandler):
 
 
 class _SafeRedirectHandler(request.HTTPRedirectHandler):
-    def __init__(self, *, allow_insecure_http: bool = False):
-        super().__init__()
-        self._allow_insecure_http = allow_insecure_http
-
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
         old_url = parse.urlsplit(req.full_url)
         new_url = parse.urlsplit(newurl)

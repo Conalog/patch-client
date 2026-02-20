@@ -195,7 +195,9 @@ class ClientSafetyTests(unittest.TestCase):
         )
         self.assertIsNone(redirected)
 
-    def test_safe_redirect_handler_blocks_https_to_http_downgrade(self) -> None:
+    def test_safe_redirect_handler_blocks_https_to_http_downgrade_without_auth_or_body(
+        self,
+    ) -> None:
         from urllib import request
 
         handler = _SafeRedirectHandler()
@@ -210,12 +212,10 @@ class ClientSafetyTests(unittest.TestCase):
         )
         self.assertIsNone(redirected)
 
-    def test_safe_redirect_handler_blocks_https_to_http_downgrade_even_with_insecure_opt_in(
-        self,
-    ) -> None:
+    def test_safe_redirect_handler_blocks_https_to_http_downgrade(self) -> None:
         from urllib import request
 
-        handler = _SafeRedirectHandler(allow_insecure_http=True)
+        handler = _SafeRedirectHandler()
         req = request.Request("https://example.com/api")
         redirected = handler.redirect_request(
             req=req,
@@ -245,7 +245,7 @@ class ClientSafetyTests(unittest.TestCase):
     def test_safe_redirect_handler_blocks_auth_bearing_redirect_replay(self) -> None:
         from urllib import request
 
-        handler = _SafeRedirectHandler(allow_insecure_http=True)
+        handler = _SafeRedirectHandler()
         req = request.Request(
             "https://example.com/api/v3/account/",
             headers={"Authorization": "Bearer token"},
@@ -263,7 +263,7 @@ class ClientSafetyTests(unittest.TestCase):
     def test_safe_redirect_handler_blocks_body_bearing_redirect_replay(self) -> None:
         from urllib import request
 
-        handler = _SafeRedirectHandler(allow_insecure_http=True)
+        handler = _SafeRedirectHandler()
         req = request.Request(
             "https://example.com/api/v3/account/auth-with-password",
             data=b'{"password":"pw"}',
