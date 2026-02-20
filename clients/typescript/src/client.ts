@@ -517,7 +517,7 @@ export class PatchClientV3 {
    * @param plantId Plant identifier.
    * @param query Metric query options.
    * @param query.includeState Whether to include state information.
-   * @param query.ago Relative time offset accepted by the endpoint.
+   * @param query.ago Time range in minutes to filter active devices.
    * @param options Optional request overrides.
    * @returns API response body.
    * @throws {PatchClientError} If the request fails.
