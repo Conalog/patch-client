@@ -1,5 +1,13 @@
+/**
+ * Account role sent to the API via the `Account-Type` request header.
+ */
 export type AccountType = "viewer" | "manager" | "admin";
 
+/**
+ * Allowed query parameter values.
+ *
+ * Arrays are encoded as repeated key/value pairs in the query string.
+ */
 export type QueryValue =
   | string
   | number
@@ -7,29 +15,89 @@ export type QueryValue =
   | null
   | undefined
   | Array<string | number | boolean | null | undefined>;
+
+/**
+ * Generic JSON object payload used by this client.
+ */
 export type JsonObject = Record<string, unknown>;
 
+/**
+ * Client-wide configuration for {@link PatchClientV3}.
+ */
 export interface ClientConfig {
+  /**
+   * API base URL.
+   *
+   * Defaults to `https://patch-api.conalog.com`.
+   * The URL must not contain query string, fragment, or credentials.
+   */
   baseUrl?: string;
+  /**
+   * Default bearer token used when `RequestOptions.accessToken` is not provided.
+   */
   accessToken?: string;
+  /**
+   * Default account type used when `RequestOptions.accountType` is not provided.
+   */
   accountType?: AccountType;
+  /**
+   * Headers merged into every request before per-request overrides.
+   */
   defaultHeaders?: Record<string, string>;
+  /**
+   * Custom fetch implementation.
+   *
+   * Required when the runtime does not provide `globalThis.fetch`.
+   */
   fetchFn?: FetchFn;
+  /**
+   * Allows non-loopback `http://` base URLs.
+   *
+   * This should only be enabled in controlled environments.
+   */
   allowInsecureHttp?: boolean;
+  /**
+   * Maximum number of response bytes to read before failing.
+   *
+   * Defaults to 10 MiB. Set to `Infinity` to disable size checks.
+   */
   maxResponseBytes?: number;
 }
 
+/**
+ * Minimal `AbortSignal`-compatible type used by this package.
+ */
 export interface AbortSignalLike {
   readonly aborted: boolean;
   addEventListener(type: "abort", listener: () => void, options?: { once?: boolean }): void;
   removeEventListener(type: "abort", listener: () => void): void;
 }
 
+/**
+ * Per-request overrides for auth, headers, and cancellation.
+ */
 export interface RequestOptions {
+  /**
+   * Overrides the client-level access token for one request.
+   */
   accessToken?: string;
+  /**
+   * Overrides the client-level account type for one request.
+   */
   accountType?: AccountType;
+  /**
+   * Additional headers merged last (highest precedence, case-insensitive).
+   */
   headers?: Record<string, string>;
+  /**
+   * External abort signal for request cancellation.
+   */
   signal?: AbortSignalLike;
+  /**
+   * Request timeout in milliseconds.
+   *
+   * Requires `AbortController` support in the current runtime.
+   */
   timeoutMs?: number;
 }
 
@@ -69,11 +137,29 @@ interface RequestInput {
 }
 
 export class PatchClientError extends Error {
+  /**
+   * HTTP status code.
+   *
+   * `0` indicates client-side failures such as network errors, timeouts,
+   * serialization errors, or response parsing failures.
+   */
   readonly status: number;
+  /**
+   * Parsed response payload for API failures or an internal error payload.
+   */
   readonly payload: unknown;
+  /**
+   * HTTP method used for the failed request, when available.
+   */
   readonly method?: string;
+  /**
+   * Full request URL for the failed request, when available.
+   */
   readonly url?: string;
 
+  /**
+   * Creates a structured client error.
+   */
   constructor(
     status: number,
     payload: unknown,
@@ -88,6 +174,17 @@ export class PatchClientError extends Error {
   }
 }
 
+/**
+ * Handwritten client for PATCH Plant Data API v3.
+ *
+ * Every request method returns a parsed payload:
+ * - JSON response: parsed JSON value
+ * - text/xml/html response: `string`
+ * - other content types: `Uint8Array`
+ * - empty body (e.g. 204): `null`
+ *
+ * Request methods throw {@link PatchClientError} for API and network failures.
+ */
 export class PatchClientV3 {
   private readonly baseUrl: string;
   private readonly fetchFn: FetchFn;
@@ -96,6 +193,12 @@ export class PatchClientV3 {
   private accessToken?: string;
   private accountType?: AccountType;
 
+  /**
+   * Creates a new API client instance.
+   *
+   * @param config Client configuration.
+   * @throws {Error} If `baseUrl` is invalid or runtime `fetch` is unavailable.
+   */
   constructor(config: ClientConfig = {}) {
     const normalizedBaseUrl = (config.baseUrl ?? "https://patch-api.conalog.com").replace(/\/$/, "");
     // Validate base URL at construction time to fail fast on invalid config.
@@ -138,26 +241,66 @@ export class PatchClientV3 {
     }
   }
 
+  /**
+   * Sets or clears the default bearer token used by subsequent requests.
+   *
+   * @param token Raw token or `Bearer ...` value. `undefined` clears it.
+   */
   setAccessToken(token?: string): void {
     this.accessToken = token;
   }
 
+  /**
+   * Sets or clears the default account type used by subsequent requests.
+   *
+   * @param accountType Account type value. `undefined` clears it.
+   */
   setAccountType(accountType?: AccountType): void {
     this.accountType = accountType;
   }
 
+  /**
+   * Authenticates a user with email/password credentials.
+   *
+   * @param payload Login payload accepted by `/api/v3/account/auth-with-password`.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async authenticateUser(payload: JsonObject): Promise<unknown> {
     return this.request("POST", "/api/v3/account/auth-with-password", { body: payload });
   }
 
+  /**
+   * Refreshes the current user's token.
+   *
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async refreshUserToken(options?: RequestOptions): Promise<unknown> {
     return this.request("POST", "/api/v3/account/refresh-token", { options });
   }
 
+  /**
+   * Fetches current account information.
+   *
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getAccountInfo(options?: RequestOptions): Promise<unknown> {
     return this.request("GET", "/api/v3/account/", { options });
   }
 
+  /**
+   * Creates a member under an organization.
+   *
+   * @param organizationId Organization identifier.
+   * @param payload Member creation payload.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async createOrganizationMember(
     organizationId: string,
     payload: JsonObject,
@@ -169,6 +312,15 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Assigns plant permissions within an organization.
+   *
+   * @param organizationId Organization identifier.
+   * @param payload Permission assignment payload.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async assignPlantPermission(
     organizationId: string,
     payload: JsonObject,
@@ -184,6 +336,16 @@ export class PatchClientV3 {
     );
   }
 
+  /**
+   * Lists plants.
+   *
+   * @param query Pagination options.
+   * @param query.page Zero-based page index.
+   * @param query.size Page size.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getPlantList(
     query?: { page?: number; size?: number },
     options?: RequestOptions
@@ -191,14 +353,39 @@ export class PatchClientV3 {
     return this.request("GET", "/api/v3/plants", { query, options });
   }
 
+  /**
+   * Creates a plant.
+   *
+   * @param payload Plant creation payload.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async createPlant(payload: JsonObject, options?: RequestOptions): Promise<unknown> {
     return this.request("POST", "/api/v3/plants", { body: payload, options });
   }
 
+  /**
+   * Retrieves details for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getPlantDetails(plantId: string, options?: RequestOptions): Promise<unknown> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}`, { options });
   }
 
+  /**
+   * Retrieves plant blueprint data for a specific date.
+   *
+   * @param plantId Plant identifier.
+   * @param date Date string expected by the API (for example `YYYY-MM-DD`).
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getPlantBlueprint(
     plantId: string,
     date: string,
@@ -210,6 +397,15 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Uploads files for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param formData `FormData`-compatible object containing file parts.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async uploadPlantFiles(
     plantId: string,
     formData: UploadFormData,
@@ -221,6 +417,17 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Retrieves asset health level data.
+   *
+   * @param plantId Plant identifier.
+   * @param unit Unit identifier.
+   * @param date Date string expected by the API.
+   * @param view Optional view mode accepted by the endpoint.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getAssetHealthLevel(
     plantId: string,
     unit: string,
@@ -238,6 +445,15 @@ export class PatchClientV3 {
     );
   }
 
+  /**
+   * Retrieves panel sequence number data for a plant and date.
+   *
+   * @param plantId Plant identifier.
+   * @param date Date string expected by the API.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getPanelSeqnum(plantId: string, date: string, options?: RequestOptions): Promise<unknown> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/seqnum`, {
       query: { date },
@@ -245,6 +461,17 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Lists inverter logs for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param query Pagination options.
+   * @param query.page Zero-based page index.
+   * @param query.size Page size.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async listInverterLogs(
     plantId: string,
     query?: { page?: number; size?: number },
@@ -256,6 +483,18 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Lists logs for a specific inverter in a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param inverterId Inverter identifier.
+   * @param query Pagination options.
+   * @param query.page Zero-based page index.
+   * @param query.size Page size.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async listInverterLogsById(
     plantId: string,
     inverterId: string,
@@ -272,6 +511,17 @@ export class PatchClientV3 {
     );
   }
 
+  /**
+   * Retrieves latest device metrics for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param query Metric query options.
+   * @param query.includeState Whether to include state information.
+   * @param query.ago Relative time offset accepted by the endpoint.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getLatestDeviceMetrics(
     plantId: string,
     query?: { includeState?: boolean; ago?: number },
@@ -283,12 +533,35 @@ export class PatchClientV3 {
     });
   }
 
+  /**
+   * Retrieves latest inverter metrics for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getLatestInverterMetrics(plantId: string, options?: RequestOptions): Promise<unknown> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/metrics/inverter/latest`, {
       options,
     });
   }
 
+  /**
+   * Retrieves metrics by date for a specific source/unit/interval.
+   *
+   * @param plantId Plant identifier.
+   * @param source Metric source.
+   * @param unit Metric unit.
+   * @param interval Metric interval segment used in the API path.
+   * @param date Date string expected by the API.
+   * @param query Optional filters.
+   * @param query.before Optional lookback window accepted by the endpoint.
+   * @param query.fields Field names to include. Sent as a comma-separated list.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getMetricsByDate(
     plantId: string,
     source: string,
@@ -308,6 +581,19 @@ export class PatchClientV3 {
     );
   }
 
+  /**
+   * Retrieves asset registration data for a plant.
+   *
+   * @param plantId Plant identifier.
+   * @param recordType Registry record type.
+   * @param date Date string expected by the API.
+   * @param query Optional filters.
+   * @param query.asset_id Optional asset identifier.
+   * @param query.map_id Optional map identifier.
+   * @param options Optional request overrides.
+   * @returns API response body.
+   * @throws {PatchClientError} If the request fails.
+   */
   async getAssetRegistrationOnPlant(
     plantId: string,
     recordType: string,
