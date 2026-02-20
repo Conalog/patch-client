@@ -423,7 +423,7 @@ export class PatchClientV3 {
    * @param plantId Plant identifier.
    * @param unit Unit identifier.
    * @param date Date string expected by the API.
-   * @param view Optional view mode accepted by the endpoint.
+   * @param view Optional view mode. Can be "summary" or "detail".
    * @param options Optional request overrides.
    * @returns API response body.
    * @throws {PatchClientError} If the request fails.
