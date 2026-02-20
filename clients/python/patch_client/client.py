@@ -4,7 +4,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import Any, Mapping, MutableMapping, Optional, Union
+from typing import Any, Mapping, Optional, Union
 from urllib import parse, request
 from urllib.error import HTTPError, URLError
 
@@ -612,13 +612,6 @@ class _SafeRedirectHandler(request.HTTPRedirectHandler):
         if redirected is None:
             return None
         return redirected
-
-
-def _pop_header_case_insensitive(headers: MutableMapping[str, str], name: str) -> None:
-    lowered = name.lower()
-    for key in list(headers.keys()):
-        if key.lower() == lowered:
-            headers.pop(key, None)
 
 
 def _has_non_empty_header(headers: Mapping[str, str], name: str) -> bool:
