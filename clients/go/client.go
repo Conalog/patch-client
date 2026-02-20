@@ -662,6 +662,9 @@ func (c *Client) shouldBlockInsecureRequest(target string) bool {
 }
 
 func shouldDisableRedirects(headers map[string]string, hasBody bool) bool {
+	// This policy is intentionally stricter than net/http defaults:
+	// any non-empty header beyond Accept/Content-Type disables redirects.
+	// The goal is to avoid replaying request context unexpectedly.
 	if hasBody || hasAuthorizationHeader(headers) {
 		return true
 	}
