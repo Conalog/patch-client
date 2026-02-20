@@ -260,7 +260,10 @@ export class PatchClientV3 {
   }
 
   /**
-   * Authenticates a user with email/password credentials.
+   * Authenticates a user with password credentials.
+   *
+   * Managers use `email` + `password`, viewers use `username` + `password`,
+   * and payload `type` must be either `"manager"` or `"viewer"`.
    *
    * @param payload Login payload accepted by `/api/v3/account/auth-with-password`.
    * @returns API response body.
@@ -340,7 +343,7 @@ export class PatchClientV3 {
    * Lists plants.
    *
    * @param query Pagination options.
-   * @param query.page Zero-based page index.
+   * @param query.page One-based page number (`1` is the first page).
    * @param query.size Page size.
    * @param options Optional request overrides.
    * @returns API response body.
@@ -466,7 +469,7 @@ export class PatchClientV3 {
    *
    * @param plantId Plant identifier.
    * @param query Pagination options.
-   * @param query.page Zero-based page index.
+   * @param query.page One-based page number (`1` is the first page).
    * @param query.size Page size.
    * @param options Optional request overrides.
    * @returns API response body.
@@ -489,7 +492,7 @@ export class PatchClientV3 {
    * @param plantId Plant identifier.
    * @param inverterId Inverter identifier.
    * @param query Pagination options.
-   * @param query.page Zero-based page index.
+   * @param query.page One-based page number (`1` is the first page).
    * @param query.size Page size.
    * @param options Optional request overrides.
    * @returns API response body.
@@ -517,7 +520,7 @@ export class PatchClientV3 {
    * @param plantId Plant identifier.
    * @param query Metric query options.
    * @param query.includeState Whether to include state information.
-   * @param query.ago Time range in minutes to filter active devices.
+   * @param query.ago Time range in minutes to filter active devices (maximum `600`).
    * @param options Optional request overrides.
    * @returns API response body.
    * @throws {PatchClientError} If the request fails.
