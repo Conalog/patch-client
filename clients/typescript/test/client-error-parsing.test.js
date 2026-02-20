@@ -191,6 +191,22 @@ test("preserves baseUrl path prefix when building request URLs", async () => {
   assert.match(observedUrl, /https:\/\/example\.com\/custom-prefix\/api\/v3\/plants$/);
 });
 
+test("rejects dot-segment path parameters to prevent traversal", async () => {
+  let called = false;
+  const client = new PatchClientV3({
+    baseUrl: "https://example.com",
+    fetchFn: async () => {
+      called = true;
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+  await assert.rejects(() => client.getPlantDetails(".."), /path segment must not be/);
+  assert.equal(called, false);
+});
+
 test("allows insecure IPv6 loopback baseUrl without opt-in", async () => {
   const client = new PatchClientV3({
     baseUrl: "http://[::1]:8080",

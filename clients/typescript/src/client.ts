@@ -59,6 +59,7 @@ type FetchInit = {
   redirect?: "follow" | "error" | "manual";
 };
 type FetchFn = (input: string, init?: FetchInit) => Promise<FetchResponse>;
+const DEFAULT_MAX_RESPONSE_BYTES = 10 << 20;
 
 interface RequestInput {
   query?: Record<string, QueryValue>;
@@ -125,7 +126,7 @@ export class PatchClientV3 {
         Number.isFinite(config.maxResponseBytes) &&
         config.maxResponseBytes > 0
           ? config.maxResponseBytes
-          : 10 << 20;
+          : DEFAULT_MAX_RESPONSE_BYTES;
     }
 
     if (config.fetchFn) {
@@ -460,6 +461,11 @@ export class PatchClientV3 {
 }
 
 function encodePath(value: string): string {
+  // URL pathname normalization treats "." and ".." as traversal markers.
+  // Reject those exact segments to prevent escaping intended API paths.
+  if (value === "." || value === "..") {
+    throw new Error("path segment must not be '.' or '..'");
+  }
   return encodeURIComponent(value);
 }
 
