@@ -358,12 +358,12 @@ impl Client {
                 continue;
             }
 
+            let body_bytes = Self::read_body_limited(res).await?;
             if status.is_success() {
-                let body_bytes = Self::read_body_limited(res).await?;
                 return Ok(serde_json::from_slice::<T>(&body_bytes)?);
             }
 
-            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
+            let body = String::from_utf8_lossy(&body_bytes).into_owned();
             return Err(Self::api_error(status, body));
         }
     }
@@ -395,14 +395,14 @@ impl Client {
                 self.refresh_token().await?;
                 continue;
             }
+            let content_type = res
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            let body = Self::read_body_limited(res).await?;
             if status.is_success() {
-                let content_type = res
-                    .headers()
-                    .get(reqwest::header::CONTENT_TYPE)
-                    .and_then(|v| v.to_str().ok())
-                    .unwrap_or("")
-                    .to_ascii_lowercase();
-                let body = Self::read_body_limited(res).await?;
                 if decode_json_string
                     && (content_type.contains("application/json") || content_type.contains("+json"))
                 {
@@ -412,8 +412,8 @@ impl Client {
                 }
                 return Ok(String::from_utf8_lossy(&body).into_owned());
             }
-            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
-            return Err(Self::api_error(status, body));
+            let body_str = String::from_utf8_lossy(&body).into_owned();
+            return Err(Self::api_error(status, body_str));
         }
     }
 
@@ -922,13 +922,13 @@ impl Client {
                 continue;
             }
 
+            let body = Self::read_body_limited(res).await?;
             if status.is_success() {
-                let body = Self::read_body_limited(res).await?;
                 return Ok(serde_json::from_slice::<FileUploadResponse>(&body)?);
             }
 
-            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
-            return Err(Self::api_error(status, body));
+            let body_str = String::from_utf8_lossy(&body).into_owned();
+            return Err(Self::api_error(status, body_str));
         }
     }
 
