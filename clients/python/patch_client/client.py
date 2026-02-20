@@ -4,18 +4,32 @@ import json
 import uuid
 from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Union
 from urllib import parse, request
 from urllib.error import HTTPError, URLError
 
 AccountType = str
+DEFAULT_MAX_RESPONSE_BYTES = 10 << 20
+DEFAULT_MAX_MULTIPART_BYTES = 20 << 20
 
 
 class PatchClientError(Exception):
-    def __init__(self, status_code: int, payload: Any):
+    def __init__(
+        self,
+        status_code: int,
+        payload: Any,
+        *,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+    ):
         self.status_code = status_code
         self.payload = payload
-        super().__init__(f"PATCH API request failed with status {status_code}")
+        self.method = method
+        self.url = url
+        context = ""
+        if method and url:
+            context = f" ({method} {url})"
+        super().__init__(f"PATCH API request failed with status {status_code}{context}")
 
 
 @dataclass(frozen=True)
@@ -33,12 +47,43 @@ class PatchClientV3:
         account_type: Optional[AccountType] = None,
         timeout: float = 30.0,
         default_headers: Optional[Mapping[str, str]] = None,
+        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+        max_multipart_bytes: int = DEFAULT_MAX_MULTIPART_BYTES,
+        allow_insecure_http: bool = False,
+        follow_redirects: bool = True,
     ):
+        parsed = parse.urlsplit(base_url)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("base_url must use http:// or https://")
+        if not parsed.hostname:
+            raise ValueError("base_url must include a hostname")
+        if parsed.username or parsed.password:
+            raise ValueError("base_url must not include credentials")
+        if parsed.query or parsed.fragment:
+            raise ValueError("base_url must not include query or fragment")
+        try:
+            _ = parsed.port
+        except ValueError as err:
+            raise ValueError("base_url must include a valid port") from err
+        if parsed.scheme != "https" and not allow_insecure_http:
+            raise ValueError("insecure http base_url requires allow_insecure_http=True")
+
         self.base_url = base_url.rstrip("/")
         self.access_token = access_token
         self.account_type = account_type
         self.timeout = timeout
+        self.allow_insecure_http = allow_insecure_http
         self.default_headers = dict(default_headers or {})
+        self.max_response_bytes = (
+            max_response_bytes if max_response_bytes > 0 else DEFAULT_MAX_RESPONSE_BYTES
+        )
+        self.max_multipart_bytes = (
+            max_multipart_bytes if max_multipart_bytes > 0 else DEFAULT_MAX_MULTIPART_BYTES
+        )
+        if follow_redirects:
+            self._opener = request.build_opener(_SafeRedirectHandler())
+        else:
+            self._opener = request.build_opener(_NoRedirectHandler())
 
     def set_access_token(self, token: Optional[str]) -> None:
         self.access_token = token
@@ -184,7 +229,9 @@ class PatchClientV3:
     ) -> Any:
         if not files:
             raise ValueError("files must not be empty")
-        content_type, body = _encode_multipart(fields or {}, files)
+        content_type, body = _encode_multipart(
+            fields or {}, files, max_total_bytes=self.max_multipart_bytes
+        )
         merged_headers = self._merge_headers(headers, access_token, account_type)
         merged_headers["Content-Type"] = content_type
         return self._request(
@@ -314,7 +361,7 @@ class PatchClientV3:
                 f"/api/v3/plants/{_encode_path(plant_id)}/metrics/"
                 f"{_encode_path(source)}/{_encode_path(unit)}-{_encode_path(interval)}"
             ),
-            query={"date": date, "before": before, "fields": fields},
+            query={"date": date, "before": before, "fields": ",".join(fields) if fields else None},
             headers=self._merge_headers(headers, access_token, account_type),
         )
 
@@ -344,7 +391,7 @@ class PatchClientV3:
         *,
         query: Optional[Mapping[str, Any]] = None,
         json_body: Optional[Any] = None,
-        raw_body: Optional[bytes] = None,
+        raw_body: Optional[Union[bytes, bytearray]] = None,
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
         url = f"{self.base_url}{path}"
@@ -372,13 +419,57 @@ class PatchClientV3:
         req = request.Request(url=url, method=method, headers=merged_headers, data=body)
 
         try:
-            with request.urlopen(req, timeout=self.timeout) as resp:
-                return _decode_response(resp.read(), resp.headers.get("Content-Type", ""))
+            with self._opener.open(req, timeout=self.timeout) as resp:
+                try:
+                    payload = self._read_limited(resp)
+                except OverflowError as err:
+                    raise PatchClientError(
+                        0,
+                        {"error": str(err)},
+                        method=method,
+                        url=url,
+                    ) from err
+                content_type = resp.headers.get("Content-Type", "")
+                decoded = _decode_response(payload, content_type)
+                status_code = _response_status_code(resp)
+                if status_code is not None and (status_code < 200 or status_code >= 300):
+                    raise PatchClientError(status_code, decoded, method=method, url=url)
+                return decoded
         except HTTPError as err:
-            payload = _decode_response(err.read(), err.headers.get("Content-Type", ""))
-            raise PatchClientError(err.code, payload) from err
+            payload: Any
+            try:
+                payload_bytes = self._read_limited(err)
+                content_type = err.headers.get("Content-Type", "") if err.headers else ""
+                payload = _decode_response(payload_bytes, content_type)
+            except OverflowError as size_err:
+                payload = {"error": str(size_err)}
+            except Exception as read_err:
+                payload = {"error": f"failed to read error response: {read_err}"}
+            finally:
+                err.close()
+            raise PatchClientError(err.code, payload, method=method, url=url) from err
         except URLError as err:
-            raise RuntimeError(f"Request failed: {err}") from err
+            raise PatchClientError(
+                0,
+                {"error": str(err.reason) if getattr(err, "reason", None) else str(err)},
+                method=method,
+                url=url,
+            ) from err
+        except PatchClientError:
+            raise
+        except Exception as err:
+            raise PatchClientError(
+                0,
+                {"error": str(err)},
+                method=method,
+                url=url,
+            ) from err
+
+    def _read_limited(self, response: Any) -> bytes:
+        payload = response.read(self.max_response_bytes + 1)
+        if len(payload) > self.max_response_bytes:
+            raise OverflowError(f"response exceeded {self.max_response_bytes} bytes")
+        return payload
 
     def _merge_headers(
         self,
@@ -392,47 +483,59 @@ class PatchClientV3:
         resolved_account_type = account_type if account_type is not None else self.account_type
 
         if resolved_token:
-            headers["Authorization"] = (
-                resolved_token
-                if resolved_token.startswith("Bearer ")
-                else f"Bearer {resolved_token}"
-            )
+            normalized_token = resolved_token.strip()
+            if normalized_token:
+                headers["Authorization"] = (
+                    normalized_token
+                    if normalized_token.lower().startswith("bearer ")
+                    else f"Bearer {normalized_token}"
+                )
         if resolved_account_type:
             headers["Account-Type"] = resolved_account_type
 
         return headers
 
 
-def _encode_multipart(fields: Mapping[str, str], files: Mapping[str, FilePart]) -> tuple[str, bytes]:
+def _encode_multipart(
+    fields: Mapping[str, str],
+    files: Mapping[str, FilePart],
+    *,
+    max_total_bytes: int = DEFAULT_MAX_MULTIPART_BYTES,
+) -> tuple[str, bytearray]:
     boundary = f"----patchclient{uuid.uuid4().hex}"
     body = bytearray()
 
+    def append_checked(chunk: bytes) -> None:
+        if len(body) + len(chunk) > max_total_bytes:
+            raise ValueError(f"multipart payload exceeds {max_total_bytes} bytes")
+        body.extend(chunk)
+
     for name, value in fields.items():
         safe_name = _quote_header_value(_reject_crlf(name, "multipart field name"))
-        body.extend(f"--{boundary}\r\n".encode("utf-8"))
-        body.extend(
+        append_checked(f"--{boundary}\r\n".encode("utf-8"))
+        append_checked(
             f'Content-Disposition: form-data; name="{safe_name}"\r\n\r\n'.encode("utf-8")
         )
-        body.extend(value.encode("utf-8"))
-        body.extend(b"\r\n")
+        append_checked(value.encode("utf-8"))
+        append_checked(b"\r\n")
 
     for name, file_part in files.items():
         safe_name = _quote_header_value(_reject_crlf(name, "multipart file field name"))
         safe_filename = _quote_header_value(_reject_crlf(file_part.filename, "multipart filename"))
         safe_content_type = _reject_crlf(file_part.content_type, "multipart content type")
-        body.extend(f"--{boundary}\r\n".encode("utf-8"))
-        body.extend(
+        append_checked(f"--{boundary}\r\n".encode("utf-8"))
+        append_checked(
             (
                 f'Content-Disposition: form-data; name="{safe_name}"; '
                 f'filename="{safe_filename}"\r\n'
             ).encode("utf-8")
         )
-        body.extend(f"Content-Type: {safe_content_type}\r\n\r\n".encode("utf-8"))
-        body.extend(file_part.content)
-        body.extend(b"\r\n")
+        append_checked(f"Content-Type: {safe_content_type}\r\n\r\n".encode("utf-8"))
+        append_checked(file_part.content)
+        append_checked(b"\r\n")
 
-    body.extend(f"--{boundary}--\r\n".encode("utf-8"))
-    return f"multipart/form-data; boundary={boundary}", bytes(body)
+    append_checked(f"--{boundary}--\r\n".encode("utf-8"))
+    return f"multipart/form-data; boundary={boundary}", body
 
 
 def _decode_response(payload: bytes, content_type: str) -> Any:
@@ -472,3 +575,67 @@ def _reject_crlf(value: str, field_name: str) -> str:
     if "\r" in value or "\n" in value:
         raise ValueError(f"{field_name} must not contain CR or LF characters")
     return value
+
+
+class _NoRedirectHandler(request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        return None
+
+
+class _SafeRedirectHandler(request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        old_url = parse.urlsplit(req.full_url)
+        new_url = parse.urlsplit(newurl)
+        if new_url.scheme not in {"http", "https"}:
+            return None
+        # Never follow HTTPS->HTTP downgrades.
+        is_downgrade = old_url.scheme == "https" and new_url.scheme != "https"
+        if is_downgrade:
+            return None
+        # Never follow cross-origin redirects.
+        same_host = (
+            old_url.hostname == new_url.hostname
+            and _normalized_port(old_url) == _normalized_port(new_url)
+        )
+        if not same_host:
+            return None
+        # Do not follow redirects for auth-bearing requests.
+        if _has_non_empty_header(req.headers, "Authorization"):
+            return None
+        # For redirects that preserve method/body (307/308), do not replay body-bearing requests.
+        if code in {307, 308} and req.data is not None:
+            return None
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        return redirected
+
+
+def _has_non_empty_header(headers: Mapping[str, str], name: str) -> bool:
+    lowered = name.lower()
+    for key, value in headers.items():
+        if key.lower() == lowered and bool(str(value).strip()):
+            return True
+    return False
+
+
+def _normalized_port(parts: parse.SplitResult) -> Optional[int]:
+    if parts.port is not None:
+        return parts.port
+    if parts.scheme == "http":
+        return 80
+    if parts.scheme == "https":
+        return 443
+    return None
+
+
+def _response_status_code(response: Any) -> Optional[int]:
+    status = getattr(response, "status", None)
+    if isinstance(status, int):
+        return status
+    getcode = getattr(response, "getcode", None)
+    if callable(getcode):
+        value = getcode()
+        if isinstance(value, int):
+            return value
+    return None
