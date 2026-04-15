@@ -607,6 +607,11 @@ pub struct AuthMethodsBody {
 #[derive(Deserialize, Debug, Clone)]
 pub struct CombinerItem {
     pub id: String,
+    pub model_name: Option<String>,
+    pub manufacturer: Option<String>,
+    pub manufacturer_address: Option<String>,
+    pub rated_current_a: Option<f64>,
+    pub max_input_voltage_v: Option<f64>,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }
@@ -614,6 +619,12 @@ pub struct CombinerItem {
 #[derive(Deserialize, Debug, Clone)]
 pub struct InverterItem {
     pub id: String,
+    pub model_name: Option<String>,
+    pub manufacturer: Option<String>,
+    pub manufacturer_address: Option<String>,
+    pub efficiency_percent: Option<f64>,
+    pub input_voltage_max_v: Option<f64>,
+    pub rated_capacity_w: Option<f64>,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }
@@ -621,6 +632,12 @@ pub struct InverterItem {
 #[derive(Deserialize, Debug, Clone)]
 pub struct ModuleItem {
     pub id: String,
+    pub model_name: Option<String>,
+    pub manufacturer: Option<String>,
+    pub manufacturer_address: Option<String>,
+    pub pmax_w: Option<f64>,
+    pub rated_efficiency: Option<f64>,
+    pub width_mm: Option<f64>,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }

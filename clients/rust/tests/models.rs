@@ -1,6 +1,6 @@
 use patch_client::model::{
-    AuthBody, AuthMethodsBody, AuthWithPasswordBody, ErrorModel, MetricsBody,
-    OrgAddPermissionOutputBody, StatPoint,
+    AuthBody, AuthMethodsBody, AuthWithPasswordBody, CombinerItem, ErrorModel, InverterItem,
+    MetricsBody, ModuleItem, OrgAddPermissionOutputBody, StatPoint,
 };
 
 #[test]
@@ -276,6 +276,91 @@ fn stat_point_deserializes_model_stats() {
     assert_eq!(body.installed_capacity_w, 12345.0);
     assert_eq!(body.module_models.unwrap()[0].count, 10);
     assert_eq!(body.device_models.unwrap()[0].name, "Inverter X");
+}
+
+#[test]
+fn combiner_item_deserializes_common_fields_and_preserves_extra() {
+    let json = r#"{
+        "id": "combiner-1",
+        "model_name": "CB-100",
+        "manufacturer": "Conalog",
+        "manufacturer_address": "Seoul",
+        "rated_current_a": 125.5,
+        "max_input_voltage_v": 1500.0,
+        "custom_field": "kept"
+    }"#;
+
+    let item: CombinerItem = serde_json::from_str(json).unwrap();
+    assert_eq!(item.id, "combiner-1");
+    assert_eq!(item.model_name.as_deref(), Some("CB-100"));
+    assert_eq!(item.manufacturer.as_deref(), Some("Conalog"));
+    assert_eq!(item.manufacturer_address.as_deref(), Some("Seoul"));
+    assert_eq!(item.rated_current_a, Some(125.5));
+    assert_eq!(item.max_input_voltage_v, Some(1500.0));
+    assert_eq!(
+        item.extra
+            .get("custom_field")
+            .and_then(serde_json::Value::as_str),
+        Some("kept")
+    );
+}
+
+#[test]
+fn inverter_item_deserializes_common_fields_and_preserves_extra() {
+    let json = r#"{
+        "id": "inverter-1",
+        "model_name": "INV-200",
+        "manufacturer": "Conalog",
+        "manufacturer_address": "Busan",
+        "efficiency_percent": 98.1,
+        "input_voltage_max_v": 1100.0,
+        "rated_capacity_w": 25000.0,
+        "custom_field": "kept"
+    }"#;
+
+    let item: InverterItem = serde_json::from_str(json).unwrap();
+    assert_eq!(item.id, "inverter-1");
+    assert_eq!(item.model_name.as_deref(), Some("INV-200"));
+    assert_eq!(item.manufacturer.as_deref(), Some("Conalog"));
+    assert_eq!(item.manufacturer_address.as_deref(), Some("Busan"));
+    assert_eq!(item.efficiency_percent, Some(98.1));
+    assert_eq!(item.input_voltage_max_v, Some(1100.0));
+    assert_eq!(item.rated_capacity_w, Some(25000.0));
+    assert_eq!(
+        item.extra
+            .get("custom_field")
+            .and_then(serde_json::Value::as_str),
+        Some("kept")
+    );
+}
+
+#[test]
+fn module_item_deserializes_common_fields_and_preserves_extra() {
+    let json = r#"{
+        "id": "module-1",
+        "model_name": "MOD-300",
+        "manufacturer": "Conalog",
+        "manufacturer_address": "Incheon",
+        "pmax_w": 650.0,
+        "rated_efficiency": 22.4,
+        "width_mm": 1134.0,
+        "custom_field": "kept"
+    }"#;
+
+    let item: ModuleItem = serde_json::from_str(json).unwrap();
+    assert_eq!(item.id, "module-1");
+    assert_eq!(item.model_name.as_deref(), Some("MOD-300"));
+    assert_eq!(item.manufacturer.as_deref(), Some("Conalog"));
+    assert_eq!(item.manufacturer_address.as_deref(), Some("Incheon"));
+    assert_eq!(item.pmax_w, Some(650.0));
+    assert_eq!(item.rated_efficiency, Some(22.4));
+    assert_eq!(item.width_mm, Some(1134.0));
+    assert_eq!(
+        item.extra
+            .get("custom_field")
+            .and_then(serde_json::Value::as_str),
+        Some("kept")
+    );
 }
 
 #[test]
