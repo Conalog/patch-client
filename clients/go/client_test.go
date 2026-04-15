@@ -134,7 +134,7 @@ func TestGetOAuth2LoginURLReturnsLocationHeader(t *testing.T) {
 	defer srv.Close()
 
 	client := NewClient(srv.URL)
-	location, err := client.GetOAuth2LoginURL(context.Background(), "google", "myscheme://callback")
+	location, err := client.GetOAuth2LoginURL(context.Background(), "google", "myscheme://callback", nil)
 	if err != nil {
 		t.Fatalf("GetOAuth2LoginURL returned error: %v", err)
 	}

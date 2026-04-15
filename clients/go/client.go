@@ -174,12 +174,12 @@ func (c *Client) ListOAuthMethods(ctx context.Context, query map[string]string, 
 	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/auth-methods", query, nil, nil, opts)
 }
 
-func (c *Client) GetOAuth2LoginURL(ctx context.Context, provider string, redirectURL string) (string, error) {
+func (c *Client) GetOAuth2LoginURL(ctx context.Context, provider string, redirectURL string, opts *RequestOptions) (string, error) {
 	query := map[string]string{"provider": provider}
 	if redirectURL != "" {
 		query["redirect_url"] = redirectURL
 	}
-	return c.getRedirectLocation(ctx, "/api/v3/account/login-with-oauth2", query, nil)
+	return c.getRedirectLocation(ctx, "/api/v3/account/login-with-oauth2", query, opts)
 }
 
 func (c *Client) CreateOrganizationMember(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
@@ -346,11 +346,11 @@ func (c *Client) getRedirectLocation(ctx context.Context, path string, query map
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		location := resp.Header.Get("Location")
-		if strings.TrimSpace(location) == "" {
-			return "", fmt.Errorf("redirect response missing Location header")
+		location, err := resp.Location()
+		if err != nil {
+			return "", fmt.Errorf("failed to parse redirect location: %w", err)
 		}
-		return location, nil
+		return location.String(), nil
 	}
 
 	payload, _, readErr := readBodyWithLimit(resp.Body, c.responseLimit())

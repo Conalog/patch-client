@@ -15,7 +15,7 @@ plants, err := client.GetPlantList(ctx, map[string]string{"page": "0", "size": "
 ## Newly Added APIs
 
 - `ListOAuthMethods(ctx, query, opts)`
-- `GetOAuth2LoginURL(ctx, provider, redirectURL)`
+- `GetOAuth2LoginURL(ctx, provider, redirectURL, opts)`
 - `ListCombinerModelInfo(ctx, opts)`
 - `ListInverterModelInfo(ctx, opts)`
 - `ListModuleModelInfo(ctx, opts)`
