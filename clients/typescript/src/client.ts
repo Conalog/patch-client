@@ -21,6 +21,56 @@ export type QueryValue =
  */
 export type JsonObject = Record<string, unknown>;
 
+export interface AuthProvider {
+  name: string;
+  state: string;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+  authUrl: string;
+}
+
+export interface AuthMethodsBody {
+  $schema?: string;
+  authProviders: AuthProvider[] | null;
+}
+
+export interface ModelCatalogItem {
+  id: string;
+  [key: string]: unknown;
+}
+
+export interface CombinerItem extends ModelCatalogItem {}
+
+export interface InverterItem extends ModelCatalogItem {}
+
+export interface ModuleItem extends ModelCatalogItem {}
+
+export interface ModelInfoListBody<TItem extends ModelCatalogItem = ModelCatalogItem> {
+  $schema?: string;
+  items: TItem[] | null;
+}
+
+export interface DeviceModelStat {
+  name: string;
+  count: number;
+  installed_capacity_w: number;
+}
+
+export interface StatModelCount {
+  name: string;
+  count: number;
+}
+
+export interface StatPoint {
+  $schema?: string;
+  timestamp: string;
+  installed_capacity_w: number;
+  module_models: StatModelCount[] | null;
+  device_models: DeviceModelStat[] | null;
+}
+
+export type DeviceStateKind = "seqnum" | "relay" | "rsd";
+
 /**
  * Client-wide configuration for {@link PatchClientV3}.
  */
@@ -296,6 +346,79 @@ export class PatchClientV3 {
   }
 
   /**
+   * Lists available OAuth2 authentication providers.
+   */
+  async listOAuthMethods(
+    query?: { provider?: string; redirect_url?: string },
+    options?: RequestOptions
+  ): Promise<AuthMethodsBody> {
+    return this.request("GET", "/api/v3/account/auth-methods", { query, options }) as Promise<AuthMethodsBody>;
+  }
+
+  /**
+   * Starts the OAuth2 login flow and returns the provider redirect URL.
+   */
+  async getOAuth2LoginUrl(
+    provider: string,
+    redirectUrl?: string,
+    options?: RequestOptions
+  ): Promise<string> {
+    const url = this.buildUrl("/api/v3/account/login-with-oauth2", {
+      provider,
+      redirect_url: redirectUrl,
+    });
+    const headers = mergeHeadersCaseInsensitive(
+      { Accept: "application/json" },
+      this.defaultHeaders,
+      options?.headers
+    );
+    const init: FetchInit = { method: "GET", headers, redirect: "manual" };
+    const { signal, cleanup, timeoutSupported } = createRequestSignal(
+      options?.signal,
+      options?.timeoutMs
+    );
+    if (signal) {
+      init.signal = signal;
+    }
+
+    try {
+      const hasTimeout =
+        typeof options?.timeoutMs === "number" &&
+        Number.isFinite(options.timeoutMs) &&
+        options.timeoutMs > 0;
+      if (hasTimeout && !timeoutSupported) {
+        throw new Error("timeoutMs requires AbortController support in this runtime");
+      }
+
+      const response = await this.fetchFn(url.toString(), init);
+      const location = response.headers.get("location");
+      if (response.status >= 300 && response.status < 400 && location) {
+        return location;
+      }
+
+      const payload = await parseResponse(response, this.maxResponseBytes);
+      throw new PatchClientError(response.status, payload, undefined, {
+        method: "GET",
+        url: url.toString(),
+      });
+    } catch (err) {
+      if (err instanceof PatchClientError) {
+        throw err;
+      }
+      const networkError = new PatchClientError(
+        0,
+        null,
+        `PATCH API request failed: GET ${url.toString()}`,
+        { method: "GET", url: url.toString() }
+      );
+      (networkError as Error & { cause?: unknown }).cause = err;
+      throw networkError;
+    } finally {
+      cleanup();
+    }
+  }
+
+  /**
    * Creates a member under an organization.
    *
    * @param organizationId Organization identifier.
@@ -465,6 +588,66 @@ export class PatchClientV3 {
   }
 
   /**
+   * Lists combiner model info rows from the asset catalog.
+   */
+  async listCombinerModelInfo(
+    options?: RequestOptions
+  ): Promise<ModelInfoListBody<CombinerItem>> {
+    return this.request("GET", "/api/v3/model-info/combiners", { options }) as Promise<
+      ModelInfoListBody<CombinerItem>
+    >;
+  }
+
+  /**
+   * Lists inverter model info rows from the asset catalog.
+   */
+  async listInverterModelInfo(
+    options?: RequestOptions
+  ): Promise<ModelInfoListBody<InverterItem>> {
+    return this.request("GET", "/api/v3/model-info/inverters", { options }) as Promise<
+      ModelInfoListBody<InverterItem>
+    >;
+  }
+
+  /**
+   * Lists module model info rows from the asset catalog.
+   */
+  async listModuleModelInfo(options?: RequestOptions): Promise<ModelInfoListBody<ModuleItem>> {
+    return this.request("GET", "/api/v3/model-info/modules", { options }) as Promise<
+      ModelInfoListBody<ModuleItem>
+    >;
+  }
+
+  /**
+   * Retrieves device state indicator data.
+   */
+  async getDeviceState(
+    plantId: string,
+    date: string,
+    kind: DeviceStateKind,
+    options?: RequestOptions
+  ): Promise<unknown> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/device-state`, {
+      query: { date, kind },
+      options,
+    });
+  }
+
+  /**
+   * Retrieves daily registry statistics for a plant.
+   */
+  async getPlantRegistryStat(
+    plantId: string,
+    date: string,
+    options?: RequestOptions
+  ): Promise<StatPoint> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry/stat`, {
+      query: { date },
+      options,
+    }) as Promise<StatPoint>;
+  }
+
+  /**
    * Lists inverter logs for a plant.
    *
    * @param plantId Plant identifier.
@@ -615,24 +798,7 @@ export class PatchClientV3 {
   }
 
   private async request(method: string, path: string, input: RequestInput = {}): Promise<unknown> {
-    const url = new URL(this.baseUrl);
-    const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
-    url.pathname = `${basePath}${path}`;
-    const query = input.query ?? {};
-    for (const [key, value] of Object.entries(query)) {
-      if (value === undefined || value === null) {
-        continue;
-      }
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          if (item !== undefined && item !== null) {
-            url.searchParams.append(key, String(item));
-          }
-        }
-      } else {
-        url.searchParams.set(key, String(value));
-      }
-    }
+    const url = this.buildUrl(path, input.query);
 
     const headers = mergeHeadersCaseInsensitive(
       { Accept: "application/json" },
@@ -746,6 +912,27 @@ export class PatchClientV3 {
     }
 
     return headers;
+  }
+
+  private buildUrl(path: string, query?: Record<string, QueryValue>): URL {
+    const url = new URL(this.baseUrl);
+    const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
+    url.pathname = `${basePath}${path}`;
+    for (const [key, value] of Object.entries(query ?? {})) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item !== undefined && item !== null) {
+            url.searchParams.append(key, String(item));
+          }
+        }
+      } else {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return url;
   }
 }
 

@@ -40,6 +40,18 @@ const client = new PatchClientV3({
 const plants = await client.getPlantList({ page: 0, size: 20 });
 ```
 
+## Newly Added APIs
+
+The latest OpenAPI sync also includes:
+
+- `listOAuthMethods(query)`
+- `getOAuth2LoginUrl(provider, redirectUrl?)`
+- `listCombinerModelInfo()`
+- `listInverterModelInfo()`
+- `listModuleModelInfo()`
+- `getDeviceState(plantId, date, kind)`
+- `getPlantRegistryStat(plantId, date)`
+
 ## Also Usable from JavaScript
 
 This package is authored in TypeScript, but distributed as JavaScript (`dist/*.js`),
