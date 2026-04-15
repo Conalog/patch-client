@@ -370,6 +370,7 @@ export class PatchClientV3 {
     const headers = mergeHeadersCaseInsensitive(
       { Accept: "application/json" },
       this.defaultHeaders,
+      this.authHeaders(options),
       options?.headers
     );
     const init: FetchInit = { method: "GET", headers, redirect: "manual" };

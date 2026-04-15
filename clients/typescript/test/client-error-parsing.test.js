@@ -550,10 +550,14 @@ test("listOAuthMethods serializes provider and redirect_url query parameters", a
 test("getOAuth2LoginUrl uses manual redirect mode and returns Location header", async () => {
   let observedRedirect = "";
   let observedUrl = "";
+  let observedAuthHeader = "";
   const client = new PatchClientV3({
+    accessToken: "token-value",
+    accountType: "manager",
     fetchFn: async (url, init) => {
       observedUrl = url;
       observedRedirect = init?.redirect ?? "";
+      observedAuthHeader = new Headers(init?.headers).get("authorization") ?? "";
       return new Response(null, {
         status: 302,
         headers: { location: "https://accounts.example.com/oauth?state=abc" },
@@ -564,6 +568,7 @@ test("getOAuth2LoginUrl uses manual redirect mode and returns Location header", 
   const location = await client.getOAuth2LoginUrl("google", "myscheme://callback");
   assert.equal(location, "https://accounts.example.com/oauth?state=abc");
   assert.equal(observedRedirect, "manual");
+  assert.equal(observedAuthHeader, "Bearer token-value");
   assert.match(
     observedUrl,
     /\/api\/v3\/account\/login-with-oauth2\?provider=google&redirect_url=myscheme%3A%2F%2Fcallback$/
