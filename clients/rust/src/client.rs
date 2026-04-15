@@ -324,6 +324,42 @@ impl Client {
             .await
     }
 
+    async fn request_auth_state(&self, include_auth: bool) -> (Option<AuthState>, bool) {
+        if include_auth {
+            let lock = self.auth.read().await;
+            ((*lock).clone(), lock.is_some())
+        } else {
+            (None, false)
+        }
+    }
+
+    fn apply_auth_headers(
+        mut req: reqwest::RequestBuilder,
+        auth: Option<&AuthState>,
+    ) -> reqwest::RequestBuilder {
+        if let Some(auth) = auth {
+            req = req
+                .header("Authorization", format!("Bearer {}", auth.token))
+                .header("Account-Type", &auth.account_type);
+        }
+        req
+    }
+
+    async fn should_retry_unauthorized(
+        &self,
+        status: StatusCode,
+        retries: &mut usize,
+        authed: bool,
+        allow_refresh_on_401: bool,
+    ) -> Result<bool> {
+        if status == StatusCode::UNAUTHORIZED && *retries > 0 && authed && allow_refresh_on_401 {
+            *retries -= 1;
+            self.refresh_token().await?;
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
     async fn execute_redirect_location_unauth_no_refresh(
         &self,
         method: Method,
@@ -343,19 +379,9 @@ impl Client {
     ) -> Result<T> {
         let mut retries = 1;
         loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = if include_auth {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            } else {
-                (None, false)
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
+            let req = self.http.request(method.clone(), url.clone());
+            let (auth, authed) = self.request_auth_state(include_auth).await;
+            let mut req = Self::apply_auth_headers(req, auth.as_ref());
 
             if let Some(b) = body {
                 req = req.json(b);
@@ -364,9 +390,10 @@ impl Client {
             let res = req.send().await?;
             let status = res.status();
 
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
-                retries -= 1;
-                self.refresh_token().await?;
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, allow_refresh_on_401)
+                .await?
+            {
                 continue;
             }
 
@@ -389,26 +416,17 @@ impl Client {
     ) -> Result<String> {
         let mut retries = 1;
         loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = if include_auth {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            } else {
-                (None, false)
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
+            let req = self.http.request(method.clone(), url.clone());
+            let (auth, authed) = self.request_auth_state(include_auth).await;
+            let req = Self::apply_auth_headers(req, auth.as_ref());
 
             let res = req.send().await?;
             let status = res.status();
 
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
-                retries -= 1;
-                self.refresh_token().await?;
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, allow_refresh_on_401)
+                .await?
+            {
                 continue;
             }
 
@@ -435,23 +453,16 @@ impl Client {
     ) -> Result<String> {
         let mut retries = 1;
         loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
+            let req = self.http.request(method.clone(), url.clone());
+            let (auth, authed) = self.request_auth_state(true).await;
+            let req = Self::apply_auth_headers(req, auth.as_ref());
 
             let res = req.send().await?;
             let status = res.status();
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
-                retries -= 1;
-                self.refresh_token().await?;
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, true)
+                .await?
+            {
                 continue;
             }
             let content_type = res
