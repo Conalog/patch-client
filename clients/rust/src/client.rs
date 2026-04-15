@@ -484,7 +484,7 @@ impl Client {
             query.push(("redirect_url", redirect_url.to_string()));
         }
         let url = self.url_with_query("api/v3/account/login-with-oauth2", &query)?;
-        let res = self.http.request(Method::GET, url.clone()).send().await?;
+        let res = self.http.get(url).send().await?;
         let status = res.status();
         if status.is_redirection() {
             if let Some(location) = res.headers().get(LOCATION).and_then(|v| v.to_str().ok()) {
