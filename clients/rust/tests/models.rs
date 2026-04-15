@@ -1,5 +1,6 @@
 use patch_client::model::{
-    AuthBody, AuthWithPasswordBody, ErrorModel, MetricsBody, OrgAddPermissionOutputBody,
+    AuthBody, AuthMethodsBody, AuthWithPasswordBody, ErrorModel, MetricsBody,
+    OrgAddPermissionOutputBody, StatPoint,
 };
 
 #[test]
@@ -234,6 +235,47 @@ fn metrics_body_deserializes_inverter_daily() {
         }
         _ => panic!("expected InverterDaily"),
     }
+}
+
+#[test]
+fn auth_methods_body_deserializes_auth_providers() {
+    let json = r#"{
+        "authProviders": [
+            {
+                "name": "google",
+                "state": "state-token",
+                "codeChallenge": "challenge",
+                "codeChallengeMethod": "S256",
+                "authUrl": "https://accounts.example.com/oauth"
+            }
+        ]
+    }"#;
+
+    let body: AuthMethodsBody = serde_json::from_str(json).unwrap();
+    let providers = body.auth_providers.unwrap();
+    assert_eq!(providers.len(), 1);
+    assert_eq!(providers[0].name, "google");
+    assert_eq!(providers[0].code_challenge_method, "S256");
+}
+
+#[test]
+fn stat_point_deserializes_model_stats() {
+    let json = r#"{
+        "timestamp": "2024-01-24T15:00:00Z",
+        "installed_capacity_w": 12345.0,
+        "module_models": [
+            {"name": "Module A", "count": 10}
+        ],
+        "device_models": [
+            {"name": "Inverter X", "count": 2, "installed_capacity_w": 5000.0}
+        ]
+    }"#;
+
+    let body: StatPoint = serde_json::from_str(json).unwrap();
+    assert_eq!(body.timestamp, "2024-01-24T15:00:00Z");
+    assert_eq!(body.installed_capacity_w, 12345.0);
+    assert_eq!(body.module_models.unwrap()[0].count, 10);
+    assert_eq!(body.device_models.unwrap()[0].name, "Inverter X");
 }
 
 #[test]

@@ -583,3 +583,88 @@ pub struct PanelIntradayMetrics {
     pub plant_id: String,
     pub date: String,
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct AuthProvider {
+    pub name: String,
+    pub state: String,
+    #[serde(rename = "codeChallenge")]
+    pub code_challenge: String,
+    #[serde(rename = "codeChallengeMethod")]
+    pub code_challenge_method: String,
+    #[serde(rename = "authUrl")]
+    pub auth_url: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct AuthMethodsBody {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
+    #[serde(rename = "authProviders")]
+    pub auth_providers: Option<Vec<AuthProvider>>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct CombinerItem {
+    pub id: String,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct InverterItem {
+    pub id: String,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ModuleItem {
+    pub id: String,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ListOutputCombinerItemBody {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
+    pub items: Option<Vec<CombinerItem>>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ListOutputInverterItemBody {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
+    pub items: Option<Vec<InverterItem>>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ListOutputModuleItemBody {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
+    pub items: Option<Vec<ModuleItem>>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct DeviceModelStat {
+    pub name: String,
+    pub count: i64,
+    pub installed_capacity_w: f64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct StatModelCount {
+    pub name: String,
+    pub count: i64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct StatPoint {
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
+    pub timestamp: String,
+    pub installed_capacity_w: f64,
+    pub module_models: Option<Vec<StatModelCount>>,
+    pub device_models: Option<Vec<DeviceModelStat>>,
+}

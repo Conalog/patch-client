@@ -1,12 +1,15 @@
 use crate::error::{Error, Result};
 use crate::model::{
-    AccountOutputBody, AuthAccountBody, AuthBody, AuthEmailBody, AuthOutputV3Body,
+    AccountOutputBody, AuthAccountBody, AuthBody, AuthEmailBody, AuthMethodsBody, AuthOutputV3Body,
     AuthWithPasswordBody, CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput,
     ErrorModel, FileUploadResponse, HealthLevelBody, InverterDataBody, InverterLogsResponse,
-    LatestDeviceBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
+    LatestDeviceBody, ListOutputCombinerItemBody, ListOutputInverterItemBody,
+    ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
     PanelIntradayMetrics, PlantBody, PlantBodyV3, PlantsListV3OutputBody, RegistryOutputBody,
+    StatPoint,
 };
 use percent_encoding::{percent_decode_str, percent_encode_byte};
+use reqwest::header::LOCATION;
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use std::net::IpAddr;
@@ -452,6 +455,48 @@ impl Client {
             Option::<&()>::None,
         )
         .await
+    }
+
+    pub async fn list_oauth_methods(
+        &self,
+        provider: Option<&str>,
+        redirect_url: Option<&str>,
+    ) -> Result<AuthMethodsBody> {
+        let mut query: Vec<(&str, String)> = Vec::new();
+        if let Some(provider) = provider {
+            query.push(("provider", provider.to_string()));
+        }
+        if let Some(redirect_url) = redirect_url {
+            query.push(("redirect_url", redirect_url.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/auth-methods", &query)?;
+        self.execute_json_unauth_no_refresh(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_oauth2_login_url(
+        &self,
+        provider: &str,
+        redirect_url: Option<&str>,
+    ) -> Result<String> {
+        let mut query = vec![("provider", provider.to_string())];
+        if let Some(redirect_url) = redirect_url {
+            query.push(("redirect_url", redirect_url.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/login-with-oauth2", &query)?;
+        let res = self.http.request(Method::GET, url.clone()).send().await?;
+        let status = res.status();
+        if status.is_redirection() {
+            if let Some(location) = res.headers().get(LOCATION).and_then(|v| v.to_str().ok()) {
+                return Ok(location.to_string());
+            }
+            return Err(Error::Api {
+                status: status.as_u16(),
+                message: "redirect response missing Location header".to_string(),
+            });
+        }
+        let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
+        Err(Self::api_error(status, body))
     }
 
     pub async fn list_plants(&self) -> Result<PlantsListV3OutputBody> {
@@ -965,6 +1010,65 @@ impl Client {
             .await
     }
 
+    pub async fn list_combiner_model_info(&self) -> Result<ListOutputCombinerItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/combiners")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_inverter_model_info(&self) -> Result<ListOutputInverterItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/inverters")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_module_model_info(&self) -> Result<ListOutputModuleItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/modules")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn get_device_state_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        kind: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/device-state",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(
+            &path,
+            &[("date", date.to_string()), ("kind", kind.to_string())],
+        )?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_plant_registry_stat_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+    ) -> Result<StatPoint> {
+        let path = format!(
+            "api/v3/plants/{}/registry/stat",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
     pub async fn create_org_member_v3(
         &self,
         organization_id: &str,
@@ -1313,6 +1417,111 @@ mod tests {
                 .map(Vec::len),
             Some(1)
         );
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn list_oauth_methods_serializes_query() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix:
+                "/api/v3/account/auth-methods?provider=google&redirect_url=myscheme%3A%2F%2Fcallback",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"authProviders":[]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_oauth_methods(Some("google"), Some("myscheme://callback"))
+            .await
+            .expect("auth methods request should succeed");
+        assert_eq!(out.auth_providers.unwrap().len(), 0);
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_returns_location_header() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            let mut req_buf = [0_u8; 8192];
+            let n = stream.read(&mut req_buf).expect("read request");
+            let req = String::from_utf8_lossy(&req_buf[..n]);
+            let req_line = req.lines().next().unwrap_or_default();
+            assert!(
+                req_line.starts_with(
+                    "GET /api/v3/account/login-with-oauth2?provider=google&redirect_url=myscheme%3A%2F%2Fcallback"
+                ),
+                "unexpected request line `{req_line}`"
+            );
+            let response = "HTTP/1.1 302 Found\r\nLocation: https://accounts.example.com/oauth?state=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        let location = client
+            .get_oauth2_login_url("google", Some("myscheme://callback"))
+            .await
+            .expect("oauth starter should succeed");
+        assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_plant_registry_stat_v3_returns_typed_payload() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"token-1",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "GET",
+                path_prefix: "/api/v3/plants/p1/registry/stat?date=2024-01-24",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "timestamp":"2024-01-24T15:00:00Z",
+                    "installed_capacity_w":12345.0,
+                    "module_models":[{"name":"Module A","count":10}],
+                    "device_models":[{"name":"Inverter X","count":2,"installed_capacity_w":5000.0}]
+                }"#,
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let stat = client
+            .get_plant_registry_stat_v3("p1", "2024-01-24")
+            .await
+            .expect("registry stat request should succeed");
+        assert_eq!(stat.installed_capacity_w, 12345.0);
+        assert_eq!(stat.module_models.unwrap()[0].count, 10);
         server.handle.join().expect("join mock server");
     }
 
