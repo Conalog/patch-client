@@ -523,3 +523,115 @@ test("clears timeout timer when fetchFn throws synchronously", async () => {
   });
   assert.ok(Date.now() - started < 500, "synchronous failure should not wait for timeout");
 });
+
+test("listOAuthMethods serializes provider and redirect_url query parameters", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ authProviders: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  const out = await client.listOAuthMethods({
+    provider: "google",
+    redirect_url: "myscheme://callback",
+  });
+  assert.deepEqual(out, { authProviders: [] });
+  assert.match(
+    observedUrl,
+    /\/api\/v3\/account\/auth-methods\?provider=google&redirect_url=myscheme%3A%2F%2Fcallback$/
+  );
+});
+
+test("getOAuth2LoginUrl uses manual redirect mode and returns Location header", async () => {
+  let observedRedirect = "";
+  let observedUrl = "";
+  let observedAuthHeader = "";
+  const client = new PatchClientV3({
+    accessToken: "token-value",
+    accountType: "manager",
+    fetchFn: async (url, init) => {
+      observedUrl = url;
+      observedRedirect = init?.redirect ?? "";
+      observedAuthHeader = new Headers(init?.headers).get("authorization") ?? "";
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://accounts.example.com/oauth?state=abc" },
+      });
+    },
+  });
+
+  const location = await client.getOAuth2LoginUrl("google", "myscheme://callback");
+  assert.equal(location, "https://accounts.example.com/oauth?state=abc");
+  assert.equal(observedRedirect, "manual");
+  assert.equal(observedAuthHeader, "Bearer token-value");
+  assert.match(
+    observedUrl,
+    /\/api\/v3\/account\/login-with-oauth2\?provider=google&redirect_url=myscheme%3A%2F%2Fcallback$/
+  );
+});
+
+test("listCombinerModelInfo requests the combiner catalog endpoint", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    accessToken: "token-value",
+    accountType: "manager",
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ items: [{ id: "comb-1" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  const out = await client.listCombinerModelInfo();
+  assert.deepEqual(out, { items: [{ id: "comb-1" }] });
+  assert.match(observedUrl, /\/api\/v3\/model-info\/combiners$/);
+});
+
+test("getDeviceState serializes date and kind query parameters", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    accessToken: "token-value",
+    accountType: "manager",
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.getDeviceState("plant-1", "2024-01-24", "relay");
+  assert.match(
+    observedUrl,
+    /\/api\/v3\/plants\/plant-1\/indicator\/device-state\?date=2024-01-24&kind=relay$/
+  );
+});
+
+test("getPlantRegistryStat builds the stat endpoint query", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    accessToken: "token-value",
+    accountType: "manager",
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ timestamp: "2024-01-24T15:00:00Z" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.getPlantRegistryStat("plant-1", "2024-01-24");
+  assert.match(
+    observedUrl,
+    /\/api\/v3\/plants\/plant-1\/registry\/stat\?date=2024-01-24$/
+  );
+});
