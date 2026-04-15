@@ -84,6 +84,7 @@ class PatchClientV3:
             self._opener = request.build_opener(_SafeRedirectHandler())
         else:
             self._opener = request.build_opener(_NoRedirectHandler())
+        self._no_redirect_opener = request.build_opener(_NoRedirectHandler())
 
     def set_access_token(self, token: Optional[str]) -> None:
         self.access_token = token
@@ -122,6 +123,33 @@ class PatchClientV3:
             "GET",
             "/api/v3/account/",
             headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def list_oauth_methods(
+        self,
+        provider: Optional[str] = None,
+        redirect_url: Optional[str] = None,
+        *,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            "/api/v3/account/auth-methods",
+            query={"provider": provider, "redirect_url": redirect_url},
+            headers=dict(headers or {}),
+        )
+
+    def get_oauth2_login_url(
+        self,
+        provider: str,
+        redirect_url: Optional[str] = None,
+        *,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> str:
+        return self._request_redirect_location(
+            "/api/v3/account/login-with-oauth2",
+            query={"provider": provider, "redirect_url": redirect_url},
+            headers=dict(headers or {}),
         )
 
     def create_organization_member(
@@ -275,6 +303,78 @@ class PatchClientV3:
             headers=self._merge_headers(headers, access_token, account_type),
         )
 
+    def list_combiner_model_info(
+        self,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            "/api/v3/model-info/combiners",
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def list_inverter_model_info(
+        self,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            "/api/v3/model-info/inverters",
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def list_module_model_info(
+        self,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            "/api/v3/model-info/modules",
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def get_device_state(
+        self,
+        plant_id: str,
+        date: str,
+        kind: str,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            f"/api/v3/plants/{_encode_path(plant_id)}/indicator/device-state",
+            query={"date": date, "kind": kind},
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def get_plant_registry_stat(
+        self,
+        plant_id: str,
+        date: str,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "GET",
+            f"/api/v3/plants/{_encode_path(plant_id)}/registry/stat",
+            query={"date": date},
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
     def list_inverter_logs(
         self,
         plant_id: str,
@@ -384,6 +484,50 @@ class PatchClientV3:
             headers=self._merge_headers(headers, access_token, account_type),
         )
 
+    def _request_redirect_location(
+        self,
+        path: str,
+        *,
+        query: Optional[Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> str:
+        url = self._build_url(path, query)
+        merged_headers = {**self.default_headers, **(headers or {})}
+        req = request.Request(url=url, method="GET", headers=merged_headers)
+        try:
+            with self._no_redirect_opener.open(req, timeout=self.timeout) as resp:
+                status_code = _response_status_code(resp) or 0
+                location = resp.headers.get("Location")
+                if 300 <= status_code < 400 and location:
+                    return location
+                payload = self._read_limited(resp)
+                decoded = _decode_response(payload, resp.headers.get("Content-Type", ""))
+                raise PatchClientError(status_code, decoded, method="GET", url=url)
+        except HTTPError as err:
+            if 300 <= err.code < 400:
+                location = err.headers.get("Location") if err.headers else None
+                if location:
+                    return location
+            payload: Any
+            try:
+                payload_bytes = self._read_limited(err)
+                content_type = err.headers.get("Content-Type", "") if err.headers else ""
+                payload = _decode_response(payload_bytes, content_type)
+            except OverflowError as size_err:
+                payload = {"error": str(size_err)}
+            except Exception as read_err:
+                payload = {"error": f"failed to read error response: {read_err}"}
+            finally:
+                err.close()
+            raise PatchClientError(err.code, payload, method="GET", url=url) from err
+        except URLError as err:
+            raise PatchClientError(
+                0,
+                {"error": str(err.reason) if getattr(err, "reason", None) else str(err)},
+                method="GET",
+                url=url,
+            ) from err
+
     def _request(
         self,
         method: str,
@@ -394,20 +538,7 @@ class PatchClientV3:
         raw_body: Optional[Union[bytes, bytearray]] = None,
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
-        url = f"{self.base_url}{path}"
-        if query:
-            query_items: list[tuple[str, str]] = []
-            for key, value in query.items():
-                if value is None:
-                    continue
-                if isinstance(value, (list, tuple)):
-                    for item in value:
-                        if item is not None:
-                            query_items.append((key, _serialize_query_value(item)))
-                else:
-                    query_items.append((key, _serialize_query_value(value)))
-            if query_items:
-                url = f"{url}?{parse.urlencode(query_items, doseq=True)}"
+        url = self._build_url(path, query)
 
         merged_headers = {"Accept": "application/json", **self.default_headers, **(headers or {})}
         body: Optional[bytes] = raw_body
@@ -494,6 +625,23 @@ class PatchClientV3:
             headers["Account-Type"] = resolved_account_type
 
         return headers
+
+    def _build_url(self, path: str, query: Optional[Mapping[str, Any]] = None) -> str:
+        url = f"{self.base_url}{path}"
+        if query:
+            query_items: list[tuple[str, str]] = []
+            for key, value in query.items():
+                if value is None:
+                    continue
+                if isinstance(value, (list, tuple)):
+                    for item in value:
+                        if item is not None:
+                            query_items.append((key, _serialize_query_value(item)))
+                else:
+                    query_items.append((key, _serialize_query_value(value)))
+            if query_items:
+                url = f"{url}?{parse.urlencode(query_items, doseq=True)}"
+        return url
 
 
 def _encode_multipart(
