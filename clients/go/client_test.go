@@ -98,6 +98,127 @@ func TestSetDefaultHeaderIsApplied(t *testing.T) {
 	}
 }
 
+func TestListOAuthMethodsBuildsQuery(t *testing.T) {
+	var gotPath string
+	var gotQuery string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{"authProviders": []any{}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	_, err := client.ListOAuthMethods(context.Background(), map[string]string{
+		"provider":     "google",
+		"redirect_url": "myscheme://callback",
+	}, nil)
+	if err != nil {
+		t.Fatalf("ListOAuthMethods returned error: %v", err)
+	}
+
+	if gotPath != "/api/v3/account/auth-methods" {
+		t.Fatalf("unexpected path: %s", gotPath)
+	}
+	if gotQuery != "provider=google&redirect_url=myscheme%3A%2F%2Fcallback" &&
+		gotQuery != "redirect_url=myscheme%3A%2F%2Fcallback&provider=google" {
+		t.Fatalf("unexpected query: %s", gotQuery)
+	}
+}
+
+func TestGetOAuth2LoginURLReturnsLocationHeader(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://accounts.example.com/oauth?state=abc", http.StatusFound)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	location, err := client.GetOAuth2LoginURL(context.Background(), "google", "myscheme://callback", nil)
+	if err != nil {
+		t.Fatalf("GetOAuth2LoginURL returned error: %v", err)
+	}
+	if location != "https://accounts.example.com/oauth?state=abc" {
+		t.Fatalf("unexpected location: %s", location)
+	}
+}
+
+func TestListCombinerModelInfoBuildsPath(t *testing.T) {
+	var gotPath string
+	var gotAuth string
+	var gotAccountType string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		gotAccountType = r.Header.Get("Account-Type")
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	_, err := client.ListCombinerModelInfo(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListCombinerModelInfo returned error: %v", err)
+	}
+	if gotPath != "/api/v3/model-info/combiners" {
+		t.Fatalf("unexpected path: %s", gotPath)
+	}
+	if gotAuth != "Bearer token-value" {
+		t.Fatalf("unexpected Authorization header: %s", gotAuth)
+	}
+	if gotAccountType != "manager" {
+		t.Fatalf("unexpected Account-Type header: %s", gotAccountType)
+	}
+}
+
+func TestGetDeviceStateBuildsPathAndQuery(t *testing.T) {
+	var gotRequestURI string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequestURI = r.RequestURI
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	_, err := client.GetDeviceState(context.Background(), "plant-1", "2024-01-24", "relay", nil)
+	if err != nil {
+		t.Fatalf("GetDeviceState returned error: %v", err)
+	}
+
+	if gotRequestURI != "/api/v3/plants/plant-1/indicator/device-state?date=2024-01-24&kind=relay" &&
+		gotRequestURI != "/api/v3/plants/plant-1/indicator/device-state?kind=relay&date=2024-01-24" {
+		t.Fatalf("unexpected request URI: %s", gotRequestURI)
+	}
+}
+
+func TestGetPlantRegistryStatBuildsPathAndQuery(t *testing.T) {
+	var gotRequestURI string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequestURI = r.RequestURI
+		_ = json.NewEncoder(w).Encode(map[string]any{"timestamp": "2024-01-24T15:00:00Z"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	_, err := client.GetPlantRegistryStat(context.Background(), "plant-1", "2024-01-24", nil)
+	if err != nil {
+		t.Fatalf("GetPlantRegistryStat returned error: %v", err)
+	}
+
+	if gotRequestURI != "/api/v3/plants/plant-1/registry/stat?date=2024-01-24" {
+		t.Fatalf("unexpected request URI: %s", gotRequestURI)
+	}
+}
+
 func TestGetPlantListAcceptsNilContext(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})

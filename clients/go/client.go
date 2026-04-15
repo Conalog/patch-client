@@ -170,6 +170,18 @@ func (c *Client) GetAccountInfo(ctx context.Context, opts *RequestOptions) (any,
 	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/", nil, nil, nil, opts)
 }
 
+func (c *Client) ListOAuthMethods(ctx context.Context, query map[string]string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/auth-methods", query, nil, nil, opts)
+}
+
+func (c *Client) GetOAuth2LoginURL(ctx context.Context, provider string, redirectURL string, opts *RequestOptions) (string, error) {
+	query := map[string]string{"provider": provider}
+	if redirectURL != "" {
+		query["redirect_url"] = redirectURL
+	}
+	return c.getRedirectLocation(ctx, "/api/v3/account/login-with-oauth2", query, opts)
+}
+
 func (c *Client) CreateOrganizationMember(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/organizations/%s/members", encodePath(organizationID))
 	return c.doJSON(ctx, http.MethodPost, path, nil, payload, nil, opts)
@@ -222,6 +234,29 @@ func (c *Client) GetAssetHealthLevel(ctx context.Context, plantID string, unit s
 
 func (c *Client) GetPanelSeqnum(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/indicator/seqnum", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, nil, opts)
+}
+
+func (c *Client) ListCombinerModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/combiners", nil, nil, nil, opts)
+}
+
+func (c *Client) ListInverterModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/inverters", nil, nil, nil, opts)
+}
+
+func (c *Client) ListModuleModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/modules", nil, nil, nil, opts)
+}
+
+func (c *Client) GetDeviceState(ctx context.Context, plantID string, date string, kind string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/device-state", encodePath(plantID))
+	query := map[string]string{"date": date, "kind": kind}
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, nil, opts)
+}
+
+func (c *Client) GetPlantRegistryStat(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/stat", encodePath(plantID))
 	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, nil, opts)
 }
 
@@ -279,6 +314,55 @@ func (c *Client) GetAssetRegistrationOnPlant(
 	q := cloneMap(query)
 	q["date"] = date
 	return c.doJSON(ctx, http.MethodGet, path, q, nil, nil, opts)
+}
+
+func (c *Client) getRedirectLocation(ctx context.Context, path string, query map[string]string, opts *RequestOptions) (string, error) {
+	target, err := c.buildURL(path, query)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequestWithContext(nonNilContext(ctx), http.MethodGet, target, nil)
+	if err != nil {
+		return "", err
+	}
+
+	headers := c.mergeHeaders(opts)
+	if headers["Accept"] == "" {
+		headers["Accept"] = "application/json"
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	if c.shouldBlockInsecureRequest(target) {
+		return "", fmt.Errorf("refusing to send request over insecure transport")
+	}
+
+	resp, err := withRedirectsDisabled(c.httpClient()).Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		location, err := resp.Location()
+		if err != nil {
+			return "", fmt.Errorf("failed to parse redirect location: %w", err)
+		}
+		return location.String(), nil
+	}
+
+	payload, _, readErr := readBodyWithLimit(resp.Body, c.responseLimit())
+	if readErr != nil {
+		return "", readErr
+	}
+	return "", &PatchClientError{
+		Method:     http.MethodGet,
+		URL:        target,
+		StatusCode: resp.StatusCode,
+		Body:       string(payload),
+	}
 }
 
 func (c *Client) doJSON(
