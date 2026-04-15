@@ -324,6 +324,15 @@ impl Client {
             .await
     }
 
+    async fn execute_redirect_location_unauth_no_refresh(
+        &self,
+        method: Method,
+        url: Url,
+    ) -> Result<String> {
+        self.execute_redirect_location_internal(method, url, false, false)
+            .await
+    }
+
     async fn execute_json_internal<T: serde::de::DeserializeOwned, B: serde::Serialize>(
         &self,
         method: Method,
@@ -367,6 +376,53 @@ impl Client {
             }
 
             let body = String::from_utf8_lossy(&body_bytes).into_owned();
+            return Err(Self::api_error(status, body));
+        }
+    }
+
+    async fn execute_redirect_location_internal(
+        &self,
+        method: Method,
+        url: Url,
+        allow_refresh_on_401: bool,
+        include_auth: bool,
+    ) -> Result<String> {
+        let mut retries = 1;
+        loop {
+            let mut req = self.http.request(method.clone(), url.clone());
+
+            let (auth, authed) = if include_auth {
+                let lock = self.auth.read().await;
+                ((*lock).clone(), lock.is_some())
+            } else {
+                (None, false)
+            };
+            if let Some(auth) = auth {
+                req = req
+                    .header("Authorization", format!("Bearer {}", auth.token))
+                    .header("Account-Type", &auth.account_type);
+            }
+
+            let res = req.send().await?;
+            let status = res.status();
+
+            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
+                retries -= 1;
+                self.refresh_token().await?;
+                continue;
+            }
+
+            if status.is_redirection() {
+                if let Some(location) = res.headers().get(LOCATION).and_then(|v| v.to_str().ok()) {
+                    return Ok(location.to_string());
+                }
+                return Err(Error::Api {
+                    status: status.as_u16(),
+                    message: "redirect response missing Location header".to_string(),
+                });
+            }
+
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             return Err(Self::api_error(status, body));
         }
     }
@@ -484,19 +540,8 @@ impl Client {
             query.push(("redirect_url", redirect_url.to_string()));
         }
         let url = self.url_with_query("api/v3/account/login-with-oauth2", &query)?;
-        let res = self.http.get(url).send().await?;
-        let status = res.status();
-        if status.is_redirection() {
-            if let Some(location) = res.headers().get(LOCATION).and_then(|v| v.to_str().ok()) {
-                return Ok(location.to_string());
-            }
-            return Err(Error::Api {
-                status: status.as_u16(),
-                message: "redirect response missing Location header".to_string(),
-            });
-        }
-        let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
-        Err(Self::api_error(status, body))
+        self.execute_redirect_location_unauth_no_refresh(Method::GET, url)
+            .await
     }
 
     pub async fn list_plants(&self) -> Result<PlantsListV3OutputBody> {
@@ -1473,6 +1518,85 @@ mod tests {
             .get_oauth2_login_url("google", Some("myscheme://callback"))
             .await
             .expect("oauth starter should succeed");
+        assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_does_not_send_stale_authorization_header() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let login_body = r#"{"token":"first","type":"manager","name":"m","email":"m@example.com","username":null,"organizations":null,"metadata":null}"#;
+
+            let mut login_stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            login_stream
+                .set_nonblocking(false)
+                .expect("set blocking stream");
+            let mut login_req_buf = [0_u8; 8192];
+            let login_n = login_stream
+                .read(&mut login_req_buf)
+                .expect("read login request");
+            let login_req = String::from_utf8_lossy(&login_req_buf[..login_n]);
+            let login_req_line = login_req.lines().next().unwrap_or_default();
+            assert!(
+                login_req_line.starts_with("POST /api/v3/account/auth-with-password"),
+                "unexpected login request line `{login_req_line}`"
+            );
+            let login_req_lower = login_req.to_ascii_lowercase();
+            assert!(
+                !login_req_lower.contains("\nauthorization:"),
+                "login request must not carry stale Authorization header"
+            );
+            let login_response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                login_body.len(),
+                login_body
+            );
+            login_stream
+                .write_all(login_response.as_bytes())
+                .expect("write login response");
+            login_stream.flush().expect("flush login response");
+
+            let mut oauth_stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            oauth_stream
+                .set_nonblocking(false)
+                .expect("set blocking stream");
+            let mut oauth_req_buf = [0_u8; 8192];
+            let oauth_n = oauth_stream
+                .read(&mut oauth_req_buf)
+                .expect("read oauth request");
+            let oauth_req = String::from_utf8_lossy(&oauth_req_buf[..oauth_n]);
+            let oauth_req_line = oauth_req.lines().next().unwrap_or_default();
+            assert!(
+                oauth_req_line.starts_with("GET /api/v3/account/login-with-oauth2?provider=google"),
+                "unexpected oauth request line `{oauth_req_line}`"
+            );
+            let oauth_req_lower = oauth_req.to_ascii_lowercase();
+            assert!(
+                !oauth_req_lower.contains("\nauthorization:"),
+                "oauth starter request must not carry Authorization header"
+            );
+            let oauth_response = "HTTP/1.1 302 Found\r\nLocation: https://accounts.example.com/oauth?state=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            oauth_stream
+                .write_all(oauth_response.as_bytes())
+                .expect("write oauth response");
+            oauth_stream.flush().expect("flush oauth response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        client
+            .login("m@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let location = client
+            .get_oauth2_login_url("google", None)
+            .await
+            .expect("oauth starter should succeed");
+
         assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
         handle.join().expect("join mock server");
     }
