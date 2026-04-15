@@ -324,12 +324,12 @@ impl Client {
             .await
     }
 
-    async fn request_auth_state(&self, include_auth: bool) -> (Option<AuthState>, bool) {
+    async fn request_auth_state(&self, include_auth: bool) -> Option<AuthState> {
         if include_auth {
             let lock = self.auth.read().await;
-            ((*lock).clone(), lock.is_some())
+            (*lock).clone()
         } else {
-            (None, false)
+            None
         }
     }
 
@@ -380,7 +380,8 @@ impl Client {
         let mut retries = 1;
         loop {
             let req = self.http.request(method.clone(), url.clone());
-            let (auth, authed) = self.request_auth_state(include_auth).await;
+            let auth = self.request_auth_state(include_auth).await;
+            let authed = auth.is_some();
             let mut req = Self::apply_auth_headers(req, auth.as_ref());
 
             if let Some(b) = body {
@@ -417,7 +418,8 @@ impl Client {
         let mut retries = 1;
         loop {
             let req = self.http.request(method.clone(), url.clone());
-            let (auth, authed) = self.request_auth_state(include_auth).await;
+            let auth = self.request_auth_state(include_auth).await;
+            let authed = auth.is_some();
             let req = Self::apply_auth_headers(req, auth.as_ref());
 
             let res = req.send().await?;
@@ -440,6 +442,13 @@ impl Client {
                 });
             }
 
+            if status.is_success() {
+                return Err(Error::Api {
+                    status: status.as_u16(),
+                    message: "expected redirect response but got non-redirect status".to_string(),
+                });
+            }
+
             let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
             return Err(Self::api_error(status, body));
         }
@@ -454,7 +463,8 @@ impl Client {
         let mut retries = 1;
         loop {
             let req = self.http.request(method.clone(), url.clone());
-            let (auth, authed) = self.request_auth_state(true).await;
+            let auth = self.request_auth_state(true).await;
+            let authed = auth.is_some();
             let req = Self::apply_auth_headers(req, auth.as_ref());
 
             let res = req.send().await?;
@@ -1609,6 +1619,48 @@ mod tests {
             .expect("oauth starter should succeed");
 
         assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_rejects_non_redirect_success_response() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            let mut req_buf = [0_u8; 8192];
+            let _ = stream.read(&mut req_buf).expect("read request");
+            let body = r#"{"message":"unexpected"}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        let err = client
+            .get_oauth2_login_url("google", None)
+            .await
+            .expect_err("non-redirect success must fail");
+        match err {
+            Error::Api { status, message } => {
+                assert_eq!(status, 200);
+                assert_eq!(
+                    message,
+                    "expected redirect response but got non-redirect status"
+                );
+            }
+            _ => panic!("expected explicit redirect error"),
+        }
         handle.join().expect("join mock server");
     }
 
