@@ -388,6 +388,54 @@ class ClientSafetyTests(unittest.TestCase):
             ],
         )
 
+    def test_get_oauth2_login_url_sends_accept_json_header(self) -> None:
+        class ResponseStub:
+            status = 302
+            headers = {"Location": "https://accounts.example.com/oauth?state=abc"}
+
+            def read(self, _limit=None):
+                return b""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        client = PatchClientV3(base_url="https://example.com")
+        observed_accept = None
+
+        def fake_open(req, timeout=None):
+            nonlocal observed_accept
+            observed_accept = req.headers.get("Accept")
+            return ResponseStub()
+
+        with patch.object(client._no_redirect_opener, "open", side_effect=fake_open):
+            client.get_oauth2_login_url("google")
+
+        self.assertEqual(observed_accept, "application/json")
+
+    def test_get_oauth2_login_url_wraps_oversized_non_redirect_response(self) -> None:
+        class ResponseStub:
+            status = 200
+            headers = {"Content-Type": "application/json"}
+
+            def read(self, _limit=None):
+                return b"x" * 5
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        client = PatchClientV3(base_url="https://example.com", max_response_bytes=4)
+        with patch.object(client._no_redirect_opener, "open", return_value=ResponseStub()):
+            with self.assertRaises(PatchClientError) as ctx:
+                client.get_oauth2_login_url("google")
+        self.assertEqual(ctx.exception.status_code, 0)
+        self.assertIn("response exceeded 4 bytes", str(ctx.exception.payload))
+
     def test_model_info_methods_use_expected_paths(self) -> None:
         class StubClient(PatchClientV3):
             def __init__(self) -> None:

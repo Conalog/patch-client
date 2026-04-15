@@ -492,7 +492,7 @@ class PatchClientV3:
         headers: Optional[Mapping[str, str]] = None,
     ) -> str:
         url = self._build_url(path, query)
-        merged_headers = {**self.default_headers, **(headers or {})}
+        merged_headers = {"Accept": "application/json", **self.default_headers, **(headers or {})}
         req = request.Request(url=url, method="GET", headers=merged_headers)
         try:
             with self._no_redirect_opener.open(req, timeout=self.timeout) as resp:
@@ -500,7 +500,15 @@ class PatchClientV3:
                 location = resp.headers.get("Location")
                 if 300 <= status_code < 400 and location:
                     return location
-                payload = self._read_limited(resp)
+                try:
+                    payload = self._read_limited(resp)
+                except OverflowError as size_err:
+                    raise PatchClientError(
+                        0,
+                        {"error": str(size_err)},
+                        method="GET",
+                        url=url,
+                    ) from size_err
                 decoded = _decode_response(payload, resp.headers.get("Content-Type", ""))
                 raise PatchClientError(status_code, decoded, method="GET", url=url)
         except HTTPError as err:
