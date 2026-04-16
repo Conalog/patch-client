@@ -1,12 +1,15 @@
 use crate::error::{Error, Result};
 use crate::model::{
-    AccountOutputBody, AuthAccountBody, AuthBody, AuthEmailBody, AuthOutputV3Body,
+    AccountOutputBody, AuthAccountBody, AuthBody, AuthEmailBody, AuthMethodsBody, AuthOutputV3Body,
     AuthWithPasswordBody, CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput,
     ErrorModel, FileUploadResponse, HealthLevelBody, InverterDataBody, InverterLogsResponse,
-    LatestDeviceBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
+    LatestDeviceBody, ListOutputCombinerItemBody, ListOutputInverterItemBody,
+    ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
     PanelIntradayMetrics, PlantBody, PlantBodyV3, PlantsListV3OutputBody, RegistryOutputBody,
+    StatPoint,
 };
 use percent_encoding::{percent_decode_str, percent_encode_byte};
+use reqwest::header::LOCATION;
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use std::net::IpAddr;
@@ -321,6 +324,51 @@ impl Client {
             .await
     }
 
+    async fn request_auth_state(&self, include_auth: bool) -> Option<AuthState> {
+        if include_auth {
+            let lock = self.auth.read().await;
+            (*lock).clone()
+        } else {
+            None
+        }
+    }
+
+    fn apply_auth_headers(
+        mut req: reqwest::RequestBuilder,
+        auth: Option<&AuthState>,
+    ) -> reqwest::RequestBuilder {
+        if let Some(auth) = auth {
+            req = req
+                .header("Authorization", format!("Bearer {}", auth.token))
+                .header("Account-Type", &auth.account_type);
+        }
+        req
+    }
+
+    async fn should_retry_unauthorized(
+        &self,
+        status: StatusCode,
+        retries: &mut usize,
+        authed: bool,
+        allow_refresh_on_401: bool,
+    ) -> Result<bool> {
+        if status == StatusCode::UNAUTHORIZED && *retries > 0 && authed && allow_refresh_on_401 {
+            *retries -= 1;
+            self.refresh_token().await?;
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    async fn execute_redirect_location_unauth_no_refresh(
+        &self,
+        method: Method,
+        url: Url,
+    ) -> Result<String> {
+        self.execute_redirect_location_internal(method, url, false, false)
+            .await
+    }
+
     async fn execute_json_internal<T: serde::de::DeserializeOwned, B: serde::Serialize>(
         &self,
         method: Method,
@@ -331,19 +379,10 @@ impl Client {
     ) -> Result<T> {
         let mut retries = 1;
         loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = if include_auth {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            } else {
-                (None, false)
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
+            let req = self.http.request(method.clone(), url.clone());
+            let auth = self.request_auth_state(include_auth).await;
+            let authed = auth.is_some();
+            let mut req = Self::apply_auth_headers(req, auth.as_ref());
 
             if let Some(b) = body {
                 req = req.json(b);
@@ -352,9 +391,10 @@ impl Client {
             let res = req.send().await?;
             let status = res.status();
 
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
-                retries -= 1;
-                self.refresh_token().await?;
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, allow_refresh_on_401)
+                .await?
+            {
                 continue;
             }
 
@@ -368,6 +408,52 @@ impl Client {
         }
     }
 
+    async fn execute_redirect_location_internal(
+        &self,
+        method: Method,
+        url: Url,
+        allow_refresh_on_401: bool,
+        include_auth: bool,
+    ) -> Result<String> {
+        let mut retries = 1;
+        loop {
+            let req = self.http.request(method.clone(), url.clone());
+            let auth = self.request_auth_state(include_auth).await;
+            let authed = auth.is_some();
+            let req = Self::apply_auth_headers(req, auth.as_ref());
+
+            let res = req.send().await?;
+            let status = res.status();
+
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, allow_refresh_on_401)
+                .await?
+            {
+                continue;
+            }
+
+            if status.is_redirection() {
+                if let Some(location) = res.headers().get(LOCATION).and_then(|v| v.to_str().ok()) {
+                    return Ok(location.to_string());
+                }
+                return Err(Error::Api {
+                    status: status.as_u16(),
+                    message: "redirect response missing Location header".to_string(),
+                });
+            }
+
+            if status.is_success() {
+                return Err(Error::Api {
+                    status: status.as_u16(),
+                    message: "expected redirect response but got non-redirect status".to_string(),
+                });
+            }
+
+            let body = String::from_utf8_lossy(&Self::read_body_limited(res).await?).into_owned();
+            return Err(Self::api_error(status, body));
+        }
+    }
+
     async fn execute_text(
         &self,
         method: Method,
@@ -376,23 +462,17 @@ impl Client {
     ) -> Result<String> {
         let mut retries = 1;
         loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
+            let req = self.http.request(method.clone(), url.clone());
+            let auth = self.request_auth_state(true).await;
+            let authed = auth.is_some();
+            let req = Self::apply_auth_headers(req, auth.as_ref());
 
             let res = req.send().await?;
             let status = res.status();
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
-                retries -= 1;
-                self.refresh_token().await?;
+            if self
+                .should_retry_unauthorized(status, &mut retries, authed, true)
+                .await?
+            {
                 continue;
             }
             let content_type = res
@@ -452,6 +532,37 @@ impl Client {
             Option::<&()>::None,
         )
         .await
+    }
+
+    pub async fn list_oauth_methods(
+        &self,
+        provider: Option<&str>,
+        redirect_url: Option<&str>,
+    ) -> Result<AuthMethodsBody> {
+        let mut query: Vec<(&str, String)> = Vec::new();
+        if let Some(provider) = provider {
+            query.push(("provider", provider.to_string()));
+        }
+        if let Some(redirect_url) = redirect_url {
+            query.push(("redirect_url", redirect_url.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/auth-methods", &query)?;
+        self.execute_json_unauth_no_refresh(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_oauth2_login_url(
+        &self,
+        provider: &str,
+        redirect_url: Option<&str>,
+    ) -> Result<String> {
+        let mut query = vec![("provider", provider.to_string())];
+        if let Some(redirect_url) = redirect_url {
+            query.push(("redirect_url", redirect_url.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/login-with-oauth2", &query)?;
+        self.execute_redirect_location_unauth_no_refresh(Method::GET, url)
+            .await
     }
 
     pub async fn list_plants(&self) -> Result<PlantsListV3OutputBody> {
@@ -965,6 +1076,65 @@ impl Client {
             .await
     }
 
+    pub async fn list_combiner_model_info(&self) -> Result<ListOutputCombinerItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/combiners")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_inverter_model_info(&self) -> Result<ListOutputInverterItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/inverters")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_module_model_info(&self) -> Result<ListOutputModuleItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/modules")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn get_device_state_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        kind: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/device-state",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(
+            &path,
+            &[("date", date.to_string()), ("kind", kind.to_string())],
+        )?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_plant_registry_stat_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+    ) -> Result<StatPoint> {
+        let path = format!(
+            "api/v3/plants/{}/registry/stat",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
     pub async fn create_org_member_v3(
         &self,
         organization_id: &str,
@@ -1313,6 +1483,232 @@ mod tests {
                 .map(Vec::len),
             Some(1)
         );
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn list_oauth_methods_serializes_query() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix:
+                "/api/v3/account/auth-methods?provider=google&redirect_url=myscheme%3A%2F%2Fcallback",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"authProviders":[]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_oauth_methods(Some("google"), Some("myscheme://callback"))
+            .await
+            .expect("auth methods request should succeed");
+        assert_eq!(out.auth_providers.unwrap().len(), 0);
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_returns_location_header() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            let mut req_buf = [0_u8; 8192];
+            let n = stream.read(&mut req_buf).expect("read request");
+            let req = String::from_utf8_lossy(&req_buf[..n]);
+            let req_line = req.lines().next().unwrap_or_default();
+            assert!(
+                req_line.starts_with(
+                    "GET /api/v3/account/login-with-oauth2?provider=google&redirect_url=myscheme%3A%2F%2Fcallback"
+                ),
+                "unexpected request line `{req_line}`"
+            );
+            let response = "HTTP/1.1 302 Found\r\nLocation: https://accounts.example.com/oauth?state=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        let location = client
+            .get_oauth2_login_url("google", Some("myscheme://callback"))
+            .await
+            .expect("oauth starter should succeed");
+        assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_does_not_send_stale_authorization_header() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let login_body = r#"{"token":"first","type":"manager","name":"m","email":"m@example.com","username":null,"organizations":null,"metadata":null}"#;
+
+            let mut login_stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            login_stream
+                .set_nonblocking(false)
+                .expect("set blocking stream");
+            let mut login_req_buf = [0_u8; 8192];
+            let login_n = login_stream
+                .read(&mut login_req_buf)
+                .expect("read login request");
+            let login_req = String::from_utf8_lossy(&login_req_buf[..login_n]);
+            let login_req_line = login_req.lines().next().unwrap_or_default();
+            assert!(
+                login_req_line.starts_with("POST /api/v3/account/auth-with-password"),
+                "unexpected login request line `{login_req_line}`"
+            );
+            let login_req_lower = login_req.to_ascii_lowercase();
+            assert!(
+                !login_req_lower.contains("\nauthorization:"),
+                "login request must not carry stale Authorization header"
+            );
+            let login_response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                login_body.len(),
+                login_body
+            );
+            login_stream
+                .write_all(login_response.as_bytes())
+                .expect("write login response");
+            login_stream.flush().expect("flush login response");
+
+            let mut oauth_stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            oauth_stream
+                .set_nonblocking(false)
+                .expect("set blocking stream");
+            let mut oauth_req_buf = [0_u8; 8192];
+            let oauth_n = oauth_stream
+                .read(&mut oauth_req_buf)
+                .expect("read oauth request");
+            let oauth_req = String::from_utf8_lossy(&oauth_req_buf[..oauth_n]);
+            let oauth_req_line = oauth_req.lines().next().unwrap_or_default();
+            assert!(
+                oauth_req_line.starts_with("GET /api/v3/account/login-with-oauth2?provider=google"),
+                "unexpected oauth request line `{oauth_req_line}`"
+            );
+            let oauth_req_lower = oauth_req.to_ascii_lowercase();
+            assert!(
+                !oauth_req_lower.contains("\nauthorization:"),
+                "oauth starter request must not carry Authorization header"
+            );
+            let oauth_response = "HTTP/1.1 302 Found\r\nLocation: https://accounts.example.com/oauth?state=abc\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            oauth_stream
+                .write_all(oauth_response.as_bytes())
+                .expect("write oauth response");
+            oauth_stream.flush().expect("flush oauth response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        client
+            .login("m@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let location = client
+            .get_oauth2_login_url("google", None)
+            .await
+            .expect("oauth starter should succeed");
+
+        assert_eq!(location, "https://accounts.example.com/oauth?state=abc");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_oauth2_login_url_rejects_non_redirect_success_response() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            let mut req_buf = [0_u8; 8192];
+            let _ = stream.read(&mut req_buf).expect("read request");
+            let body = r#"{"message":"unexpected"}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        let err = client
+            .get_oauth2_login_url("google", None)
+            .await
+            .expect_err("non-redirect success must fail");
+        match err {
+            Error::Api { status, message } => {
+                assert_eq!(status, 200);
+                assert_eq!(
+                    message,
+                    "expected redirect response but got non-redirect status"
+                );
+            }
+            _ => panic!("expected explicit redirect error"),
+        }
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn get_plant_registry_stat_v3_returns_typed_payload() {
+        let server = spawn_mock_server(vec![
+            MockStep {
+                method: "POST",
+                path_prefix: "/api/v3/account/auth-with-password",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "token":"token-1",
+                    "type":"manager",
+                    "name":"manager",
+                    "email":"manager@example.com",
+                    "username":null,
+                    "organizations":null,
+                    "metadata":null
+                }"#,
+                stall_before_response: None,
+            },
+            MockStep {
+                method: "GET",
+                path_prefix: "/api/v3/plants/p1/registry/stat?date=2024-01-24",
+                status: 200,
+                content_type: "application/json",
+                body: r#"{
+                    "timestamp":"2024-01-24T15:00:00Z",
+                    "installed_capacity_w":12345.0,
+                    "module_models":[{"name":"Module A","count":10}],
+                    "device_models":[{"name":"Inverter X","count":2,"installed_capacity_w":5000.0}]
+                }"#,
+                stall_before_response: None,
+            },
+        ]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .login("manager@example.com", "pw")
+            .await
+            .expect("login should succeed");
+        let stat = client
+            .get_plant_registry_stat_v3("p1", "2024-01-24")
+            .await
+            .expect("registry stat request should succeed");
+        assert_eq!(stat.installed_capacity_w, 12345.0);
+        assert_eq!(stat.module_models.unwrap()[0].count, 10);
         server.handle.join().expect("join mock server");
     }
 
