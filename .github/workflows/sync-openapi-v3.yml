@@ -1,0 +1,52 @@
+name: Sync OpenAPI v3
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-openapi-v3
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Sync v3 OpenAPI snapshot
+        run: ./scripts/update-openapi-v3.sh
+
+      - name: Detect snapshot changes
+        id: changes
+        run: |
+          if git diff --quiet -- openapi/openapi-v3.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit updated snapshot
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openapi/openapi-v3.json
+          git commit -m "chore: sync openapi v3 snapshot"
+
+      - name: Push to main
+        if: steps.changes.outputs.changed == 'true'
+        run: git push origin HEAD:main

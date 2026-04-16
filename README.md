@@ -48,6 +48,16 @@ Run:
 ./scripts/update-openapi-v3.sh
 ```
 
+## Automated spec sync
+
+GitHub Actions also keeps `openapi/openapi-v3.json` up to date automatically.
+
+- Weekly schedule: every Monday at 00:00 UTC, which is Monday 09:00 in Korea Standard Time
+- Manual trigger: Actions -> `Sync OpenAPI v3` -> `Run workflow`
+- Commit behavior: if the extracted v3 snapshot changed, the workflow commits the updated `openapi/openapi-v3.json` directly to `main`
+
+The workflow is defined in `.github/workflows/sync-openapi-v3.yml` and reuses `scripts/update-openapi-v3.sh` so local and automated sync stay consistent.
+
 ## Local development
 
 ### TypeScript
