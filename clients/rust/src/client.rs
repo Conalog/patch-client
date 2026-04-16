@@ -18,6 +18,17 @@ use url::Url;
 const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_MAX_RESPONSE_BYTES: usize = 10 << 20;
 
+fn ensure_allowed(value: &str, allowed: &[&str], field: &str) -> Result<()> {
+    if allowed.contains(&value) {
+        Ok(())
+    } else {
+        Err(Error::InvalidPath(format!(
+            "invalid {field} `{value}`, expected one of: {}",
+            allowed.join(", ")
+        )))
+    }
+}
+
 #[derive(Clone)]
 struct AuthState {
     token: String,
@@ -123,17 +134,6 @@ impl Client {
         Ok(self.base_url.join(path)?)
     }
 
-    fn ensure_allowed(value: &str, allowed: &[&str], field: &str) -> Result<()> {
-        if allowed.contains(&value) {
-            Ok(())
-        } else {
-            Err(Error::InvalidPath(format!(
-                "invalid {field} `{value}`, expected one of: {}",
-                allowed.join(", ")
-            )))
-        }
-    }
-
     pub async fn login(&self, body: &AuthWithPasswordBody) -> Result<AuthOutputV3Body> {
         let auth: AuthOutputV3Body = match self
             .execute_json_unauth_no_refresh(
@@ -194,11 +194,11 @@ impl Client {
                 continue;
             }
 
-            let body = Self::read_body_limited(res).await?;
             if status.is_success() {
                 return Ok(());
             }
 
+            let body = Self::read_body_limited(res).await?;
             let body_str = String::from_utf8_lossy(&body).into_owned();
             return Err(Self::api_error(status, body_str));
         }
@@ -385,7 +385,6 @@ impl Client {
             .get(reqwest::header::LOCATION)
             .and_then(|v| v.to_str().ok())
             .map(ToOwned::to_owned);
-        let body = Self::read_body_limited(res).await?;
 
         if status == StatusCode::FOUND {
             return location.ok_or_else(|| Error::Api {
@@ -394,6 +393,7 @@ impl Client {
             });
         }
 
+        let body = Self::read_body_limited(res).await?;
         let body = String::from_utf8_lossy(&body).into_owned();
         Err(Self::api_error(status, body))
     }
@@ -517,7 +517,7 @@ impl Client {
         asset_id: Option<&str>,
         map_id: Option<&str>,
     ) -> Result<Option<Vec<RegistryOutputBody>>> {
-        Self::ensure_allowed(record_type, &["logs", "snapshots"], "record_type")?;
+        ensure_allowed(record_type, &["logs", "snapshots"], "record_type")?;
         let path = format!(
             "api/v3/plants/{}/registry/{}",
             Self::encode_path_segment(plant_id),
@@ -591,13 +591,13 @@ impl Client {
         ids: Option<&[String]>,
         fields: Option<&[String]>,
     ) -> Result<MetricsBody> {
-        Self::ensure_allowed(source, &["device", "inverter", "sensor"], "source")?;
-        Self::ensure_allowed(
+        ensure_allowed(source, &["device", "inverter", "sensor"], "source")?;
+        ensure_allowed(
             unit,
             &["panel", "inverter", "string", "plant", "temperature", "insolation"],
             "unit",
         )?;
-        Self::ensure_allowed(interval, &["5m", "15m", "1h", "1d", "1M", "1y"], "interval")?;
+        ensure_allowed(interval, &["5m", "15m", "1h", "1d", "1M", "1y"], "interval")?;
         let path = format!(
             "api/v3/plants/{}/metrics/{}/{}-{}",
             Self::encode_path_segment(plant_id),
@@ -692,7 +692,7 @@ impl Client {
         );
         let mut q: Vec<(&str, String)> = vec![("date", date.to_string())];
         if let Some(v) = view {
-            Self::ensure_allowed(v, &["summary", "detail"], "view")?;
+            ensure_allowed(v, &["summary", "detail"], "view")?;
             q.push(("view", v.to_string()));
         }
         let url = self.url_with_query(&path, &q)?;
@@ -706,7 +706,7 @@ impl Client {
         date: &str,
         kind: &str,
     ) -> Result<()> {
-        Self::ensure_allowed(kind, &["seqnum", "relay", "rsd"], "kind")?;
+        ensure_allowed(kind, &["seqnum", "relay", "rsd"], "kind")?;
         let path = format!(
             "api/v3/plants/{}/indicator/device-state",
             Self::encode_path_segment(plant_id)

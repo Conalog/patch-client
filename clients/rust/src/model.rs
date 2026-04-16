@@ -107,13 +107,6 @@ where
     )
 }
 
-fn deserialize_exact_len_15<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_validated_string(deserializer, is_exact_len_15, "exactly 15 characters")
-}
-
 fn deserialize_registry_asset_type<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
@@ -154,7 +147,7 @@ fn validate_role_identity(
                 Ok(())
             }
         }
-        _ => unreachable!(),
+        _ => Err(format!("{context} requires a supported account type")),
     }
 }
 
@@ -439,7 +432,6 @@ pub struct CreatePlantInput {
 pub struct PlantBody {
     #[serde(rename = "$schema", default, deserialize_with = "deserialize_optional_non_null")]
     pub schema: Option<String>,
-    #[serde(deserialize_with = "deserialize_exact_len_15")]
     pub id: String,
     pub name: String,
     pub organization: String,
@@ -459,7 +451,6 @@ pub struct PlantBody {
 pub struct PlantBodyV3 {
     #[serde(rename = "$schema", default, deserialize_with = "deserialize_optional_non_null")]
     pub schema: Option<String>,
-    #[serde(deserialize_with = "deserialize_exact_len_15")]
     pub id: String,
     pub name: String,
     pub organization: OrgInfo,

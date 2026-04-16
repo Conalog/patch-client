@@ -704,25 +704,6 @@ fn new_plant_body_rejects_non_object_metadata() {
 }
 
 #[test]
-fn new_plant_body_rejects_non_15_char_id() {
-    let json = r#"{
-        "id": "short",
-        "name": "Plant A",
-        "organization": "org-1",
-        "organizationData": {
-            "id": "org-1",
-            "name": "Org A"
-        },
-        "created": "2025-01-01 00:00:00.000Z",
-        "updated": "2025-01-02 00:00:00.000Z",
-        "metadata": {},
-        "images": []
-    }"#;
-
-    serde_json::from_str::<PlantBody>(json).expect_err("plant ids must be 15 characters");
-}
-
-#[test]
 fn new_org_info_rejects_null_optional_fields_and_unknown_keys() {
     let null_json = r#"{
         "id": "org-1",
