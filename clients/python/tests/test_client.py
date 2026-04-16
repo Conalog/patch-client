@@ -331,6 +331,177 @@ class ClientSafetyTests(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 302)
         self.assertEqual(ctx.exception.payload, {"detail": "redirected"})
 
+    def test_list_oauth_methods_serializes_optional_query(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.captured = None
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.captured = (method, path, kwargs.get("query"))
+                return {"authProviders": []}
+
+        client = StubClient()
+        out = client.list_oauth_methods(
+            provider="google",
+            redirect_url="myscheme://callback",
+        )
+        self.assertEqual(out, {"authProviders": []})
+        assert client.captured is not None
+        self.assertEqual(client.captured[0], "GET")
+        self.assertEqual(client.captured[1], "/api/v3/account/auth-methods")
+        self.assertEqual(
+            client.captured[2],
+            {"provider": "google", "redirect_url": "myscheme://callback"},
+        )
+
+    def test_get_oauth2_login_url_returns_redirect_location(self) -> None:
+        class ResponseStub:
+            status = 302
+            headers = {"Location": "https://accounts.example.com/oauth?state=abc"}
+
+            def read(self, _limit=None):
+                return b""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        client = PatchClientV3(base_url="https://example.com")
+        observed_urls = []
+
+        def fake_open(req, timeout=None):
+            observed_urls.append(req.full_url)
+            return ResponseStub()
+
+        with patch.object(client._no_redirect_opener, "open", side_effect=fake_open):
+            location = client.get_oauth2_login_url("google", redirect_url="myscheme://callback")
+
+        self.assertEqual(location, "https://accounts.example.com/oauth?state=abc")
+        self.assertEqual(
+            observed_urls,
+            [
+                "https://example.com/api/v3/account/login-with-oauth2"
+                "?provider=google&redirect_url=myscheme%3A%2F%2Fcallback"
+            ],
+        )
+
+    def test_get_oauth2_login_url_sends_accept_json_header(self) -> None:
+        class ResponseStub:
+            status = 302
+            headers = {"Location": "https://accounts.example.com/oauth?state=abc"}
+
+            def read(self, _limit=None):
+                return b""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        client = PatchClientV3(base_url="https://example.com")
+        observed_accept = None
+
+        def fake_open(req, timeout=None):
+            nonlocal observed_accept
+            observed_accept = req.headers.get("Accept")
+            return ResponseStub()
+
+        with patch.object(client._no_redirect_opener, "open", side_effect=fake_open):
+            client.get_oauth2_login_url("google")
+
+        self.assertEqual(observed_accept, "application/json")
+
+    def test_get_oauth2_login_url_wraps_oversized_non_redirect_response(self) -> None:
+        class ResponseStub:
+            status = 200
+            headers = {"Content-Type": "application/json"}
+
+            def read(self, _limit=None):
+                return b"x" * 5
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        client = PatchClientV3(base_url="https://example.com", max_response_bytes=4)
+        with patch.object(client._no_redirect_opener, "open", return_value=ResponseStub()):
+            with self.assertRaises(PatchClientError) as ctx:
+                client.get_oauth2_login_url("google")
+        self.assertEqual(ctx.exception.status_code, 0)
+        self.assertIn("response exceeded 4 bytes", str(ctx.exception.payload))
+
+    def test_model_info_methods_use_expected_paths(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.paths = []
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.paths.append((method, path))
+                return {"items": []}
+
+        client = StubClient()
+        client.list_combiner_model_info()
+        client.list_inverter_model_info()
+        client.list_module_model_info()
+        self.assertEqual(
+            client.paths,
+            [
+                ("GET", "/api/v3/model-info/combiners"),
+                ("GET", "/api/v3/model-info/inverters"),
+                ("GET", "/api/v3/model-info/modules"),
+            ],
+        )
+
+    def test_get_device_state_serializes_date_and_kind(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.captured = None
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.captured = (method, path, kwargs.get("query"))
+                return {"items": []}
+
+        client = StubClient()
+        client.get_device_state("plant-id", "2024-01-24", "rsd")
+        self.assertEqual(
+            client.captured,
+            (
+                "GET",
+                "/api/v3/plants/plant-id/indicator/device-state",
+                {"date": "2024-01-24", "kind": "rsd"},
+            ),
+        )
+
+    def test_get_plant_registry_stat_serializes_date(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.captured = None
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.captured = (method, path, kwargs.get("query"))
+                return {"timestamp": "2024-01-24T15:00:00Z"}
+
+        client = StubClient()
+        out = client.get_plant_registry_stat("plant-id", "2024-01-24")
+        self.assertEqual(out, {"timestamp": "2024-01-24T15:00:00Z"})
+        self.assertEqual(
+            client.captured,
+            (
+                "GET",
+                "/api/v3/plants/plant-id/registry/stat",
+                {"date": "2024-01-24"},
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
