@@ -1,11 +1,11 @@
 use crate::error::{Error, Result};
 use crate::model::{
     AccountOutputBody, AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody,
-    CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput, ErrorModel,
-    HealthLevelBody, InverterDataBody, InverterLogsResponse, LatestDeviceBody,
-    ListOutputCombinerItemBody, ListOutputInverterItemBody, ListOutputModuleItemBody,
-    MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody, PlantBody, PlantBodyV3,
-    PlantsListV3OutputBody, RegistryOutputBody, StatPoint,
+    CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput, ErrorModel, HealthLevelBody,
+    InverterDataBody, InverterLogsResponse, LatestDeviceBody, ListOutputCombinerItemBody,
+    ListOutputInverterItemBody, ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody,
+    OrgAddPermissionOutputBody, PlantBody, PlantBodyV3, PlantsListV3OutputBody, RegistryOutputBody,
+    StatPoint,
 };
 use percent_encoding::{percent_decode_str, percent_encode_byte};
 use reqwest::{Client as HttpClient, Method, StatusCode};
@@ -172,36 +172,17 @@ impl Client {
     }
 
     async fn execute_no_content(&self, method: Method, url: Url) -> Result<()> {
-        let mut retries = 1;
-        loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
-
-            let res = req.send().await?;
-            let status = res.status();
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
-                retries -= 1;
-                self.refresh_token().await?;
-                continue;
-            }
-
-            if status.is_success() {
-                return Ok(());
-            }
-
-            let body = Self::read_body_limited(res).await?;
-            let body_str = String::from_utf8_lossy(&body).into_owned();
-            return Err(Self::api_error(status, body_str));
+        let res = self
+            .send_with_retry(method, url, Option::<&()>::None, true, true)
+            .await?;
+        let status = res.status();
+        if status.is_success() {
+            return Ok(());
         }
+
+        let body = Self::read_body_limited(res).await?;
+        let body_str = String::from_utf8_lossy(&body).into_owned();
+        Err(Self::api_error(status, body_str))
     }
 
     pub async fn refresh_token(&self) -> Result<()> {
@@ -287,6 +268,56 @@ impl Client {
         allow_refresh_on_401: bool,
         include_auth: bool,
     ) -> Result<T> {
+        let res = self
+            .send_with_retry(method, url, body, allow_refresh_on_401, include_auth)
+            .await?;
+        let status = res.status();
+        let body_bytes = Self::read_body_limited(res).await?;
+        if status.is_success() {
+            return Ok(serde_json::from_slice::<T>(&body_bytes)?);
+        }
+
+        let body = String::from_utf8_lossy(&body_bytes).into_owned();
+        Err(Self::api_error(status, body))
+    }
+
+    async fn execute_text(
+        &self,
+        method: Method,
+        url: Url,
+        decode_json_string: bool,
+    ) -> Result<String> {
+        let res = self
+            .send_with_retry(method, url, Option::<&()>::None, true, true)
+            .await?;
+        let status = res.status();
+        let content_type = res
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let body = Self::read_body_limited(res).await?;
+        if status.is_success() {
+            if decode_json_string
+                && (content_type.contains("application/json") || content_type.contains("+json"))
+            {
+                return Ok(serde_json::from_slice::<String>(&body)?);
+            }
+            return Ok(String::from_utf8_lossy(&body).into_owned());
+        }
+        let body_str = String::from_utf8_lossy(&body).into_owned();
+        Err(Self::api_error(status, body_str))
+    }
+
+    async fn send_with_retry<B: serde::Serialize>(
+        &self,
+        method: Method,
+        url: Url,
+        body: Option<&B>,
+        allow_refresh_on_401: bool,
+        include_auth: bool,
+    ) -> Result<reqwest::Response> {
         let mut retries = 1;
         loop {
             let mut req = self.http.request(method.clone(), url.clone());
@@ -309,67 +340,12 @@ impl Client {
 
             let res = req.send().await?;
             let status = res.status();
-
             if status == StatusCode::UNAUTHORIZED && retries > 0 && authed && allow_refresh_on_401 {
                 retries -= 1;
                 self.refresh_token().await?;
                 continue;
             }
-
-            let body_bytes = Self::read_body_limited(res).await?;
-            if status.is_success() {
-                return Ok(serde_json::from_slice::<T>(&body_bytes)?);
-            }
-
-            let body = String::from_utf8_lossy(&body_bytes).into_owned();
-            return Err(Self::api_error(status, body));
-        }
-    }
-
-    async fn execute_text(
-        &self,
-        method: Method,
-        url: Url,
-        decode_json_string: bool,
-    ) -> Result<String> {
-        let mut retries = 1;
-        loop {
-            let mut req = self.http.request(method.clone(), url.clone());
-
-            let (auth, authed) = {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
-
-            let res = req.send().await?;
-            let status = res.status();
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
-                retries -= 1;
-                self.refresh_token().await?;
-                continue;
-            }
-            let content_type = res
-                .headers()
-                .get(reqwest::header::CONTENT_TYPE)
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("")
-                .to_ascii_lowercase();
-            let body = Self::read_body_limited(res).await?;
-            if status.is_success() {
-                if decode_json_string
-                    && (content_type.contains("application/json") || content_type.contains("+json"))
-                {
-                    return Ok(serde_json::from_slice::<String>(&body)?);
-                }
-                return Ok(String::from_utf8_lossy(&body).into_owned());
-            }
-            let body_str = String::from_utf8_lossy(&body).into_owned();
-            return Err(Self::api_error(status, body_str));
+            return Ok(res);
         }
     }
 
@@ -594,7 +570,14 @@ impl Client {
         ensure_allowed(source, &["device", "inverter", "sensor"], "source")?;
         ensure_allowed(
             unit,
-            &["panel", "inverter", "string", "plant", "temperature", "insolation"],
+            &[
+                "panel",
+                "inverter",
+                "string",
+                "plant",
+                "temperature",
+                "insolation",
+            ],
             "unit",
         )?;
         ensure_allowed(interval, &["5m", "15m", "1h", "1d", "1M", "1y"], "interval")?;
@@ -610,10 +593,8 @@ impl Client {
         if let Some(v) = before {
             q.push(("before", v.to_string()));
         }
-        if let Some(ids) = ids {
-            for id in ids {
-                q.push(("id", id.clone()));
-            }
+        if let Some(ids) = ids.filter(|ids| !ids.is_empty()) {
+            q.push(("id", ids.join(",")));
         }
         Self::push_fields_csv_query(&mut q, fields);
         let url = self.url_with_query(&path, &q)?;
@@ -700,12 +681,7 @@ impl Client {
             .await
     }
 
-    pub async fn get_device_state_v3(
-        &self,
-        plant_id: &str,
-        date: &str,
-        kind: &str,
-    ) -> Result<()> {
+    pub async fn get_device_state_v3(&self, plant_id: &str, date: &str, kind: &str) -> Result<()> {
         ensure_allowed(kind, &["seqnum", "relay", "rsd"], "kind")?;
         let path = format!(
             "api/v3/plants/{}/indicator/device-state",
@@ -1070,11 +1046,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_metrics_by_date_v3_serializes_repeated_id_query() {
+    async fn get_metrics_by_date_v3_serializes_ids_as_csv_query() {
         let server = spawn_mock_server(vec![MockStep {
             method: "GET",
             path_prefix:
-                "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01&id=pnl-1&id=pnl-2",
+                "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01&id=pnl-1%2Cpnl-2",
             status: 200,
             content_type: "application/json",
             body: r#"{
@@ -1370,25 +1346,21 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("manager@example.com".to_string()),
-                    username: None,
-                    password: "pw".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("manager@example.com".to_string()),
+                username: None,
+                password: "pw".to_string(),
+            })
             .await
             .expect("first login should succeed");
         let err = client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("manager@example.com".to_string()),
-                    username: None,
-                    password: "wrong".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("manager@example.com".to_string()),
+                username: None,
+                password: "wrong".to_string(),
+            })
             .await
             .expect_err("second login should fail with login endpoint error");
         match err {
@@ -1448,25 +1420,21 @@ mod tests {
 
         let client = Client::new(&format!("http://{addr}")).expect("create client");
         client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("m@example.com".to_string()),
-                    username: None,
-                    password: "pw".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("m@example.com".to_string()),
+                username: None,
+                password: "pw".to_string(),
+            })
             .await
             .expect("first login should succeed");
         client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("m2@example.com".to_string()),
-                    username: None,
-                    password: "pw2".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("m2@example.com".to_string()),
+                username: None,
+                password: "pw2".to_string(),
+            })
             .await
             .expect("second login should succeed");
 
@@ -1606,14 +1574,12 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("manager@example.com".to_string()),
-                    username: None,
-                    password: "pw".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("manager@example.com".to_string()),
+                username: None,
+                password: "pw".to_string(),
+            })
             .await
             .expect("login should succeed");
         let err = client
@@ -1668,14 +1634,12 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login(
-                &AuthWithPasswordBody {
-                    account_type: "manager".to_string(),
-                    email: Some("manager@example.com".to_string()),
-                    username: None,
-                    password: "pw".to_string(),
-                },
-            )
+            .login(&AuthWithPasswordBody {
+                account_type: "manager".to_string(),
+                email: Some("manager@example.com".to_string()),
+                username: None,
+                password: "pw".to_string(),
+            })
             .await
             .expect("login should succeed");
         let err = client
