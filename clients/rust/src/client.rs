@@ -1,13 +1,13 @@
 use crate::error::{Error, Result};
 use crate::model::{
-    AccountOutputBody, AuthAccountBody, AuthBody, AuthEmailBody, AuthOutputV3Body,
-    AuthWithPasswordBody, CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput,
-    ErrorModel, FileUploadResponse, HealthLevelBody, InverterDataBody, InverterLogsResponse,
-    LatestDeviceBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
-    PanelIntradayMetrics, PlantBody, PlantBodyV3, PlantsListV3OutputBody, RegistryOutputBody,
+    AccountOutputBody, AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody,
+    CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput, ErrorModel,
+    HealthLevelBody, InverterDataBody, InverterLogsResponse, LatestDeviceBody,
+    ListOutputCombinerItemBody, ListOutputInverterItemBody, ListOutputModuleItemBody,
+    MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody, PlantBody, PlantBodyV3,
+    PlantsListV3OutputBody, RegistryOutputBody, StatPoint,
 };
 use percent_encoding::{percent_decode_str, percent_encode_byte};
-use reqwest::multipart::{Form, Part};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use std::net::IpAddr;
 use std::sync::Arc;
@@ -30,22 +30,6 @@ impl std::fmt::Debug for AuthState {
             .field("token", &"<redacted>")
             .field("account_type", &self.account_type)
             .finish()
-    }
-}
-
-#[derive(serde::Deserialize)]
-#[serde(untagged)]
-enum CreatePlantV3Response {
-    V3(PlantBodyV3),
-    Legacy(PlantBody),
-}
-
-impl CreatePlantV3Response {
-    fn into_v3(self) -> PlantBodyV3 {
-        match self {
-            Self::V3(v3) => v3,
-            Self::Legacy(v2) => v2.into(),
-        }
     }
 }
 
@@ -139,28 +123,23 @@ impl Client {
         Ok(self.base_url.join(path)?)
     }
 
-    pub async fn login(&self, account: &str, password: &str) -> Result<AuthOutputV3Body> {
-        let body = if account.contains('@') {
-            AuthWithPasswordBody {
-                account_type: "manager".to_string(),
-                email: Some(account.to_string()),
-                username: None,
-                password: password.to_string(),
-            }
+    fn ensure_allowed(value: &str, allowed: &[&str], field: &str) -> Result<()> {
+        if allowed.contains(&value) {
+            Ok(())
         } else {
-            AuthWithPasswordBody {
-                account_type: "viewer".to_string(),
-                email: None,
-                username: Some(account.to_string()),
-                password: password.to_string(),
-            }
-        };
+            Err(Error::InvalidPath(format!(
+                "invalid {field} `{value}`, expected one of: {}",
+                allowed.join(", ")
+            )))
+        }
+    }
 
+    pub async fn login(&self, body: &AuthWithPasswordBody) -> Result<AuthOutputV3Body> {
         let auth: AuthOutputV3Body = match self
             .execute_json_unauth_no_refresh(
                 Method::POST,
                 self.url("api/v3/account/auth-with-password")?,
-                Some(&body),
+                Some(body),
             )
             .await
         {
@@ -178,60 +157,6 @@ impl Client {
         Ok(auth)
     }
 
-    pub async fn login_v2_manager(&self, email: &str, password: Option<&str>) -> Result<AuthBody> {
-        let body = AuthEmailBody {
-            email: email.to_string(),
-            password: password.map(|s| s.to_string()),
-        };
-        let auth: AuthBody = match self
-            .execute_json_unauth_no_refresh(
-                Method::POST,
-                self.url("api/v2/manager/auth-with-password")?,
-                Some(&body),
-            )
-            .await
-        {
-            Ok(v) => v,
-            Err(err) => {
-                self.clear_auth_on_login_failure(&err).await;
-                return Err(err);
-            }
-        };
-        let mut lock = self.auth.write().await;
-        *lock = Some(AuthState {
-            token: auth.token.clone(),
-            account_type: "manager".to_string(),
-        });
-        Ok(auth)
-    }
-
-    pub async fn login_v2_viewer(&self, account: &str, password: Option<&str>) -> Result<AuthBody> {
-        let body = AuthAccountBody {
-            account: account.to_string(),
-            password: password.map(|s| s.to_string()),
-        };
-        let auth: AuthBody = match self
-            .execute_json_unauth_no_refresh(
-                Method::POST,
-                self.url("api/v2/viewer/auth-with-password")?,
-                Some(&body),
-            )
-            .await
-        {
-            Ok(v) => v,
-            Err(err) => {
-                self.clear_auth_on_login_failure(&err).await;
-                return Err(err);
-            }
-        };
-        let mut lock = self.auth.write().await;
-        *lock = Some(AuthState {
-            token: auth.token.clone(),
-            account_type: "viewer".to_string(),
-        });
-        Ok(auth)
-    }
-
     async fn clear_auth_on_login_failure(&self, err: &Error) {
         let should_clear = match err {
             Error::Api { status, .. } | Error::ApiProblem { status, .. } => {
@@ -243,6 +168,39 @@ impl Client {
         if should_clear {
             let mut lock = self.auth.write().await;
             *lock = None;
+        }
+    }
+
+    async fn execute_no_content(&self, method: Method, url: Url) -> Result<()> {
+        let mut retries = 1;
+        loop {
+            let mut req = self.http.request(method.clone(), url.clone());
+
+            let (auth, authed) = {
+                let lock = self.auth.read().await;
+                ((*lock).clone(), lock.is_some())
+            };
+            if let Some(auth) = auth {
+                req = req
+                    .header("Authorization", format!("Bearer {}", auth.token))
+                    .header("Account-Type", &auth.account_type);
+            }
+
+            let res = req.send().await?;
+            let status = res.status();
+            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
+                retries -= 1;
+                self.refresh_token().await?;
+                continue;
+            }
+
+            let body = Self::read_body_limited(res).await?;
+            if status.is_success() {
+                return Ok(());
+            }
+
+            let body_str = String::from_utf8_lossy(&body).into_owned();
+            return Err(Self::api_error(status, body_str));
         }
     }
 
@@ -415,6 +373,31 @@ impl Client {
         }
     }
 
+    async fn execute_redirect_location_unauth_no_refresh(
+        &self,
+        method: Method,
+        url: Url,
+    ) -> Result<String> {
+        let res = self.http.request(method, url).send().await?;
+        let status = res.status();
+        let location = res
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|v| v.to_str().ok())
+            .map(ToOwned::to_owned);
+        let body = Self::read_body_limited(res).await?;
+
+        if status == StatusCode::FOUND {
+            return location.ok_or_else(|| Error::Api {
+                status: status.as_u16(),
+                message: "missing Location header".to_string(),
+            });
+        }
+
+        let body = String::from_utf8_lossy(&body).into_owned();
+        Err(Self::api_error(status, body))
+    }
+
     async fn read_body_limited(mut res: reqwest::Response) -> Result<Vec<u8>> {
         let mut body = Vec::new();
         while let Some(chunk) = res.chunk().await? {
@@ -454,8 +437,34 @@ impl Client {
         .await
     }
 
-    pub async fn list_plants(&self) -> Result<PlantsListV3OutputBody> {
-        self.execute_json(Method::GET, self.url("api/v3/plants")?, Option::<&()>::None)
+    pub async fn get_auth_methods_v3(
+        &self,
+        provider: Option<&str>,
+        redirect_url: Option<&str>,
+    ) -> Result<AuthMethodsBody> {
+        let mut q = Vec::new();
+        if let Some(v) = provider {
+            q.push(("provider", v.to_string()));
+        }
+        if let Some(v) = redirect_url {
+            q.push(("redirect_url", v.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/auth-methods", &q)?;
+        self.execute_json_unauth_no_refresh(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn login_with_oauth2(
+        &self,
+        provider: &str,
+        redirect_url: Option<&str>,
+    ) -> Result<String> {
+        let mut q = vec![("provider", provider.to_string())];
+        if let Some(v) = redirect_url {
+            q.push(("redirect_url", v.to_string()));
+        }
+        let url = self.url_with_query("api/v3/account/login-with-oauth2", &q)?;
+        self.execute_redirect_location_unauth_no_refresh(Method::GET, url)
             .await
     }
 
@@ -463,6 +472,7 @@ impl Client {
         &self,
         page: Option<u32>,
         size: Option<u32>,
+        full: Option<bool>,
     ) -> Result<PlantsListV3OutputBody> {
         let mut q = Vec::new();
         if let Some(v) = page {
@@ -471,30 +481,12 @@ impl Client {
         if let Some(v) = size {
             q.push(("size", v.to_string()));
         }
+        if let Some(v) = full {
+            q.push(("full", v.to_string()));
+        }
         let url = self.url_with_query("api/v3/plants", &q)?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
             .await
-    }
-
-    pub async fn list_plants_v2(
-        &self,
-        page: Option<u32>,
-        size: Option<u32>,
-    ) -> Result<Option<Vec<PlantBody>>> {
-        let mut q = Vec::new();
-        if let Some(v) = page {
-            q.push(("page", v.to_string()));
-        }
-        if let Some(v) = size {
-            q.push(("size", v.to_string()));
-        }
-        let url = self.url_with_query("api/v2/information/plants", &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
-    }
-
-    pub async fn get_plant(&self, plant_id: &str) -> Result<PlantBodyV3> {
-        self.get_plant_v3(plant_id).await
     }
 
     pub async fn get_plant_v3(&self, plant_id: &str) -> Result<PlantBodyV3> {
@@ -503,20 +495,9 @@ impl Client {
             .await
     }
 
-    pub async fn get_plant_v2(&self, plant_id: &str) -> Result<PlantBody> {
-        let path = format!(
-            "api/v2/information/plants/{}",
-            Self::encode_path_segment(plant_id)
-        );
-        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
+    pub async fn create_plant_v3(&self, input: &CreatePlantInput) -> Result<PlantBody> {
+        self.execute_json(Method::POST, self.url("api/v3/plants")?, Some(input))
             .await
-    }
-
-    pub async fn create_plant_v3(&self, input: &CreatePlantInput) -> Result<PlantBodyV3> {
-        let out: CreatePlantV3Response = self
-            .execute_json(Method::POST, self.url("api/v3/plants")?, Some(input))
-            .await?;
-        Ok(out.into_v3())
     }
 
     pub async fn get_blueprint_text_v3(&self, plant_id: &str, date: &str) -> Result<String> {
@@ -528,31 +509,6 @@ impl Client {
         self.execute_text(Method::GET, url, true).await
     }
 
-    pub async fn get_blueprint_text_v2(&self, plant_id: &str, date: &str) -> Result<String> {
-        let path = format!(
-            "api/v2/blueprint/plants/{}",
-            Self::encode_path_segment(plant_id)
-        );
-        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
-        self.execute_text(Method::GET, url, false).await
-    }
-
-    pub async fn get_blueprint(&self, plant_id: &str, date: &str) -> Result<serde_json::Value> {
-        let s = self.get_blueprint_text_v3(plant_id, date).await?;
-        Ok(serde_json::Value::String(s))
-    }
-
-    pub async fn get_registry(
-        &self,
-        plant_id: &str,
-        date: &str,
-    ) -> Result<Vec<RegistryOutputBody>> {
-        let res = self
-            .get_registry_v3(plant_id, "snapshots", date, None, None)
-            .await?;
-        Ok(res.unwrap_or_default())
-    }
-
     pub async fn get_registry_v3(
         &self,
         plant_id: &str,
@@ -561,6 +517,7 @@ impl Client {
         asset_id: Option<&str>,
         map_id: Option<&str>,
     ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        Self::ensure_allowed(record_type, &["logs", "snapshots"], "record_type")?;
         let path = format!(
             "api/v3/plants/{}/registry/{}",
             Self::encode_path_segment(plant_id),
@@ -578,57 +535,14 @@ impl Client {
             .await
     }
 
-    pub async fn get_registry_v2(
-        &self,
-        plant_id: &str,
-        record_type: &str,
-        date: &str,
-        asset_id: Option<&str>,
-        map_id: Option<&str>,
-    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+    pub async fn get_registry_stat_v3(&self, plant_id: &str, date: &str) -> Result<StatPoint> {
         let path = format!(
-            "api/v2/registry/plants/{}/{}",
-            Self::encode_path_segment(plant_id),
-            Self::encode_path_segment(record_type)
+            "api/v3/plants/{}/registry/stat",
+            Self::encode_path_segment(plant_id)
         );
-        let mut q = vec![("date", date.to_string())];
-        if let Some(v) = asset_id {
-            q.push(("asset_id", v.to_string()));
-        }
-        if let Some(v) = map_id {
-            q.push(("map_id", v.to_string()));
-        }
-        let url = self.url_with_query(&path, &q)?;
+        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
             .await
-    }
-
-    pub async fn get_panel_metrics(
-        &self,
-        plant_id: &str,
-        date: &str,
-    ) -> Result<PanelIntradayMetrics> {
-        let metrics = self
-            .get_metrics_by_date_v3(plant_id, "device", "panel", "5m", date, None, None)
-            .await?;
-
-        match metrics {
-            MetricsBody::PanelIntraday(body) => {
-                let data = body.data.ok_or_else(|| Error::Api {
-                    status: 500,
-                    message: "missing metrics data in panel metrics response".to_string(),
-                })?;
-                Ok(PanelIntradayMetrics {
-                    data,
-                    plant_id: body.plant_id,
-                    date: body.date,
-                })
-            }
-            _ => Err(Error::Api {
-                status: 500,
-                message: "unexpected metrics body variant".to_string(),
-            }),
-        }
     }
 
     pub async fn get_latest_device_metrics_v3(
@@ -665,40 +579,6 @@ impl Client {
             .await
     }
 
-    pub async fn get_latest_device_metrics_v2(
-        &self,
-        plant_id: &str,
-        include_state: Option<bool>,
-        ago: Option<i64>,
-    ) -> Result<Option<Vec<LatestDeviceBody>>> {
-        let path = format!(
-            "api/v2/metrics/plants/{}/device/latest",
-            Self::encode_path_segment(plant_id)
-        );
-        let mut q: Vec<(&str, String)> = Vec::new();
-        if let Some(v) = include_state {
-            q.push(("includeState", v.to_string()));
-        }
-        if let Some(v) = ago {
-            q.push(("ago", v.to_string()));
-        }
-        let url = self.url_with_query(&path, &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
-    }
-
-    pub async fn get_latest_inverter_metrics_v2(
-        &self,
-        plant_id: &str,
-    ) -> Result<Option<Vec<InverterDataBody>>> {
-        let path = format!(
-            "api/v2/metrics/plants/{}/inverter/latest",
-            Self::encode_path_segment(plant_id)
-        );
-        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
-            .await
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub async fn get_metrics_by_date_v3(
         &self,
@@ -708,8 +588,16 @@ impl Client {
         interval: &str,
         date: &str,
         before: Option<i64>,
+        ids: Option<&[String]>,
         fields: Option<&[String]>,
     ) -> Result<MetricsBody> {
+        Self::ensure_allowed(source, &["device", "inverter", "sensor"], "source")?;
+        Self::ensure_allowed(
+            unit,
+            &["panel", "inverter", "string", "plant", "temperature", "insolation"],
+            "unit",
+        )?;
+        Self::ensure_allowed(interval, &["5m", "15m", "1h", "1d", "1M", "1y"], "interval")?;
         let path = format!(
             "api/v3/plants/{}/metrics/{}/{}-{}",
             Self::encode_path_segment(plant_id),
@@ -722,82 +610,15 @@ impl Client {
         if let Some(v) = before {
             q.push(("before", v.to_string()));
         }
-        Self::push_fields_csv_query(&mut q, fields);
-        let url = self.url_with_query(&path, &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub async fn get_metrics_by_date_v2(
-        &self,
-        plant_id: &str,
-        source: &str,
-        unit: &str,
-        interval: &str,
-        date: &str,
-        before: Option<i64>,
-        fields: Option<&[String]>,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v2/metrics/plants/{}/{}/{}-{}",
-            Self::encode_path_segment(plant_id),
-            Self::encode_path_segment(source),
-            Self::encode_path_segment(unit),
-            Self::encode_path_segment(interval)
-        );
-        let mut q: Vec<(&str, String)> = vec![("date", date.to_string())];
-        if let Some(v) = before {
-            q.push(("before", v.to_string()));
+        if let Some(ids) = ids {
+            for id in ids {
+                q.push(("id", id.clone()));
+            }
         }
         Self::push_fields_csv_query(&mut q, fields);
         let url = self.url_with_query(&path, &q)?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
             .await
-    }
-
-    /// v2 metrics endpoint (typed).
-    ///
-    /// Note: OpenAPI currently omits the 200-schema for this operation.
-    /// Use this helper when the server returns the same metrics payload shapes as v3.
-    #[allow(clippy::too_many_arguments)]
-    pub async fn get_metrics_by_date_v2_typed(
-        &self,
-        plant_id: &str,
-        source: &str,
-        unit: &str,
-        interval: &str,
-        date: &str,
-        before: Option<i64>,
-        fields: Option<&[String]>,
-    ) -> Result<MetricsBody> {
-        let path = format!(
-            "api/v2/metrics/plants/{}/{}/{}-{}",
-            Self::encode_path_segment(plant_id),
-            Self::encode_path_segment(source),
-            Self::encode_path_segment(unit),
-            Self::encode_path_segment(interval)
-        );
-
-        let mut q: Vec<(&str, String)> = vec![("date", date.to_string())];
-        if let Some(v) = before {
-            q.push(("before", v.to_string()));
-        }
-        Self::push_fields_csv_query(&mut q, fields);
-        let url = self.url_with_query(&path, &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
-    }
-
-    #[cfg(test)]
-    fn build_metrics_path_v2(plant_id: &str, source: &str, unit: &str, interval: &str) -> String {
-        format!(
-            "api/v2/metrics/plants/{}/{}/{}-{}",
-            Self::encode_path_segment(plant_id),
-            Self::encode_path_segment(source),
-            Self::encode_path_segment(unit),
-            Self::encode_path_segment(interval)
-        )
     }
 
     #[cfg(test)]
@@ -857,79 +678,6 @@ impl Client {
             .await
     }
 
-    pub async fn list_inverter_logs_v2(
-        &self,
-        plant_id: &str,
-        page: Option<u32>,
-        size: Option<u32>,
-    ) -> Result<InverterLogsResponse> {
-        let path = format!(
-            "api/v2/logs/plants/{}/inverter",
-            Self::encode_path_segment(plant_id)
-        );
-        let mut q = Vec::new();
-        if let Some(v) = page {
-            q.push(("page", v.to_string()));
-        }
-        if let Some(v) = size {
-            q.push(("size", v.to_string()));
-        }
-        let url = self.url_with_query(&path, &q)?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
-    }
-
-    pub async fn upload_plant_file_v3(
-        &self,
-        plant_id: &str,
-        name: &str,
-        filename: &str,
-        bytes: Vec<u8>,
-    ) -> Result<FileUploadResponse> {
-        let path = format!(
-            "api/v3/plants/{}/files",
-            Self::encode_path_segment(plant_id)
-        );
-        let url = self.url(&path)?;
-
-        let mut retries = 1;
-        loop {
-            let mut req = self.http.request(Method::POST, url.clone());
-
-            let (auth, authed) = {
-                let lock = self.auth.read().await;
-                ((*lock).clone(), lock.is_some())
-            };
-            if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
-            }
-
-            let form = Form::new().text("name", name.to_string()).part(
-                "filename",
-                Part::bytes(bytes.clone()).file_name(filename.to_string()),
-            );
-
-            let res = req.multipart(form).send().await?;
-            let status = res.status();
-
-            if status == StatusCode::UNAUTHORIZED && retries > 0 && authed {
-                retries -= 1;
-                self.refresh_token().await?;
-                continue;
-            }
-
-            let body = Self::read_body_limited(res).await?;
-            if status.is_success() {
-                return Ok(serde_json::from_slice::<FileUploadResponse>(&body)?);
-            }
-
-            let body_str = String::from_utf8_lossy(&body).into_owned();
-            return Err(Self::api_error(status, body_str));
-        }
-    }
-
     pub async fn get_health_level_v3(
         &self,
         plant_id: &str,
@@ -944,6 +692,7 @@ impl Client {
         );
         let mut q: Vec<(&str, String)> = vec![("date", date.to_string())];
         if let Some(v) = view {
+            Self::ensure_allowed(v, &["summary", "detail"], "view")?;
             q.push(("view", v.to_string()));
         }
         let url = self.url_with_query(&path, &q)?;
@@ -951,18 +700,49 @@ impl Client {
             .await
     }
 
-    pub async fn get_panel_seqnum_v3(
+    pub async fn get_device_state_v3(
         &self,
         plant_id: &str,
         date: &str,
-    ) -> Result<serde_json::Value> {
+        kind: &str,
+    ) -> Result<()> {
+        Self::ensure_allowed(kind, &["seqnum", "relay", "rsd"], "kind")?;
         let path = format!(
-            "api/v3/plants/{}/indicator/seqnum",
+            "api/v3/plants/{}/indicator/device-state",
             Self::encode_path_segment(plant_id)
         );
-        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
-        self.execute_json(Method::GET, url, Option::<&()>::None)
-            .await
+        let url = self.url_with_query(
+            &path,
+            &[("date", date.to_string()), ("kind", kind.to_string())],
+        )?;
+        self.execute_no_content(Method::GET, url).await
+    }
+
+    pub async fn list_module_model_info_v3(&self) -> Result<ListOutputModuleItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/modules")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_inverter_model_info_v3(&self) -> Result<ListOutputInverterItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/inverters")?,
+            Option::<&()>::None,
+        )
+        .await
+    }
+
+    pub async fn list_combiner_model_info_v3(&self) -> Result<ListOutputCombinerItemBody> {
+        self.execute_json(
+            Method::GET,
+            self.url("api/v3/model-info/combiners")?,
+            Option::<&()>::None,
+        )
+        .await
     }
 
     pub async fn create_org_member_v3(
@@ -1114,9 +894,6 @@ mod tests {
 
     #[test]
     fn metrics_path_uses_compound_unit_interval_segment() {
-        let p2 = Client::build_metrics_path_v2("p1", "device", "panel", "5m");
-        assert_eq!(p2, "api/v2/metrics/plants/p1/device/panel-5m");
-
         let p3 = Client::build_metrics_path_v3("p1", "device", "panel", "5m");
         assert_eq!(p3, "api/v3/plants/p1/metrics/device/panel-5m");
     }
@@ -1283,6 +1060,7 @@ mod tests {
                 "5m",
                 "2026-01-01",
                 None,
+                None,
                 Some(&fields),
             )
             .await
@@ -1292,35 +1070,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_panel_seqnum_v3_returns_payload() {
+    async fn get_metrics_by_date_v3_serializes_repeated_id_query() {
         let server = spawn_mock_server(vec![MockStep {
             method: "GET",
-            path_prefix: "/api/v3/plants/p1/indicator/seqnum?date=2026-01-01",
-            status: 200,
-            content_type: "application/json",
-            body: r#"{"items":[{"timestamp":1,"seq_num":3}]}"#,
-            stall_before_response: None,
-        }]);
-
-        let client = Client::new(&server.base_url).expect("create client");
-        let out = client
-            .get_panel_seqnum_v3("p1", "2026-01-01")
-            .await
-            .expect("seqnum request should succeed");
-        assert_eq!(
-            out.get("items")
-                .and_then(serde_json::Value::as_array)
-                .map(Vec::len),
-            Some(1)
-        );
-        server.handle.join().expect("join mock server");
-    }
-
-    #[tokio::test]
-    async fn get_panel_metrics_rejects_missing_data() {
-        let server = spawn_mock_server(vec![MockStep {
-            method: "GET",
-            path_prefix: "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01",
+            path_prefix:
+                "/api/v3/plants/p1/metrics/device/panel-5m?date=2026-01-01&id=pnl-1&id=pnl-2",
             status: 200,
             content_type: "application/json",
             body: r#"{
@@ -1329,23 +1083,260 @@ mod tests {
                 "source":"device",
                 "date":"2026-01-01",
                 "interval":"5m",
-                "data": null
+                "data":[
+                  {
+                    "id":"pnl-1",
+                    "date":"2026-01-01",
+                    "timestamp":1,
+                    "energy":1.0,
+                    "cumulative_energy":2.0,
+                    "i_out":3.0,
+                    "p":4.0,
+                    "v_in":5.0,
+                    "v_out":6.0,
+                    "temp":7.0
+                  }
+                ]
             }"#,
             stall_before_response: None,
         }]);
 
         let client = Client::new(&server.base_url).expect("create client");
-        let err = client
-            .get_panel_metrics("p1", "2026-01-01")
+        let ids = vec!["pnl-1".to_string(), "pnl-2".to_string()];
+        let out = client
+            .get_metrics_by_date_v3(
+                "p1",
+                "device",
+                "panel",
+                "5m",
+                "2026-01-01",
+                None,
+                Some(&ids),
+                None,
+            )
             .await
-            .expect_err("missing data must be treated as an error");
-        match err {
-            Error::Api { status, message } => {
-                assert_eq!(status, 500);
-                assert!(message.contains("missing metrics data"));
-            }
-            _ => panic!("expected Api error for missing panel metrics data"),
-        }
+            .expect("metrics request should succeed");
+        assert!(matches!(out, MetricsBody::PanelIntraday(_)));
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn list_plants_v3_serializes_full_query_mode() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants?full=true",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "items": [],
+                "page": 1,
+                "perPage": 500,
+                "totalItems": 0,
+                "totalPages": 1
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_plants_v3(None, None, Some(true))
+            .await
+            .expect("full plants request should succeed");
+        assert_eq!(out.total_items, 0);
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_get_auth_methods_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix:
+                "/api/v3/account/auth-methods?provider=google&redirect_url=myscheme%3A%2F%2Fcallback",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "authProviders": [
+                    {
+                        "name": "google",
+                        "state": "signed-state",
+                        "codeChallenge": "challenge",
+                        "codeChallengeMethod": "S256",
+                        "authUrl": "https://patch-api.conalog.com/oauth/google"
+                    }
+                ]
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .get_auth_methods_v3(Some("google"), Some("myscheme://callback"))
+            .await
+            .expect("auth methods request should succeed");
+        assert_eq!(out.auth_providers.unwrap()[0].name, "google");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_login_with_oauth2_returns_redirect_location() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        listener
+            .set_nonblocking(true)
+            .expect("set nonblocking listener");
+        let addr = listener.local_addr().expect("read local addr");
+        let handle = thread::spawn(move || {
+            let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
+            stream.set_nonblocking(false).expect("set blocking stream");
+            let mut req_buf = [0_u8; 8192];
+            let n = stream.read(&mut req_buf).expect("read request");
+            let req = String::from_utf8_lossy(&req_buf[..n]);
+            let req_line = req.lines().next().unwrap_or_default();
+            assert!(
+                req_line.starts_with(
+                    "GET /api/v3/account/login-with-oauth2?provider=google&redirect_url=myscheme%3A%2F%2Fcallback"
+                ),
+                "unexpected request line `{req_line}`"
+            );
+            let location = "https://accounts.example.com/oauth/google";
+            let response = format!(
+                "HTTP/1.1 302 Found\r\nLocation: {location}\r\nContent-Type: text/plain\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        let client = Client::new(&format!("http://{addr}")).expect("create client");
+        let out = client
+            .login_with_oauth2("google", Some("myscheme://callback"))
+            .await
+            .expect("oauth login starter should succeed");
+        assert_eq!(out, "https://accounts.example.com/oauth/google");
+        handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn login_with_oauth2_rejects_non_redirect_success() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/account/login-with-oauth2?provider=google",
+            status: 200,
+            content_type: "text/plain",
+            body: "unexpected body",
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let err = client
+            .login_with_oauth2("google", None)
+            .await
+            .expect_err("only 302 responses should be treated as valid oauth starts");
+        assert!(matches!(err, Error::Api { status: 200, .. }));
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_list_module_model_info_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/model-info/modules",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"items":[{"id":"mod-1","model_name":"Model A"}]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_module_model_info_v3()
+            .await
+            .expect("module model info request should succeed");
+        assert_eq!(out.items.unwrap()[0].id, "mod-1");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_list_inverter_model_info_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/model-info/inverters",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"items":[{"id":"inv-1","model_name":"Inverter A"}]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_inverter_model_info_v3()
+            .await
+            .expect("inverter model info request should succeed");
+        assert_eq!(out.items.unwrap()[0].id, "inv-1");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_list_combiner_model_info_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/model-info/combiners",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{"items":[{"id":"cmb-1","model_name":"Combiner A"}]}"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .list_combiner_model_info_v3()
+            .await
+            .expect("combiner model info request should succeed");
+        assert_eq!(out.items.unwrap()[0].id, "cmb-1");
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_get_registry_stat_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/registry/stat?date=2026-01-01",
+            status: 200,
+            content_type: "application/json",
+            body: r#"{
+                "timestamp":"2026-01-01T14:59:59Z",
+                "installed_capacity_w":12000.0,
+                "module_models":[{"name":"Panel X","count":24}],
+                "device_models":[{"name":"Device Y","count":24,"installed_capacity_w":12000.0}]
+            }"#,
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        let out = client
+            .get_registry_stat_v3("p1", "2026-01-01")
+            .await
+            .expect("registry stat request should succeed");
+        assert_eq!(out.installed_capacity_w, 12000.0);
+        server.handle.join().expect("join mock server");
+    }
+
+    #[tokio::test]
+    async fn new_get_device_state_v3_requests_expected_path() {
+        let server = spawn_mock_server(vec![MockStep {
+            method: "GET",
+            path_prefix: "/api/v3/plants/p1/indicator/device-state?date=2026-01-01&kind=relay",
+            status: 200,
+            content_type: "text/plain",
+            body: "",
+            stall_before_response: None,
+        }]);
+
+        let client = Client::new(&server.base_url).expect("create client");
+        client
+            .get_device_state_v3("p1", "2026-01-01", "relay")
+            .await
+            .expect("device state request should succeed");
         server.handle.join().expect("join mock server");
     }
 
@@ -1362,7 +1353,6 @@ mod tests {
                     "type":"manager",
                     "name":"manager",
                     "email":"manager@example.com",
-                    "username":null,
                     "organizations":null,
                     "metadata":null
                 }"#,
@@ -1380,11 +1370,25 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login("manager@example.com", "pw")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("manager@example.com".to_string()),
+                    username: None,
+                    password: "pw".to_string(),
+                },
+            )
             .await
             .expect("first login should succeed");
         let err = client
-            .login("manager@example.com", "wrong")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("manager@example.com".to_string()),
+                    username: None,
+                    password: "wrong".to_string(),
+                },
+            )
             .await
             .expect_err("second login should fail with login endpoint error");
         match err {
@@ -1411,8 +1415,8 @@ mod tests {
         let addr = listener.local_addr().expect("read local addr");
         let handle = thread::spawn(move || {
             let bodies = [
-                r#"{"token":"first","type":"manager","name":"m","email":"m@example.com","username":null,"organizations":null,"metadata":null}"#,
-                r#"{"token":"second","type":"manager","name":"m2","email":"m2@example.com","username":null,"organizations":null,"metadata":null}"#,
+                r#"{"token":"first","type":"manager","name":"m","email":"m@example.com","organizations":null,"metadata":null}"#,
+                r#"{"token":"second","type":"manager","name":"m2","email":"m2@example.com","organizations":null,"metadata":null}"#,
             ];
             for body in bodies {
                 let mut stream = accept_with_timeout(&listener, TEST_ACCEPT_TIMEOUT);
@@ -1444,11 +1448,25 @@ mod tests {
 
         let client = Client::new(&format!("http://{addr}")).expect("create client");
         client
-            .login("m@example.com", "pw")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("m@example.com".to_string()),
+                    username: None,
+                    password: "pw".to_string(),
+                },
+            )
             .await
             .expect("first login should succeed");
         client
-            .login("m2@example.com", "pw2")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("m2@example.com".to_string()),
+                    username: None,
+                    password: "pw2".to_string(),
+                },
+            )
             .await
             .expect("second login should succeed");
 
@@ -1516,17 +1534,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_plant_v3_accepts_legacy_response_shape() {
+    async fn create_plant_v3_returns_spec_response_shape() {
         let server = spawn_mock_server(vec![MockStep {
             method: "POST",
             path_prefix: "/api/v3/plants",
             status: 200,
             content_type: "application/json",
             body: r#"{
-                "id":"p1",
+                "id":"pln123456789012",
                 "name":"Plant One",
                 "organization":"org-1",
-                "organizationData":{"id":"org-1","name":"Org One","icon":null,"logo":null,"owner":null},
+                "organizationData":{"id":"org-1","name":"Org One"},
                 "created":"2026-01-01T00:00:00Z",
                 "updated":"2026-01-01T00:00:00Z",
                 "metadata":{},
@@ -1539,13 +1557,14 @@ mod tests {
         let created = client
             .create_plant_v3(&CreatePlantInput {
                 name: "Plant One".to_string(),
-                organization_id: "org-1".to_string(),
+                organization_id: "org123456789012".to_string(),
                 metadata: None,
             })
             .await
-            .expect("legacy create response should deserialize");
-        assert_eq!(created.id, "p1");
-        assert_eq!(created.organization.id, "org-1");
+            .expect("create response should deserialize");
+        assert_eq!(created.id, "pln123456789012");
+        assert_eq!(created.organization, "org-1");
+        assert_eq!(created.organization_data.id, "org-1");
         server.handle.join().expect("join mock server");
     }
 
@@ -1562,7 +1581,6 @@ mod tests {
                     "type":"manager",
                     "name":"manager",
                     "email":"manager@example.com",
-                    "username":null,
                     "organizations":null,
                     "metadata":null
                 }"#,
@@ -1588,7 +1606,14 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login("manager@example.com", "pw")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("manager@example.com".to_string()),
+                    username: None,
+                    password: "pw".to_string(),
+                },
+            )
             .await
             .expect("login should succeed");
         let err = client
@@ -1618,7 +1643,6 @@ mod tests {
                     "type":"manager",
                     "name":"manager",
                     "email":"manager@example.com",
-                    "username":null,
                     "organizations":null,
                     "metadata":null
                 }"#,
@@ -1644,7 +1668,14 @@ mod tests {
 
         let client = Client::new(&server.base_url).expect("create client");
         client
-            .login("manager@example.com", "pw")
+            .login(
+                &AuthWithPasswordBody {
+                    account_type: "manager".to_string(),
+                    email: Some("manager@example.com".to_string()),
+                    username: None,
+                    password: "pw".to_string(),
+                },
+            )
             .await
             .expect("login should succeed");
         let err = client
