@@ -758,8 +758,7 @@
           },
           "has_diode": {
             "description": "Diode presence flag from the combiners asset catalog view.",
-            "format": "int64",
-            "type": "integer"
+            "type": "boolean"
           },
           "height_fuse_mm": {
             "description": "Height fuse value from the combiners asset catalog view.",
@@ -801,8 +800,8 @@
           },
           "ip_rating": {
             "description": "IP rating value from the combiners asset catalog view.",
-            "format": "int64",
-            "type": "integer"
+            "format": "double",
+            "type": "number"
           },
           "manufacturer": {
             "description": "Manufacturer value from the combiners asset catalog view.",
@@ -851,8 +850,7 @@
           },
           "rated_current_a": {
             "description": "Rated current value from the combiners asset catalog view.",
-            "format": "double",
-            "type": "number"
+            "type": "string"
           },
           "rated_output_power_kva": {
             "description": "Rated output power value from the combiners asset catalog view.",
@@ -861,8 +859,8 @@
           },
           "string_count": {
             "description": "String count value from the combiners asset catalog view.",
-            "format": "int64",
-            "type": "integer"
+            "format": "double",
+            "type": "number"
           },
           "technical_standard": {
             "description": "Technical standard value from the combiners asset catalog view.",
@@ -2097,9 +2095,7 @@
             "type": "string"
           },
           "cell_specification": {
-            "additionalProperties": {},
-            "description": "Cell specification object from the modules asset catalog view.",
-            "type": "object"
+            "description": "Cell specification value from the modules asset catalog view."
           },
           "certification_date": {
             "description": "Certification date value from the modules asset catalog view.",
