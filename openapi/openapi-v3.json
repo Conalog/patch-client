@@ -2897,6 +2897,7 @@
       "Report": {
         "additionalProperties": false,
         "properties": {
+          "content": {},
           "created": {
             "type": "string"
           },
@@ -2928,6 +2929,7 @@
           "start": {
             "type": "string"
           },
+          "summary": {},
           "title": {
             "type": "string"
           },
