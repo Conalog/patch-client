@@ -1927,6 +1927,31 @@
         ],
         "type": "object"
       },
+      "InverterModelStat": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "description": "Active inverter count for the model name at the end of the requested day.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "installed_capacity_w": {
+            "description": "Installed capacity in watts attributed to the inverter model at the end of the requested day.",
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "description": "Active inverter model name at the end of the requested day.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count",
+          "installed_capacity_w"
+        ],
+        "type": "object"
+      },
       "LatestDeviceBody": {
         "additionalProperties": false,
         "properties": {
@@ -1948,9 +1973,6 @@
           "metrics": {
             "$ref": "#/components/schemas/LatestDeviceBodyMetricsStruct"
           },
-          "plant_id": {
-            "type": "string"
-          },
           "state": {
             "additionalProperties": {
               "type": "boolean"
@@ -1968,7 +1990,6 @@
           "asset_type",
           "map_id",
           "map_type",
-          "plant_id",
           "edge_id",
           "metrics",
           "state"
@@ -3050,6 +3071,16 @@
             "format": "double",
             "type": "number"
           },
+          "inverter_models": {
+            "description": "Active inverter model stats at the end of the requested day.",
+            "items": {
+              "$ref": "#/components/schemas/InverterModelStat"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "module_models": {
             "description": "Active panel and panel_group model counts at the end of the requested day.",
             "items": {
@@ -3069,7 +3100,8 @@
           "timestamp",
           "installed_capacity_w",
           "module_models",
-          "device_models"
+          "device_models",
+          "inverter_models"
         ],
         "type": "object"
       },
@@ -4557,7 +4589,7 @@
     },
     "/api/v3/plants/{plant_id}/indicator/health-level/{unit}": {
       "get": {
-        "description": "Calculates and retrieves the health level of panels for a specific plant based on daily energy production. Panels are categorized as 'best', 'caution', or 'faulty'.",
+        "description": "Calculates panel health indicators from daily energy production. The response reports the top ten panels as 'best' and reports panels outside the top ten only when they fall into 'caution' or 'faulty' thresholds.",
         "operationId": "get_asset_health_level",
         "parameters": [
           {
@@ -5454,12 +5486,12 @@
             }
           },
           {
-            "description": "Panel ID filters. Supported only when source=device and unit=panel. Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
+            "description": "Device panel or inverter ID filters. Supported only for intraday device/panel and inverter/inverter requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
             "explode": false,
             "in": "query",
             "name": "id",
             "schema": {
-              "description": "Panel ID filters. Supported only when source=device and unit=panel. Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
+              "description": "Device panel or inverter ID filters. Supported only for intraday device/panel and inverter/inverter requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
               "examples": [
                 [
                   "pnl-001",
@@ -5985,7 +6017,7 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StatPoint",
-                  "description": "Installed panel capacity, module model counts, and device model stats at the end of the requested day."
+                  "description": "Installed panel capacity, module model counts, device model stats, and inverter model stats at the end of the requested day."
                 }
               }
             },
