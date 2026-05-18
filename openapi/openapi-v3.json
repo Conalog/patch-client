@@ -367,6 +367,237 @@
         ],
         "type": "object"
       },
+      "BlueprintListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "description": "Blueprint record creation timestamp.",
+            "type": "string"
+          },
+          "date": {
+            "description": "Blueprint effective date.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Blueprint record ID.",
+            "type": "string"
+          },
+          "updated": {
+            "description": "Blueprint record update timestamp.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "BodyESSPlantDailyData": {
+        "additionalProperties": false,
+        "description": "Plant-level energy storage system daily metrics at 1-day intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSPlantDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Plant Daily Metrics",
+        "type": "object"
+      },
+      "BodyESSPlantIntradayData": {
+        "additionalProperties": false,
+        "description": "Plant-level energy storage system metrics at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSPlantIntradayData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Plant Intraday Metrics",
+        "type": "object"
+      },
+      "BodyESSUnitDailyData": {
+        "additionalProperties": false,
+        "description": "Energy storage system unit daily metrics at 1-day intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSUnitDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Unit Daily Metrics",
+        "type": "object"
+      },
+      "BodyESSUnitIntradayData": {
+        "additionalProperties": false,
+        "description": "Energy storage system unit metrics at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSUnitIntradayData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Unit Intraday Metrics",
+        "type": "object"
+      },
       "BodyInverterDailyData": {
         "additionalProperties": false,
         "description": "Daily aggregated metrics for individual inverters at 1-day intervals.",
@@ -1247,6 +1478,335 @@
         ],
         "type": "object"
       },
+      "ESSPlantDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "charge_energy": {
+            "description": "Daily charged energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "description": "Asia/Seoul local date represented by the row",
+            "type": "string"
+          },
+          "discharge_energy": {
+            "description": "Daily discharged or output energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "energy": {
+            "description": "Daily positive output energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "plant_id": {
+            "description": "Plant identifier for the local date partition",
+            "type": "string"
+          },
+          "pv_energy": {
+            "description": "Daily PV-side generated energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "plant_id",
+          "date",
+          "energy",
+          "charge_energy",
+          "discharge_energy",
+          "pv_energy"
+        ],
+        "type": "object"
+      },
+      "ESSPlantIntradayData": {
+        "additionalProperties": false,
+        "properties": {
+          "battery_current": {
+            "description": "Battery current (A); positive means net discharge and negative means net charge",
+            "format": "double",
+            "type": "number"
+          },
+          "battery_power": {
+            "description": "Battery power magnitude during the interval (kW)",
+            "format": "double",
+            "type": "number"
+          },
+          "battery_voltage": {
+            "description": "Battery voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "charge_energy": {
+            "description": "Energy charged into the battery during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "discharge_energy": {
+            "description": "Energy discharged or output from the battery during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_a_current": {
+            "description": "AC output phase A current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_a_voltage": {
+            "description": "AC output phase A voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_b_current": {
+            "description": "AC output phase B current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_b_voltage": {
+            "description": "AC output phase B voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_c_current": {
+            "description": "AC output phase C current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_c_voltage": {
+            "description": "AC output phase C voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_current": {
+            "description": "PV DC current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_energy": {
+            "description": "PV-side generated energy during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_voltage": {
+            "description": "PV DC voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "time": {
+            "description": "Asia/Seoul interval start time label in HH:MM format",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Interval start Unix timestamp interpreted from the local date",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_charge_energy": {
+            "description": "Cumulative charge energy display value at the interval timestamp (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "total_discharge_energy": {
+            "description": "Cumulative discharge energy display value at the interval timestamp (kWh)",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "charge_energy",
+          "discharge_energy",
+          "pv_energy",
+          "battery_power",
+          "output_a_voltage",
+          "output_b_voltage",
+          "output_c_voltage",
+          "output_a_current",
+          "output_b_current",
+          "output_c_current",
+          "battery_voltage",
+          "battery_current",
+          "pv_voltage",
+          "pv_current",
+          "total_charge_energy",
+          "total_discharge_energy",
+          "time",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "ESSUnitDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "charge_energy": {
+            "description": "Daily charged energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "description": "Asia/Seoul local date represented by the row",
+            "type": "string"
+          },
+          "discharge_energy": {
+            "description": "Daily discharged or output energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "energy": {
+            "description": "Daily positive output energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "ESS device identifier",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier for the local date partition",
+            "type": "string"
+          },
+          "pv_energy": {
+            "description": "Daily PV-side generated energy total (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "updated": {
+            "description": "Timestamp with time zone indicating when the daily row was updated",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "id",
+          "date",
+          "energy",
+          "charge_energy",
+          "discharge_energy",
+          "pv_energy",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "ESSUnitIntradayData": {
+        "additionalProperties": false,
+        "properties": {
+          "battery_current": {
+            "description": "Battery current (A); positive means net discharge and negative means net charge",
+            "format": "double",
+            "type": "number"
+          },
+          "battery_power": {
+            "description": "Battery power magnitude during the interval (kW)",
+            "format": "double",
+            "type": "number"
+          },
+          "battery_voltage": {
+            "description": "Battery voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "charge_energy": {
+            "description": "Energy charged into the battery during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "discharge_energy": {
+            "description": "Energy discharged or output from the battery during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "ESS device identifier",
+            "type": "string"
+          },
+          "output_a_current": {
+            "description": "AC output phase A current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_a_voltage": {
+            "description": "AC output phase A voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_b_current": {
+            "description": "AC output phase B current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_b_voltage": {
+            "description": "AC output phase B voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_c_current": {
+            "description": "AC output phase C current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "output_c_voltage": {
+            "description": "AC output phase C voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_current": {
+            "description": "PV DC current (A)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_energy": {
+            "description": "PV-side generated energy during the interval (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "pv_voltage": {
+            "description": "PV DC voltage (V)",
+            "format": "double",
+            "type": "number"
+          },
+          "time": {
+            "description": "Asia/Seoul interval start time label in HH:MM format",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Interval start Unix timestamp interpreted from the local date",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_charge_energy": {
+            "description": "Cumulative charge energy display value at the interval timestamp (kWh)",
+            "format": "double",
+            "type": "number"
+          },
+          "total_discharge_energy": {
+            "description": "Cumulative discharge energy display value at the interval timestamp (kWh)",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "charge_energy",
+          "discharge_energy",
+          "pv_energy",
+          "battery_power",
+          "output_a_voltage",
+          "output_b_voltage",
+          "output_c_voltage",
+          "output_a_current",
+          "output_b_current",
+          "output_c_current",
+          "battery_voltage",
+          "battery_current",
+          "pv_voltage",
+          "pv_current",
+          "total_charge_energy",
+          "total_discharge_energy",
+          "time",
+          "timestamp"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -1429,6 +1989,36 @@
         ],
         "type": "object"
       },
+      "InternalInvalidateAuthValidationCacheBody": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_key": {
+            "pattern": "^token-auth/v2/(manager|viewer|admin)/[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_key"
+        ],
+        "type": "object"
+      },
+      "InternalInvalidateAuthValidationCacheResult": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "deleted": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "accepted",
+          "deleted"
+        ],
+        "type": "object"
+      },
       "InternalWarmCacheBody": {
         "additionalProperties": false,
         "properties": {
@@ -1471,6 +2061,7 @@
             "type": "string"
           },
           "plant_id": {
+            "description": "Physical data plant ID to warm. RefPlant-backed public requests read canonical data plant cache keys, so warm targets should use the physical data plant ID.",
             "maxLength": 15,
             "minLength": 15,
             "type": "string"
@@ -1478,7 +2069,8 @@
           "source": {
             "enum": [
               "device",
-              "inverter"
+              "inverter",
+              "ess"
             ],
             "type": "string"
           },
@@ -1490,6 +2082,7 @@
             "enum": [
               "panel",
               "inverter",
+              "ess",
               "string",
               "plant"
             ],
@@ -2424,38 +3017,77 @@
       "PanelData": {
         "additionalProperties": false,
         "properties": {
-          "cumulative_energy": {
-            "description": "Cumulative energy production up to this point (kWh)",
+          "avg_seqnum": {
+            "description": "Average sequence number indicator for the panel, or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "count": {
+            "description": "Data count for the panel interval, or null when the source parquet does not contain this optional metric.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cumulative_energy": {
+            "description": "Cumulative energy production up to this point (kWh), or null when the source parquet does not contain this optional metric.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "date": {
             "description": "Date of the data point in YYYY-MM-DD format",
             "type": "string"
           },
           "energy": {
-            "description": "Energy production for the time interval (kWh)",
+            "description": "Energy production for the time interval (kWh), or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "i_out": {
-            "description": "Output current measurement (Amperes)",
+            "description": "Output current measurement (Amperes), or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "id": {
             "description": "Unique identifier for the solar panel",
             "type": "string"
           },
-          "p": {
-            "description": "Power output measurement (Watts)",
+          "min_seqnum": {
+            "description": "Minimum sequence number indicator for the panel, or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p": {
+            "description": "Power output measurement (Watts), or null when the source parquet does not contain this optional metric.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "temp": {
-            "description": "Panel temperature measurement (Celsius)",
+            "description": "Panel temperature measurement (Celsius), or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "timestamp": {
             "description": "Unix timestamp of the measurement",
@@ -2463,14 +3095,20 @@
             "type": "integer"
           },
           "v_in": {
-            "description": "Input voltage measurement (Volts)",
+            "description": "Input voltage measurement (Volts), or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "v_out": {
-            "description": "Output voltage measurement (Volts)",
+            "description": "Output voltage measurement (Volts), or null when the source parquet does not contain this optional metric.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2483,7 +3121,10 @@
           "p",
           "v_in",
           "v_out",
-          "temp"
+          "temp",
+          "avg_seqnum",
+          "min_seqnum",
+          "count"
         ],
         "type": "object"
       },
@@ -2791,7 +3432,10 @@
             "enum": [
               "device",
               "inverter",
-              "edge"
+              "edge",
+              "panel",
+              "panel_group",
+              "sensor"
             ],
             "examples": [
               "device"
@@ -2813,7 +3457,10 @@
               "edge",
               "inverter",
               "combiner",
-              "panel"
+              "panel",
+              "panel_group",
+              "tracker",
+              "sensor"
             ],
             "examples": [
               "panel"
@@ -2869,7 +3516,10 @@
             "enum": [
               "device",
               "inverter",
-              "edge"
+              "edge",
+              "panel",
+              "panel_group",
+              "sensor"
             ],
             "type": "string"
           },
@@ -2885,7 +3535,10 @@
               "edge",
               "inverter",
               "combiner",
-              "panel"
+              "panel",
+              "panel_group",
+              "tracker",
+              "sensor"
             ],
             "type": "string"
           },
@@ -3056,6 +3709,10 @@
             "readOnly": true,
             "type": "string"
           },
+          "all_asset_models_registered": {
+            "description": "Whether every active stat-covered registry record has required asset model information registered at the end of the requested day. Panels may inherit a panel_group model. Edge, sensor, tracker, combiner, string, and other non-stat records are ignored.",
+            "type": "boolean"
+          },
           "device_models": {
             "description": "Active device model stats at the end of the requested day.",
             "items": {
@@ -3099,6 +3756,7 @@
         "required": [
           "timestamp",
           "installed_capacity_w",
+          "all_asset_models_registered",
           "module_models",
           "device_models",
           "inverter_models"
@@ -3120,7 +3778,10 @@
             "enum": [
               "device",
               "inverter",
-              "edge"
+              "edge",
+              "panel",
+              "panel_group",
+              "sensor"
             ],
             "examples": [
               "device"
@@ -3142,7 +3803,10 @@
               "edge",
               "inverter",
               "combiner",
-              "panel"
+              "panel",
+              "panel_group",
+              "tracker",
+              "sensor"
             ],
             "examples": [
               "panel"
@@ -4474,9 +5138,299 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/blueprints": {
+      "get": {
+        "description": "Lists blueprint records for a specific plant without including each record's data payload. Authorization header and Account-Type header are required.",
+        "operationId": "list_plant_blueprints",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to list blueprint records for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to list blueprint records for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Blueprint records without data payloads.",
+                  "items": {
+                    "$ref": "#/components/schemas/BlueprintListItem"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Plant Blueprint Records",
+        "tags": [
+          "v3/plants/blueprints"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/blueprints/{blueprint_id}": {
+      "get": {
+        "description": "Retrieves a specific blueprint record on a plant, including record metadata and the data payload. Authorization header and Account-Type header are required.",
+        "operationId": "get_plant_blueprint_data",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Blueprint record ID.",
+            "in": "path",
+            "name": "blueprint_id",
+            "required": true,
+            "schema": {
+              "description": "Blueprint record ID.",
+              "examples": [
+                "blueprint123456"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Blueprint record. The data field contains the stored blueprint payload, which can be an object or an array.",
+                  "properties": {
+                    "created": {
+                      "description": "Blueprint record creation timestamp.",
+                      "type": "string"
+                    },
+                    "data": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": true,
+                          "type": "object"
+                        },
+                        {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      ],
+                      "description": "Blueprint data payload."
+                    },
+                    "date": {
+                      "description": "Blueprint effective timestamp.",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Blueprint record ID.",
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "additionalProperties": true,
+                      "description": "Blueprint record metadata.",
+                      "type": "object"
+                    },
+                    "plant": {
+                      "description": "Requested plant ID.",
+                      "type": "string"
+                    },
+                    "updated": {
+                      "description": "Blueprint record update timestamp.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "plant",
+                    "date",
+                    "updated",
+                    "metadata",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Blueprint record with metadata and data payload.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Blueprint Data By Record ID",
+        "tags": [
+          "v3/plants/blueprints"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/indicator/device-state": {
       "get": {
-        "description": "Retrieves device or panel state indicator data at 5-minute interval. Use the `kind` query parameter with one of: seqnum, relay, rsd.",
+        "description": "Retrieves device or panel state indicator data at 5-minute intervals. Use the kind query parameter to select the indicator (seqnum, relay, rsd, or count). Data row fields vary by kind: count rows include edge_id, id, timestamp, date, and count; seqnum rows include id, timestamp, avg_seqnum, and min_seqnum; relay rows include id, date, timestamp, is_relay, and is_forced_relay; rsd rows include id, date, timestamp, is_rsd, and is_forced_rsd.",
         "operationId": "get_device_state",
         "parameters": [
           {
@@ -4545,17 +5499,18 @@
             }
           },
           {
-            "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd.",
+            "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd, count.",
             "explode": false,
             "in": "query",
             "name": "kind",
             "required": true,
             "schema": {
-              "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd.",
+              "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd, count.",
               "enum": [
                 "seqnum",
                 "relay",
-                "rsd"
+                "rsd",
+                "count"
               ],
               "type": "string"
             }
@@ -4563,7 +5518,57 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Device state response envelope. The data row shape depends on kind; count rows include edge_id, id, timestamp, date, and count.",
+                  "properties": {
+                    "data": {
+                      "description": "Indicator rows. The structure of each item depends on the requested kind: count rows include edge_id, id, timestamp, date, and count; seqnum rows include id, timestamp, avg_seqnum, and min_seqnum; relay rows include id, date, timestamp, is_relay, and is_forced_relay; rsd rows include id, date, timestamp, is_rsd, and is_forced_rsd.",
+                      "items": {
+                        "additionalProperties": true,
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "date": {
+                      "description": "Requested local date.",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "Indicator kind: seqnum, relay, rsd, or count.",
+                      "enum": [
+                        "seqnum",
+                        "relay",
+                        "rsd",
+                        "count"
+                      ],
+                      "type": "string"
+                    },
+                    "plant_id": {
+                      "description": "Requested plant ID.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "plant_id",
+                    "date",
+                    "kind",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Gzip JSON envelope containing indicator data. The data row structure varies by kind (e.g., count rows include edge_id, id, timestamp, date, and count).",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
           },
           "default": {
             "content": {
@@ -4581,7 +5586,7 @@
             "bearer": []
           }
         ],
-        "summary": "Retrieve Device State (5m avg)",
+        "summary": "Retrieve Device State (5m)",
         "tags": [
           "v3/plants/indicator"
         ]
@@ -5307,7 +6312,7 @@
     },
     "/api/v3/plants/{plant_id}/metrics/{source}/{unit}-{interval}": {
       "get": {
-        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, and plant-level data aggregation across different time intervals.",
+        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, ESS, and plant-level data aggregation across different time intervals. ESS supports ess and plant units at 5m, 15m, 1h, and 1d intervals only.",
         "operationId": "get_metrics_by_date",
         "parameters": [
           {
@@ -5367,16 +6372,17 @@
             }
           },
           {
-            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, and 'sensor' refers to sensor data collection.",
+            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess' and 'plant'.",
             "in": "path",
             "name": "source",
             "required": true,
             "schema": {
               "default": "device",
-              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, and 'sensor' refers to sensor data collection.",
+              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess' and 'plant'.",
               "enum": [
                 "device",
                 "inverter",
+                "ess",
                 "sensor"
               ],
               "examples": [
@@ -5386,16 +6392,17 @@
             }
           },
           {
-            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units.",
+            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Unit 'ess' is valid only with source 'ess'.",
             "in": "path",
             "name": "unit",
             "required": true,
             "schema": {
               "default": "plant",
-              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units.",
+              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Unit 'ess' is valid only with source 'ess'.",
               "enum": [
                 "panel",
                 "inverter",
+                "ess",
                 "string",
                 "plant",
                 "temperature",
@@ -5408,12 +6415,12 @@
             }
           },
           {
-            "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year).",
+            "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year). For source 'ess', supported intervals are '5m', '15m', '1h', and '1d'.",
             "in": "path",
             "name": "interval",
             "required": true,
             "schema": {
-              "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year).",
+              "description": "Time interval for data aggregation. Determines the temporal granularity of the returned time-series data. Supported intervals: '5m' (5 minutes), '15m' (15 minutes), '1h' (1 hour), '1d' (1 day), '1M' (1 month), '1y' (1 year). For source 'ess', supported intervals are '5m', '15m', '1h', and '1d'.",
               "enum": [
                 "5m",
                 "15m",
@@ -5444,13 +6451,13 @@
             }
           },
           {
-            "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h).",
+            "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h). For source 'ess', before ranges are supported only for interval '1d'.",
             "explode": false,
             "in": "query",
             "name": "before",
             "schema": {
               "default": 1,
-              "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h).",
+              "description": "Historical data range. Number of time intervals before the specified date to include in the response. This parameter allows retrieval of historical trend data. Note: Only applicable for daily and longer intervals (1d, 1M, 1y), not for intraday intervals (5m, 15m, 1h). For source 'ess', before ranges are supported only for interval '1d'.",
               "examples": [
                 1
               ],
@@ -5822,6 +6829,210 @@
                     },
                     {
                       "additionalProperties": false,
+                      "description": "Energy storage system unit metrics at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSUnitIntradayData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Unit Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Energy storage system unit daily metrics at 1-day intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSUnitDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Unit Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Plant-level energy storage system metrics at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPlantIntradayData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Plant Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Plant-level energy storage system daily metrics at 1-day intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPlantDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Plant Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
                       "description": "Aggregated metrics for entire plant at 1-day, 1-month, and 1-year intervals.",
                       "properties": {
                         "before": {
@@ -5896,6 +7107,829 @@
         "summary": "Retrieve Time-Series Metrics Data",
         "tags": [
           "v3/plants/metrics"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry": {
+      "get": {
+        "description": "Retrieves the registry timeline for a date by combining snapshots from the previous date with logs from the requested date.",
+        "operationId": "get_plant_registry_timeline",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date for registry timeline data. Must follow the format 'YYYY-MM-DD'.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date for registry timeline data. Must follow the format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of asset registration records for the specified plant and date",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistryOutputBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Registry Timeline",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry/logs": {
+      "get": {
+        "description": "Retrieves registry log records for the specified plant and date using the explicit patch-registry logs path shape.",
+        "operationId": "get_plant_registry_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "Optional asset ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional map ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_type",
+            "schema": {
+              "description": "Optional asset type filter.",
+              "enum": [
+                "device",
+                "inverter",
+                "edge",
+                "panel",
+                "panel_group",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional map type filter.",
+              "enum": [
+                "device",
+                "string",
+                "edge",
+                "inverter",
+                "combiner",
+                "panel",
+                "panel_group",
+                "tracker",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of asset registration records for the specified plant and date",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistryOutputBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Registry Logs",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry/logs/filter": {
+      "get": {
+        "description": "Filters registry log records for the specified plant and date by asset_id, map_id, asset_type, and map_type. At least one filter parameter is required.",
+        "operationId": "filter_plant_registry_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "Optional asset ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional map ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_type",
+            "schema": {
+              "description": "Optional asset type filter.",
+              "enum": [
+                "device",
+                "inverter",
+                "edge",
+                "panel",
+                "panel_group",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional map type filter.",
+              "enum": [
+                "device",
+                "string",
+                "edge",
+                "inverter",
+                "combiner",
+                "panel",
+                "panel_group",
+                "tracker",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of asset registration records for the specified plant and date",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistryOutputBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Filter Plant Registry Logs",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry/snapshots": {
+      "get": {
+        "description": "Retrieves registry snapshot records for the specified plant and date, with optional asset_id, map_id, asset_type, and map_type filters.",
+        "operationId": "get_plant_registry_snapshots",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "Optional asset ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional map ID filter.",
+              "pattern": "^[a-zA-Z0-9.\\-_ /:@+]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional asset type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_type",
+            "schema": {
+              "description": "Optional asset type filter.",
+              "enum": [
+                "device",
+                "inverter",
+                "edge",
+                "panel",
+                "panel_group",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional map type filter.",
+              "enum": [
+                "device",
+                "string",
+                "edge",
+                "inverter",
+                "combiner",
+                "panel",
+                "panel_group",
+                "tracker",
+                "sensor"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of asset registration records for the specified plant and date",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistryOutputBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Registry Snapshots",
+        "tags": [
+          "v3/plants/registry"
         ]
       }
     },
@@ -6048,203 +8082,6 @@
           }
         ],
         "summary": "Retrieve Plant Registry Stat",
-        "tags": [
-          "v3/plants/registry"
-        ]
-      }
-    },
-    "/api/v3/plants/{plant_id}/registry/{record_type}": {
-      "get": {
-        "description": "Retrieves asset registry information for a specific plant filtered by record type. Includes registration status, mapping information, and historical data for the specified asset type. Authorization header and Account-Type header are required.",
-        "operationId": "get_asset_registration_on_plant",
-        "parameters": [
-          {
-            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-            "in": "header",
-            "name": "Authorization",
-            "required": true,
-            "schema": {
-              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-            "in": "header",
-            "name": "Account-Type",
-            "required": true,
-            "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-              "enum": [
-                "viewer",
-                "manager",
-                "admin"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
-            "in": "path",
-            "name": "plant_id",
-            "required": true,
-            "schema": {
-              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
-              "examples": [
-                "unw4id41ud2p0wt"
-              ],
-              "maxLength": 15,
-              "minLength": 15,
-              "patternDescription": "alphanum",
-              "type": "string"
-            }
-          },
-          {
-            "description": "The type of data to retrieve. Possible values:'logs': Returns all records that have changed on the specified date., 'snapshots': Returns all records that can be evaluated as 'registered' on the specified date.",
-            "in": "path",
-            "name": "record_type",
-            "required": true,
-            "schema": {
-              "description": "The type of data to retrieve. Possible values:'logs': Returns all records that have changed on the specified date., 'snapshots': Returns all records that can be evaluated as 'registered' on the specified date.",
-              "enum": [
-                "logs",
-                "snapshots"
-              ],
-              "examples": [
-                "logs"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
-            "explode": false,
-            "in": "query",
-            "name": "date",
-            "required": true,
-            "schema": {
-              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
-              "examples": [
-                "2024-01-24"
-              ],
-              "format": "date",
-              "type": "string"
-            }
-          },
-          {
-            "description": "The unique identifier for the asset.",
-            "explode": false,
-            "in": "query",
-            "name": "asset_id",
-            "schema": {
-              "description": "The unique identifier for the asset.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "The unique identifier for the map.",
-            "explode": false,
-            "in": "query",
-            "name": "map_id",
-            "schema": {
-              "description": "The unique identifier for the map.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches one of the passed values.",
-            "in": "header",
-            "name": "If-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches one of the passed values.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-            "in": "header",
-            "name": "If-None-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is more recent than the passed date.",
-            "in": "header",
-            "name": "If-Modified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is more recent than the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-            "in": "header",
-            "name": "If-Unmodified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "Array of asset registration records for the specified plant and date",
-                  "items": {
-                    "$ref": "#/components/schemas/RegistryOutputBody"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "ETag": {
-                "schema": {
-                  "description": "Weak entity tag for conditional requests.",
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Retrieve Plant Registry by Record Type",
         "tags": [
           "v3/plants/registry"
         ]
