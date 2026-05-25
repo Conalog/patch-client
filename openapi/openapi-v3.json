@@ -3499,6 +3499,20 @@
         ],
         "type": "object"
       },
+      "RegistryMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "fielder_name": {
+            "description": "Name of the field worker who performed the registry event.",
+            "type": "string"
+          },
+          "fielder_org": {
+            "description": "Organization of the field worker who performed the registry event.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "RegistryOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -3546,6 +3560,10 @@
             "description": "Timestamp when the asset was registered in RFC3339 format",
             "type": "string"
           },
+          "registered_meta": {
+            "$ref": "#/components/schemas/RegistryMeta",
+            "description": "Sanitized registration actor metadata. Only fielder_name and fielder_org are exposed."
+          },
           "tag": {
             "additionalProperties": {},
             "description": "Additional metadata and tags associated with the asset registration",
@@ -3554,6 +3572,10 @@
           "unregistered": {
             "description": "Timestamp when the asset was unregistered in RFC3339 format (empty if still registered)",
             "type": "string"
+          },
+          "unregistered_meta": {
+            "$ref": "#/components/schemas/RegistryMeta",
+            "description": "Sanitized unregistration actor metadata. Only fielder_name and fielder_org are exposed."
           }
         },
         "required": [
