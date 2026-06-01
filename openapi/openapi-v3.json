@@ -1204,6 +1204,205 @@
         ],
         "type": "object"
       },
+      "CommentActionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CommentActionBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "images": {
+            "description": "Image file IDs attached to the comment.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "is_private": {
+            "description": "Private flag.",
+            "type": "boolean"
+          },
+          "map_ids": {
+            "description": "Plant map object IDs attached to the comment.",
+            "items": {
+              "minLength": 1,
+              "pattern": "^[^\\s\\p{Z}](?:[^\\r\\n\\x85\\p{Zl}\\p{Zp}]*[^\\s\\p{Z}])?$",
+              "patternDescription": "non-blank with no leading or trailing whitespace",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "related": {
+            "description": "Related plant-data timestamp.",
+            "examples": [
+              "2025-04-11 00:05:00.000Z"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "description": "Comment text.",
+            "examples": [
+              "입력전압 없음"
+            ],
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "CommentEditBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CommentEditBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "images": {
+            "description": "Image file IDs attached to the comment.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "is_private": {
+            "description": "Private flag.",
+            "type": "boolean"
+          },
+          "map_ids": {
+            "description": "Plant map object IDs attached to the comment.",
+            "items": {
+              "minLength": 1,
+              "pattern": "^[^\\s\\p{Z}](?:[^\\r\\n\\x85\\p{Zl}\\p{Zp}]*[^\\s\\p{Z}])?$",
+              "patternDescription": "non-blank with no leading or trailing whitespace",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "related": {
+            "description": "Related plant-data timestamp.",
+            "examples": [
+              "2025-04-11 00:05:00.000Z"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "description": "Comment text.",
+            "examples": [
+              "입력전압 없음"
+            ],
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CommentOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CommentOutput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "is_private": {
+            "type": "boolean"
+          },
+          "map_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "parent": {
+            "type": "string"
+          },
+          "related": {
+            "type": "string"
+          },
+          "resolved": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "created",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "CommentStateBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CommentStateBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "transition": {
+            "description": "State transition to apply to the comment.",
+            "enum": [
+              "resolve",
+              "reopen",
+              "archive",
+              "restore"
+            ],
+            "examples": [
+              "resolve"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "transition"
+        ],
+        "type": "object"
+      },
       "CreateAccountOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -1272,6 +1471,46 @@
           "type",
           "name",
           "organizations"
+        ],
+        "type": "object"
+      },
+      "CreateFilterBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CreateFilterBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "map_ids": {
+            "description": "Plant map object IDs included in this filter.",
+            "items": {
+              "minLength": 1,
+              "pattern": "^[^\\s\\p{Z}](?:[^\\r\\n\\x85\\p{Zl}\\p{Zp}]*[^\\s\\p{Z}])?$",
+              "patternDescription": "non-blank with no leading or trailing whitespace",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "name": {
+            "description": "Filter name.",
+            "examples": [
+              "Inverter A"
+            ],
+            "minLength": 1,
+            "pattern": "^[^\\s\\p{Z}](?:[^\\r\\n\\x85\\p{Zl}\\p{Zp}]*[^\\s\\p{Z}])?$",
+            "patternDescription": "non-blank with no leading or trailing whitespace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "map_ids"
         ],
         "type": "object"
       },
@@ -1937,6 +2176,90 @@
           "filename",
           "size",
           "created",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "Filter": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/Filter.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/FilterConditions",
+            "description": "Filter conditions."
+          },
+          "created": {
+            "description": "Filter record creation timestamp.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Filter record ID.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Filter name.",
+            "type": "string"
+          },
+          "updated": {
+            "description": "Filter record update timestamp.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "conditions",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "FilterConditions": {
+        "additionalProperties": false,
+        "properties": {
+          "merge": {
+            "description": "Map object IDs merged by this filter.",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "FilterListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "description": "Filter record creation timestamp.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Filter record ID.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Filter name.",
+            "type": "string"
+          },
+          "updated": {
+            "description": "Filter record update timestamp.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
           "updated"
         ],
         "type": "object"
@@ -3042,7 +3365,7 @@
             ]
           },
           "date": {
-            "description": "Date of the data point in YYYY-MM-DD format",
+            "description": "Date/time label from the panel-all parquet row.",
             "type": "string"
           },
           "energy": {
@@ -3112,11 +3435,6 @@
           }
         },
         "required": [
-          "id",
-          "date",
-          "timestamp",
-          "energy",
-          "cumulative_energy",
           "i_out",
           "p",
           "v_in",
@@ -3124,7 +3442,12 @@
           "temp",
           "avg_seqnum",
           "min_seqnum",
-          "count"
+          "count",
+          "energy",
+          "cumulative_energy",
+          "id",
+          "date",
+          "timestamp"
         ],
         "type": "object"
       },
@@ -3587,6 +3910,34 @@
           "registered",
           "tag",
           "unregistered"
+        ],
+        "type": "object"
+      },
+      "RenameFilterBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/RenameFilterBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Filter name.",
+            "examples": [
+              "Inverter A"
+            ],
+            "minLength": 1,
+            "pattern": "^[^\\s\\p{Z}](?:[^\\r\\n\\x85\\p{Zl}\\p{Zp}]*[^\\s\\p{Z}])?$",
+            "patternDescription": "non-blank with no leading or trailing whitespace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
         ],
         "type": "object"
       },
@@ -5450,9 +5801,1190 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/comments": {
+      "get": {
+        "description": "Lists comments for a specific plant.",
+        "operationId": "list_plant_comments",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CommentOutput"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Plant Comments",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/start_thread": {
+      "post": {
+        "description": "Starts a comment thread for a specific plant.",
+        "operationId": "start_plant_comment_thread",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start Plant Comment Thread",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/{comment_id}": {
+      "get": {
+        "description": "Retrieves a specific comment for a plant.",
+        "operationId": "get_plant_comment",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput",
+                  "description": "Plant comment detail."
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Plant Comment",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/{comment_id}/edit": {
+      "post": {
+        "description": "Edits a specific plant comment.",
+        "operationId": "edit_plant_comment",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentEditBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit Plant Comment",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/{comment_id}/reply": {
+      "post": {
+        "description": "Creates a reply under a specific plant comment.",
+        "operationId": "reply_plant_comment",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reply To Plant Comment",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/{comment_id}/state": {
+      "post": {
+        "description": "Applies a state transition to a specific plant comment.",
+        "operationId": "change_plant_comment_state",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentStateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change Plant Comment State",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/filters": {
+      "get": {
+        "description": "Lists reusable map object filters for a specific plant without including each filter's condition payload.",
+        "operationId": "list_plant_filters",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Plant filters without condition payloads.",
+                  "items": {
+                    "$ref": "#/components/schemas/FilterListItem"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Plant Filters",
+        "tags": [
+          "v3/plants/filters"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/filters/create": {
+      "post": {
+        "description": "Creates a reusable map object filter for a specific plant. The request map IDs are stored internally as merge conditions.",
+        "operationId": "create_plant_filter",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFilterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Filter",
+                  "description": "Created plant filter."
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Plant Filter",
+        "tags": [
+          "v3/plants/filters"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/filters/{filter_id}": {
+      "delete": {
+        "description": "Deletes a reusable map object filter for a specific plant.",
+        "operationId": "delete_plant_filter",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter record ID.",
+            "in": "path",
+            "name": "filter_id",
+            "required": true,
+            "schema": {
+              "description": "Filter record ID.",
+              "examples": [
+                "filter123456789"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete Plant Filter",
+        "tags": [
+          "v3/plants/filters"
+        ]
+      },
+      "get": {
+        "description": "Retrieves a reusable map object filter for a specific plant, including its condition payload.",
+        "operationId": "get_plant_filter",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter record ID.",
+            "in": "path",
+            "name": "filter_id",
+            "required": true,
+            "schema": {
+              "description": "Filter record ID.",
+              "examples": [
+                "filter123456789"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Filter",
+                  "description": "Plant filter detail."
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Plant Filter",
+        "tags": [
+          "v3/plants/filters"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/filters/{filter_id}/rename": {
+      "post": {
+        "description": "Renames a reusable map object filter for a specific plant.",
+        "operationId": "rename_plant_filter",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "admin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter record ID.",
+            "in": "path",
+            "name": "filter_id",
+            "required": true,
+            "schema": {
+              "description": "Filter record ID.",
+              "examples": [
+                "filter123456789"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameFilterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Filter",
+                  "description": "Renamed plant filter."
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename Plant Filter",
+        "tags": [
+          "v3/plants/filters"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/indicator/device-state": {
       "get": {
-        "description": "Retrieves device or panel state indicator data at 5-minute intervals. Use the kind query parameter to select the indicator (seqnum, relay, rsd, or count). Data row fields vary by kind: count rows include edge_id, id, timestamp, date, and count; seqnum rows include id, timestamp, avg_seqnum, and min_seqnum; relay rows include id, date, timestamp, is_relay, and is_forced_relay; rsd rows include id, date, timestamp, is_rsd, and is_forced_rsd.",
+        "description": "Retrieves device-state data at 5-minute intervals. The fields query parameter is accepted for API compatibility but currently all device-state columns are returned. Rows include id, timestamp, date, is_forced_rapid_shutdown, is_forced_ref, is_forced_relay, is_rapid_shutdown, and is_relay.",
         "operationId": "get_device_state",
         "parameters": [
           {
@@ -5521,20 +7053,28 @@
             }
           },
           {
-            "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd, count.",
+            "description": "Device-state fields to include. Selection is reserved for future use; the endpoint currently returns all device-state columns.",
             "explode": false,
             "in": "query",
-            "name": "kind",
-            "required": true,
+            "name": "fields",
             "schema": {
-              "description": "Indicator kind to retrieve. One of: seqnum, relay, rsd, count.",
-              "enum": [
-                "seqnum",
-                "relay",
-                "rsd",
-                "count"
+              "default": [
+                "all"
               ],
-              "type": "string"
+              "description": "Device-state fields to include. Selection is reserved for future use; the endpoint currently returns all device-state columns.",
+              "examples": [
+                [
+                  "is_relay",
+                  "is_rapid_shutdown"
+                ]
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -5543,28 +7083,64 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Device state response envelope. The data row shape depends on kind; count rows include edge_id, id, timestamp, date, and count.",
+                  "description": "Device state response envelope. Rows include id, timestamp, date, is_forced_rapid_shutdown, is_forced_ref, is_forced_relay, is_rapid_shutdown, and is_relay.",
                   "properties": {
                     "data": {
-                      "description": "Indicator rows. The structure of each item depends on the requested kind: count rows include edge_id, id, timestamp, date, and count; seqnum rows include id, timestamp, avg_seqnum, and min_seqnum; relay rows include id, date, timestamp, is_relay, and is_forced_relay; rsd rows include id, date, timestamp, is_rsd, and is_forced_rsd.",
+                      "description": "Device-state rows. Rows include id, timestamp, date, is_forced_rapid_shutdown, is_forced_ref, is_forced_relay, is_rapid_shutdown, and is_relay.",
                       "items": {
-                        "additionalProperties": true,
+                        "additionalProperties": false,
+                        "description": "Rows include id, timestamp, date, is_forced_rapid_shutdown, is_forced_ref, is_forced_relay, is_rapid_shutdown, and is_relay.",
+                        "properties": {
+                          "date": {
+                            "description": "Time label from the device-state parquet row.",
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Device-state row identifier.",
+                            "type": "string"
+                          },
+                          "is_forced_rapid_shutdown": {
+                            "description": "Forced rapid shutdown state.",
+                            "type": "boolean"
+                          },
+                          "is_forced_ref": {
+                            "description": "Forced reference state.",
+                            "type": "boolean"
+                          },
+                          "is_forced_relay": {
+                            "description": "Forced relay state.",
+                            "type": "boolean"
+                          },
+                          "is_rapid_shutdown": {
+                            "description": "Rapid shutdown state.",
+                            "type": "boolean"
+                          },
+                          "is_relay": {
+                            "description": "Relay state.",
+                            "type": "boolean"
+                          },
+                          "timestamp": {
+                            "description": "Unix timestamp of the device-state row.",
+                            "format": "int64",
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "timestamp",
+                          "date",
+                          "is_forced_rapid_shutdown",
+                          "is_forced_ref",
+                          "is_forced_relay",
+                          "is_rapid_shutdown",
+                          "is_relay"
+                        ],
                         "type": "object"
                       },
                       "type": "array"
                     },
                     "date": {
                       "description": "Requested local date.",
-                      "type": "string"
-                    },
-                    "kind": {
-                      "description": "Indicator kind: seqnum, relay, rsd, or count.",
-                      "enum": [
-                        "seqnum",
-                        "relay",
-                        "rsd",
-                        "count"
-                      ],
                       "type": "string"
                     },
                     "plant_id": {
@@ -5575,15 +7151,23 @@
                   "required": [
                     "plant_id",
                     "date",
-                    "kind",
                     "data"
                   ],
                   "type": "object"
                 }
               }
             },
-            "description": "Gzip JSON envelope containing indicator data. The data row structure varies by kind (e.g., count rows include edge_id, id, timestamp, date, and count).",
+            "description": "Gzip JSON envelope containing device-state rows. Rows include id, timestamp, date, is_forced_rapid_shutdown, is_forced_ref, is_forced_relay, is_rapid_shutdown, and is_relay.",
             "headers": {
+              "Content-Encoding": {
+                "description": "Response body content encoding. Device-state streams are gzip encoded.",
+                "schema": {
+                  "enum": [
+                    "gzip"
+                  ],
+                  "type": "string"
+                }
+              },
               "ETag": {
                 "schema": {
                   "description": "Weak entity tag for conditional requests.",
