@@ -14,7 +14,7 @@
             "type": "string"
           },
           "email": {
-            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "description": "The email address of the user. Only available for 'manager' account types.",
             "examples": [
               "manager@example.com"
             ],
@@ -45,12 +45,12 @@
             "enum": [
               "manager",
               "viewer",
-              "admin"
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "The username of the user. Only available for 'viewer' account types.",
+            "description": "The username of the user. Only available for 'viewer' and 'temporary' account types.",
             "examples": [
               "viewer_user"
             ],
@@ -61,6 +61,60 @@
           "type",
           "name",
           "organizations"
+        ],
+        "type": "object"
+      },
+      "AssignOrganizationPermissionRequestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AssignOrganizationPermissionRequestBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "User email to grant access for. Used when Role is manager",
+            "examples": [
+              "usr123456789012@conalog.com"
+            ],
+            "type": "string"
+          },
+          "plantId": {
+            "description": "Target plant ID to grant access to.",
+            "examples": [
+              "pln123456789012"
+            ],
+            "maxLength": 15,
+            "minLength": 15,
+            "type": "string"
+          },
+          "type": {
+            "description": "Account type of user.",
+            "enum": [
+              "viewer",
+              "manager",
+              "temporary"
+            ],
+            "examples": [
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "User username to grant access for. Used when Role is viewer or temporary",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plantId",
+          "type"
         ],
         "type": "object"
       },
@@ -202,7 +256,7 @@
             "type": "string"
           },
           "email": {
-            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "description": "The email address of the user. Only available for 'manager' account types.",
             "examples": [
               "manager@example.com"
             ],
@@ -237,12 +291,12 @@
             "enum": [
               "manager",
               "viewer",
-              "admin"
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "The username of the user. Only available for 'viewer' account types.",
+            "description": "The username of the user. Only available for 'viewer' and 'temporary' account types.",
             "examples": [
               "viewer_user"
             ],
@@ -349,12 +403,13 @@
             "description": "The type of account to authenticate. Determines the authentication method and access level.",
             "enum": [
               "manager",
-              "viewer"
+              "viewer",
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "The user's username. Required when authenticating as a 'viewer' account type.",
+            "description": "The user's username. Required when authenticating as a 'viewer' or 'temporary' account type.",
             "examples": [
               "viewer_user"
             ],
@@ -391,6 +446,78 @@
           "id",
           "date",
           "updated"
+        ],
+        "type": "object"
+      },
+      "BlueprintRecordPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/BlueprintRecordPayload.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "data": {},
+          "date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "metadata": {},
+          "plant": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "plant",
+          "date",
+          "updated",
+          "metadata",
+          "data"
+        ],
+        "type": "object"
+      },
+      "BlueprintWriteBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/BlueprintWriteBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "description": "Blueprint data payload."
+          },
+          "date": {
+            "description": "Blueprint effective timestamp.",
+            "examples": [
+              "2026-06-04 00:00:00.000Z"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Blueprint metadata."
+          }
+        },
+        "required": [
+          "date",
+          "data"
         ],
         "type": "object"
       },
@@ -1117,93 +1244,6 @@
         ],
         "type": "object"
       },
-      "Comment": {
-        "additionalProperties": false,
-        "properties": {
-          "created": {
-            "type": "string"
-          },
-          "expand": {
-            "additionalProperties": {},
-            "type": "object"
-          },
-          "id": {
-            "type": "string"
-          },
-          "images": {
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "isArchive": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "isPrivate": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "parent": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "plant": {
-            "type": "string"
-          },
-          "related": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "resolved": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tag": {},
-          "text": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated": {
-            "type": "string"
-          },
-          "user": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "plant",
-          "user",
-          "title",
-          "text",
-          "images",
-          "tag",
-          "parent",
-          "resolved",
-          "related",
-          "isPrivate",
-          "isArchive",
-          "created",
-          "updated"
-        ],
-        "type": "object"
-      },
       "CommentActionBody": {
         "additionalProperties": false,
         "properties": {
@@ -1324,10 +1364,20 @@
           "created": {
             "type": "string"
           },
+          "expand": {
+            "additionalProperties": {},
+            "type": "object"
+          },
           "id": {
             "type": "string"
           },
           "images": {
+            "description": "Array of image file URLs attached to the comment.",
+            "examples": [
+              [
+                "https://example.org/api/files/w8l3o9jedinck7g/img123/blob.jpg"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -1362,11 +1412,79 @@
           },
           "updated": {
             "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CommentUserOutput"
           }
         },
         "required": [
           "id",
           "text",
+          "user",
+          "created",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "CommentReadOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "description": "Array of image file URLs attached to the comment.",
+            "examples": [
+              [
+                "https://example.org/api/files/w8l3o9jedinck7g/img123/blob.jpg"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "is_private": {
+            "type": "boolean"
+          },
+          "map_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "parent": {
+            "type": "string"
+          },
+          "related": {
+            "type": "string"
+          },
+          "resolved": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CommentUserOutput"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "user",
           "created",
           "updated"
         ],
@@ -1403,6 +1521,30 @@
         ],
         "type": "object"
       },
+      "CommentUserOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "username",
+          "email"
+        ],
+        "type": "object"
+      },
       "CreateAccountOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -1416,10 +1558,14 @@
             "type": "string"
           },
           "email": {
-            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "description": "The email address of the user. Only available for 'manager' account types.",
             "examples": [
               "manager@example.com"
             ],
+            "type": "string"
+          },
+          "expired": {
+            "description": "Expiration timestamp for temporary accounts.",
             "type": "string"
           },
           "id": {
@@ -1429,11 +1575,15 @@
             ],
             "type": "string"
           },
+          "link": {
+            "description": "Generated onsite link for temporary accounts.",
+            "type": "string"
+          },
           "metadata": {
             "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
           },
           "name": {
-            "description": "The display name of the user.",
+            "description": "The display name of the created manager or viewer account.",
             "examples": [
               "John Doe"
             ],
@@ -1454,12 +1604,12 @@
             "enum": [
               "manager",
               "viewer",
-              "admin"
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "The username of the user. Only available for 'viewer' account types.",
+            "description": "The username of the user. Only available for 'viewer' and 'temporary' account types.",
             "examples": [
               "viewer_user"
             ],
@@ -1469,7 +1619,6 @@
         "required": [
           "id",
           "type",
-          "name",
           "organizations"
         ],
         "type": "object"
@@ -1646,7 +1795,7 @@
         "additionalProperties": false,
         "properties": {
           "email": {
-            "description": "The email address of the user. Only available for 'manager' and 'admin' account types.",
+            "description": "The email address of the user. Only available for 'manager' account types.",
             "examples": [
               "manager@example.com"
             ],
@@ -1656,14 +1805,14 @@
             "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
           },
           "name": {
-            "description": "The display name of the user.",
+            "description": "The display name of the user. Only used for 'manager' and 'viewer' account types.",
             "examples": [
               "John Doe"
             ],
             "type": "string"
           },
           "password": {
-            "description": "The user's password for authentication",
+            "description": "The user's password for authentication. Temporary account passwords are generated by the server and returned in the create response.",
             "examples": [
               "securepassword123"
             ],
@@ -1673,12 +1822,13 @@
             "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
             "enum": [
               "manager",
-              "viewer"
+              "viewer",
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "The username of the user. Only available for 'viewer' account types.",
+            "description": "The username of the user. Only used for 'viewer' account types. Temporary account usernames are generated by the server.",
             "examples": [
               "viewer_user"
             ],
@@ -1686,9 +1836,7 @@
           }
         },
         "required": [
-          "type",
-          "password",
-          "name"
+          "type"
         ],
         "type": "object"
       },
@@ -2180,63 +2328,6 @@
         ],
         "type": "object"
       },
-      "Filter": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/Filter.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "conditions": {
-            "$ref": "#/components/schemas/FilterConditions",
-            "description": "Filter conditions."
-          },
-          "created": {
-            "description": "Filter record creation timestamp.",
-            "type": "string"
-          },
-          "id": {
-            "description": "Filter record ID.",
-            "type": "string"
-          },
-          "name": {
-            "description": "Filter name.",
-            "type": "string"
-          },
-          "updated": {
-            "description": "Filter record update timestamp.",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "conditions",
-          "updated"
-        ],
-        "type": "object"
-      },
-      "FilterConditions": {
-        "additionalProperties": false,
-        "properties": {
-          "merge": {
-            "description": "Map object IDs merged by this filter.",
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          }
-        },
-        "type": "object"
-      },
       "FilterListItem": {
         "additionalProperties": false,
         "properties": {
@@ -2248,6 +2339,16 @@
             "description": "Filter record ID.",
             "type": "string"
           },
+          "map_ids": {
+            "description": "Plant map object IDs included in this filter.",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "name": {
             "description": "Filter name.",
             "type": "string"
@@ -2260,6 +2361,54 @@
         "required": [
           "id",
           "name",
+          "map_ids",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "FilterOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/FilterOutput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "created": {
+            "description": "Filter record creation timestamp.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Filter record ID.",
+            "type": "string"
+          },
+          "map_ids": {
+            "description": "Plant map object IDs included in this filter.",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "Filter name.",
+            "type": "string"
+          },
+          "updated": {
+            "description": "Filter record update timestamp.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "map_ids",
           "updated"
         ],
         "type": "object"
@@ -2312,11 +2461,50 @@
         ],
         "type": "object"
       },
+      "ImageUploadResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "description": "Timestamp when the image record was created",
+            "type": "string"
+          },
+          "filename": {
+            "description": "Original filename of the uploaded image",
+            "type": "string"
+          },
+          "id": {
+            "description": "Image record ID. Use this value in comment image attachment requests.",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant ID from the upload route path",
+            "type": "string"
+          },
+          "size": {
+            "description": "Image file size in bytes",
+            "format": "int64",
+            "type": "integer"
+          },
+          "updated": {
+            "description": "Timestamp when the image record was last updated",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "plant_id",
+          "filename",
+          "size",
+          "created",
+          "updated"
+        ],
+        "type": "object"
+      },
       "InternalInvalidateAuthValidationCacheBody": {
         "additionalProperties": false,
         "properties": {
           "cache_key": {
-            "pattern": "^token-auth/v2/(manager|viewer|admin)/[a-f0-9]{64}$",
+            "pattern": "^token-auth/v2/(manager|viewer|temporary)/[a-f0-9]{64}$",
             "type": "string"
           }
         },
@@ -3155,59 +3343,6 @@
         ],
         "type": "object"
       },
-      "OrgAddPermissionInputBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/OrgAddPermissionInputBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "email": {
-            "description": "User email to grant access for. Used when Role is manager",
-            "examples": [
-              "usr123456789012@conalog.com"
-            ],
-            "type": "string"
-          },
-          "plantId": {
-            "description": "Target plant ID to grant access to.",
-            "examples": [
-              "pln123456789012"
-            ],
-            "maxLength": 15,
-            "minLength": 15,
-            "type": "string"
-          },
-          "type": {
-            "description": "Account type of user.",
-            "enum": [
-              "viewer",
-              "manager"
-            ],
-            "examples": [
-              "viewer"
-            ],
-            "type": "string"
-          },
-          "username": {
-            "description": "User username to grant access for. Used when Role is viewer",
-            "examples": [
-              "usr123456789012"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "plantId",
-          "type"
-        ],
-        "type": "object"
-      },
       "OrgAddPermissionOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -3234,12 +3369,13 @@
             "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
             "enum": [
               "manager",
-              "viewer"
+              "viewer",
+              "temporary"
             ],
             "type": "string"
           },
           "username": {
-            "description": "User username to grant access for. Used when Role is viewer",
+            "description": "User username to grant access for. Used when Role is viewer or temporary",
             "examples": [
               "usr123456789012"
             ],
@@ -3743,6 +3879,15 @@
       "RegisterBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/RegisterBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "asset_id": {
             "description": "Unique identifier for the physical asset to be registered (e.g., device serial number, inverter ID)",
             "examples": [
@@ -3799,18 +3944,35 @@
             "type": "string"
           },
           "registered_meta": {
-            "description": "Additional metadata associated with the registration event (JSON string or custom format)",
-            "examples": [
-              "{\"installer\": \"John Doe\", \"warranty\": \"2029-01-24\"}"
-            ],
-            "type": "string"
+            "description": "Registration action metadata. Structured form accepts an object with JSON values; legacy string is still accepted.",
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "description": "Registration action metadata as a flat object with JSON values. Limited to 4096 bytes, 32 keys, key length 64, and value JSON size 1024 bytes.",
+                "maxProperties": 32,
+                "type": "object"
+              },
+              {
+                "deprecated": true,
+                "description": "Deprecated compatibility form. Use structured actor metadata instead. The full meta JSON value is limited to 4096 bytes.",
+                "maxLength": 4094,
+                "type": "string"
+              }
+            ]
           },
           "tag": {
-            "description": "Optional descriptive tag or label for the asset (e.g., location, purpose, or custom identifier)",
-            "examples": [
-              "North Array Panel 5"
-            ],
-            "type": "string"
+            "description": "Optional tag metadata for the asset.",
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "deprecated": true,
+                "description": "Deprecated compatibility form. Use an object instead.",
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
@@ -4051,6 +4213,48 @@
         ],
         "type": "object"
       },
+      "SetTemporaryExpiredBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expired": {
+            "description": "Expiration timestamp to set on the temporary account.",
+            "examples": [
+              "2026-06-11 00:00:00.000Z"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Temporary account record ID.",
+            "examples": [
+              "temporary123456"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expired"
+        ],
+        "type": "object"
+      },
+      "SetTemporaryExpiredOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expired": {
+            "description": "Updated expiration timestamp.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Temporary account record ID.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expired"
+        ],
+        "type": "object"
+      },
       "StatModelCount": {
         "additionalProperties": false,
         "properties": {
@@ -4139,6 +4343,15 @@
       "UnregisterBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/UnregisterBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "asset_id": {
             "description": "Unique identifier for the physical asset to be unregistered (must match the originally registered asset ID)",
             "examples": [
@@ -4187,11 +4400,18 @@
             "type": "string"
           },
           "tag": {
-            "description": "Optional descriptive tag or label for the asset (should match the originally registered tag if applicable)",
-            "examples": [
-              "North Array Panel 5"
-            ],
-            "type": "string"
+            "description": "Optional tag metadata for the asset.",
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "deprecated": true,
+                "description": "Deprecated compatibility form. Use an object instead.",
+                "type": "string"
+              }
+            ]
           },
           "unregistered": {
             "description": "Timestamp when the asset should be considered unregistered. Must be in RFC3339 format and should be after the original registration date.",
@@ -4202,11 +4422,21 @@
             "type": "string"
           },
           "unregistered_meta": {
-            "description": "Additional metadata associated with the unregistration event (JSON string or custom format)",
-            "examples": [
-              "{\"reason\": \"Equipment replacement\", \"technician\": \"Jane Smith\"}"
-            ],
-            "type": "string"
+            "description": "Unregistration action metadata. Structured form accepts an object with JSON values; legacy string is still accepted.",
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "description": "Registration action metadata as a flat object with JSON values. Limited to 4096 bytes, 32 keys, key length 64, and value JSON size 1024 bytes.",
+                "maxProperties": 32,
+                "type": "object"
+              },
+              {
+                "deprecated": true,
+                "description": "Deprecated compatibility form. Use structured actor metadata instead. The full meta JSON value is limited to 4096 bytes.",
+                "maxLength": 4094,
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
@@ -4286,16 +4516,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -4456,7 +4686,7 @@
     },
     "/api/v3/account/auth-with-password": {
       "post": {
-        "description": "Authenticates users using either email (for managers) or username (for viewers) with password. The response includes an authentication token for subsequent API calls. This endpoint does not require the Authorization header.",
+        "description": "Authenticates users using either email (for managers) or username (for viewers and temporary accounts) with password. The response includes an authentication token for subsequent API calls. This endpoint does not require the Authorization header.",
         "operationId": "authenticate_user",
         "requestBody": {
           "content": {
@@ -4578,16 +4808,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -4643,16 +4873,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -4707,16 +4937,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -4771,16 +5001,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -4835,16 +5065,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -4911,29 +5140,29 @@
     },
     "/api/v3/organizations/{organization_id}/permissions": {
       "post": {
-        "description": "Grants a user a specific role-based permission (viewer, user, temporary) to access a plant under the given organization.",
+        "description": "Grants a user a specific role-based permission (viewer, manager, temporary) to access a plant under the given organization.",
         "operationId": "assign_plant_permission",
         "parameters": [
           {
             "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
             "in": "header",
             "name": "Authorization",
+            "required": true,
             "schema": {
               "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
               "type": "string"
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -4958,7 +5187,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OrgAddPermissionInputBody",
+                "$ref": "#/components/schemas/AssignOrganizationPermissionRequestBody",
                 "description": "Request body for assigning plant permission to a user"
               }
             }
@@ -5015,16 +5244,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -5174,16 +5402,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -5250,16 +5477,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -5389,16 +5616,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
               "enum": [
-                "viewer",
                 "manager",
-                "admin"
+                "viewer",
+                "temporary"
               ],
               "type": "string"
             }
@@ -5527,16 +5754,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
               "enum": [
-                "viewer",
                 "manager",
-                "admin"
+                "viewer",
+                "temporary"
               ],
               "type": "string"
             }
@@ -5598,6 +5825,95 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/blueprints/record": {
+      "post": {
+        "description": "Records a new immutable blueprint snapshot for a plant. This endpoint never mutates an existing blueprint record. On success, it invalidates the plant blueprint timeline/list cache.",
+        "operationId": "record_plant_blueprint",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the blueprint account type making the request. Blueprint record writes are available to manager accounts only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the blueprint account type making the request. Blueprint record writes are available to manager accounts only.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to record blueprint data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to record blueprint data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlueprintWriteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlueprintRecordPayload",
+                  "description": "Recorded immutable blueprint snapshot."
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record Plant Blueprint Snapshot",
+        "tags": [
+          "v3/plants/blueprints"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/blueprints/{blueprint_id}": {
       "get": {
         "description": "Retrieves a specific blueprint record on a plant, including record metadata and the data payload. Authorization header and Account-Type header are required.",
@@ -5614,16 +5930,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the blueprint account type making the request. Supported values map to public blueprint collections: 'manager', 'viewer', and 'temporary'.",
               "enum": [
-                "viewer",
                 "manager",
-                "admin"
+                "viewer",
+                "temporary"
               ],
               "type": "string"
             }
@@ -5817,16 +6133,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -5855,7 +6171,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CommentOutput"
+                    "$ref": "#/components/schemas/CommentReadOutput"
                   },
                   "type": [
                     "array",
@@ -5904,16 +6220,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -5979,163 +6294,6 @@
         ]
       }
     },
-    "/api/v3/plants/{plant_id}/comments/{comment_id}": {
-      "get": {
-        "description": "Retrieves a specific comment for a plant.",
-        "operationId": "get_plant_comment",
-        "parameters": [
-          {
-            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-            "in": "header",
-            "name": "Authorization",
-            "required": true,
-            "schema": {
-              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-            "in": "header",
-            "name": "Account-Type",
-            "required": true,
-            "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-              "enum": [
-                "viewer",
-                "manager",
-                "admin"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
-            "in": "path",
-            "name": "plant_id",
-            "required": true,
-            "schema": {
-              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
-              "examples": [
-                "unw4id41ud2p0wt"
-              ],
-              "maxLength": 15,
-              "minLength": 15,
-              "pattern": "^[a-zA-Z0-9]{15}$",
-              "patternDescription": "alphanum",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
-            "in": "path",
-            "name": "comment_id",
-            "required": true,
-            "schema": {
-              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
-              "examples": [
-                "unw4id41ud2p0wt"
-              ],
-              "maxLength": 15,
-              "minLength": 15,
-              "pattern": "^[a-zA-Z0-9]{15}$",
-              "patternDescription": "alphanum",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches one of the passed values.",
-            "in": "header",
-            "name": "If-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches one of the passed values.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-            "in": "header",
-            "name": "If-None-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is more recent than the passed date.",
-            "in": "header",
-            "name": "If-Modified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is more recent than the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-            "in": "header",
-            "name": "If-Unmodified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentOutput",
-                  "description": "Plant comment detail."
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "ETag": {
-                "schema": {
-                  "description": "Weak entity tag for conditional requests.",
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get Plant Comment",
-        "tags": [
-          "v3/plants/comments"
-        ]
-      }
-    },
     "/api/v3/plants/{plant_id}/comments/{comment_id}/edit": {
       "post": {
         "description": "Edits a specific plant comment.",
@@ -6152,16 +6310,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6259,16 +6416,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6367,16 +6523,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6461,7 +6616,7 @@
     },
     "/api/v3/plants/{plant_id}/filters": {
       "get": {
-        "description": "Lists reusable map object filters for a specific plant without including each filter's condition payload.",
+        "description": "Lists reusable map object filters for a specific plant, including each filter's map object IDs.",
         "operationId": "list_plant_filters",
         "parameters": [
           {
@@ -6475,16 +6630,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -6512,7 +6667,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Plant filters without condition payloads.",
+                  "description": "Plant filters with map object IDs.",
                   "items": {
                     "$ref": "#/components/schemas/FilterListItem"
                   },
@@ -6549,7 +6704,7 @@
     },
     "/api/v3/plants/{plant_id}/filters/create": {
       "post": {
-        "description": "Creates a reusable map object filter for a specific plant. The request map IDs are stored internally as merge conditions.",
+        "description": "Creates a reusable map object filter for a specific plant from the provided map IDs.",
         "operationId": "create_plant_filter",
         "parameters": [
           {
@@ -6563,16 +6718,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6610,7 +6764,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Filter",
+                  "$ref": "#/components/schemas/FilterOutput",
                   "description": "Created plant filter."
                 }
               }
@@ -6655,16 +6809,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6724,157 +6877,6 @@
         "tags": [
           "v3/plants/filters"
         ]
-      },
-      "get": {
-        "description": "Retrieves a reusable map object filter for a specific plant, including its condition payload.",
-        "operationId": "get_plant_filter",
-        "parameters": [
-          {
-            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-            "in": "header",
-            "name": "Authorization",
-            "required": true,
-            "schema": {
-              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-            "in": "header",
-            "name": "Account-Type",
-            "required": true,
-            "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
-              "enum": [
-                "viewer",
-                "manager",
-                "admin"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
-            "in": "path",
-            "name": "plant_id",
-            "required": true,
-            "schema": {
-              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
-              "examples": [
-                "unw4id41ud2p0wt"
-              ],
-              "maxLength": 15,
-              "minLength": 15,
-              "pattern": "^[a-zA-Z0-9]{15}$",
-              "patternDescription": "alphanum",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Filter record ID.",
-            "in": "path",
-            "name": "filter_id",
-            "required": true,
-            "schema": {
-              "description": "Filter record ID.",
-              "examples": [
-                "filter123456789"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches one of the passed values.",
-            "in": "header",
-            "name": "If-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches one of the passed values.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-            "in": "header",
-            "name": "If-None-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is more recent than the passed date.",
-            "in": "header",
-            "name": "If-Modified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is more recent than the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-            "in": "header",
-            "name": "If-Unmodified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Filter",
-                  "description": "Plant filter detail."
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "ETag": {
-                "schema": {
-                  "description": "Weak entity tag for conditional requests.",
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get Plant Filter",
-        "tags": [
-          "v3/plants/filters"
-        ]
       }
     },
     "/api/v3/plants/{plant_id}/filters/{filter_id}/rename": {
@@ -6893,16 +6895,15 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Plant filter mutation routes are available to manager and viewer accounts only.",
               "enum": [
                 "viewer",
-                "manager",
-                "admin"
+                "manager"
               ],
               "type": "string"
             }
@@ -6953,7 +6954,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Filter",
+                  "$ref": "#/components/schemas/FilterOutput",
                   "description": "Renamed plant filter."
                 }
               }
@@ -6998,16 +6999,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7214,16 +7215,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7357,16 +7358,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7484,16 +7485,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7621,16 +7622,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7791,16 +7792,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -7932,16 +7933,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -8732,16 +8733,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -8892,16 +8893,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -9113,16 +9114,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -9318,6 +9319,97 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/registry/register": {
+      "post": {
+        "description": "Registers a new asset (device, inverter, etc.) to the specified plant with mapping and metadata information.",
+        "operationId": "register_asset_to_plant",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Confirmation message indicating successful asset registration or operation details",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register Asset to Plant",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/registry/snapshots": {
       "get": {
         "description": "Retrieves registry snapshot records for the specified plant and date, with optional asset_id, map_id, asset_type, and map_type filters.",
@@ -9334,16 +9426,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -9555,16 +9647,16 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'admin' grants full system access.",
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
               "enum": [
                 "viewer",
                 "manager",
-                "admin"
+                "temporary"
               ],
               "type": "string"
             }
@@ -9688,6 +9780,97 @@
           }
         ],
         "summary": "Retrieve Plant Registry Stat",
+        "tags": [
+          "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/registry/unregister": {
+      "post": {
+        "description": "Unregisters an existing asset (device, inverter, etc.) from the specified plant when equipment is replaced or removed.",
+        "operationId": "unregister_asset_from_plant",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID. A unique alphanumeric identifier representing the plant to fetch data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnregisterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Confirmation message indicating successful asset unregistration or operation details",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unregister Asset from Plant",
         "tags": [
           "v3/plants/registry"
         ]
