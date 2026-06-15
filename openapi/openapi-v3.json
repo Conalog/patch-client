@@ -2331,6 +2331,9 @@
       "FilterListItem": {
         "additionalProperties": false,
         "properties": {
+          "condition": {
+            "description": "JSONLogic condition body for non-merge filters."
+          },
           "created": {
             "description": "Filter record creation timestamp.",
             "type": "string"
@@ -2377,6 +2380,9 @@
             "format": "uri",
             "readOnly": true,
             "type": "string"
+          },
+          "condition": {
+            "description": "JSONLogic condition body for non-merge filters."
           },
           "created": {
             "description": "Filter record creation timestamp.",
@@ -3457,6 +3463,10 @@
       "PanelDailyData": {
         "additionalProperties": false,
         "properties": {
+          "date": {
+            "description": "Date of the data point in YYYY-MM-DD format",
+            "type": "string"
+          },
           "energy": {
             "description": "Total daily energy production (kWh)",
             "format": "double",
@@ -3469,6 +3479,7 @@
         },
         "required": [
           "id",
+          "date",
           "energy"
         ],
         "type": "object"
@@ -3895,6 +3906,11 @@
             ],
             "type": "string"
           },
+          "asset_model": {
+            "additionalProperties": {},
+            "description": "Optional asset model information to store with the registry record.",
+            "type": "object"
+          },
           "asset_type": {
             "description": "Classification of the physical asset being registered",
             "enum": [
@@ -4050,9 +4066,18 @@
             "description": "Sanitized registration actor metadata. Only fielder_name and fielder_org are exposed."
           },
           "tag": {
-            "additionalProperties": {},
             "description": "Additional metadata and tags associated with the asset registration",
-            "type": "object"
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "deprecated": true,
+                "description": "Deprecated compatibility form. Use an object instead.",
+                "type": "string"
+              }
+            ]
           },
           "unregistered": {
             "description": "Timestamp when the asset was unregistered in RFC3339 format (empty if still registered)",
@@ -4399,20 +4424,6 @@
             ],
             "type": "string"
           },
-          "tag": {
-            "description": "Optional tag metadata for the asset.",
-            "oneOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "deprecated": true,
-                "description": "Deprecated compatibility form. Use an object instead.",
-                "type": "string"
-              }
-            ]
-          },
           "unregistered": {
             "description": "Timestamp when the asset should be considered unregistered. Must be in RFC3339 format and should be after the original registration date.",
             "examples": [
@@ -4483,6 +4494,184 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "WeatherForecastDaily": {
+        "additionalProperties": false,
+        "properties": {
+          "img_1x": {
+            "type": "string"
+          },
+          "img_2x": {
+            "type": "string"
+          },
+          "img_4x": {
+            "type": "string"
+          },
+          "precip_prob": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_min_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "wmo_code": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "WeatherForecastHour": {
+        "additionalProperties": false,
+        "properties": {
+          "img_1x": {
+            "type": "string"
+          },
+          "img_2x": {
+            "type": "string"
+          },
+          "img_4x": {
+            "type": "string"
+          },
+          "precip_prob": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "time": {
+            "type": "string"
+          },
+          "wmo_code": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "type": "object"
+      },
+      "WeatherForecastRow": {
+        "additionalProperties": false,
+        "properties": {
+          "daily": {
+            "$ref": "#/components/schemas/WeatherForecastDaily"
+          },
+          "hourly": {
+            "items": {
+              "$ref": "#/components/schemas/WeatherForecastHour"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "local_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "local_date",
+          "daily"
+        ],
+        "type": "object"
+      },
+      "WeatherObservedDaily": {
+        "additionalProperties": false,
+        "properties": {
+          "img_1x": {
+            "type": "string"
+          },
+          "img_2x": {
+            "type": "string"
+          },
+          "img_4x": {
+            "type": "string"
+          },
+          "precip_prob": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_max_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_min_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "wmo_code": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "WeatherObservedHour": {
+        "additionalProperties": false,
+        "properties": {
+          "img_1x": {
+            "type": "string"
+          },
+          "img_2x": {
+            "type": "string"
+          },
+          "img_4x": {
+            "type": "string"
+          },
+          "precip_prob": {
+            "format": "double",
+            "type": "number"
+          },
+          "temp_c": {
+            "format": "double",
+            "type": "number"
+          },
+          "time": {
+            "type": "string"
+          },
+          "wmo_code": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "type": "object"
+      },
+      "WeatherObservedRow": {
+        "additionalProperties": false,
+        "properties": {
+          "daily": {
+            "$ref": "#/components/schemas/WeatherObservedDaily"
+          },
+          "hourly": {
+            "items": {
+              "$ref": "#/components/schemas/WeatherObservedHour"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "local_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "local_date",
+          "daily"
+        ],
         "type": "object"
       }
     },
@@ -9873,6 +10062,221 @@
         "summary": "Unregister Asset from Plant",
         "tags": [
           "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/weather/forecast": {
+      "get": {
+        "description": "Retrieves weather forecast rows for the specified plant by using the plant metadata address and forwarding to weather-api.",
+        "operationId": "get_plant_weather_forecast",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch weather forecast data for.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch weather forecast data for.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of forecast days to request from weather-api, including the current day.",
+            "explode": false,
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "default": 7,
+              "description": "Number of forecast days to request from weather-api, including the current day.",
+              "format": "int64",
+              "maximum": 7,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherForecastRow"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Weather Forecast",
+        "tags": [
+          "v3/plants/weather"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/weather/observed": {
+      "get": {
+        "description": "Retrieves observed weather rows for the specified plant and date by using the plant metadata address and forwarding to weather-api.",
+        "operationId": "get_plant_weather_observed",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch observed weather data for.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the plant to fetch observed weather data for.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Local date to fetch observed weather for, formatted as YYYY-MM-DD.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Local date to fetch observed weather for, formatted as YYYY-MM-DD.",
+              "examples": [
+                "2026-04-13"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of observed days to include up to and including date.",
+            "explode": false,
+            "in": "query",
+            "name": "before",
+            "schema": {
+              "default": 1,
+              "description": "Number of observed days to include up to and including date.",
+              "format": "int64",
+              "maximum": 31,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherObservedRow"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Observed Weather",
+        "tags": [
+          "v3/plants/weather"
         ]
       }
     }
