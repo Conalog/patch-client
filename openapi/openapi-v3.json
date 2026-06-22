@@ -83,15 +83,6 @@
             ],
             "type": "string"
           },
-          "plantId": {
-            "description": "Target plant ID to grant access to.",
-            "examples": [
-              "pln123456789012"
-            ],
-            "maxLength": 15,
-            "minLength": 15,
-            "type": "string"
-          },
           "type": {
             "description": "Account type of user.",
             "enum": [
@@ -113,40 +104,7 @@
           }
         },
         "required": [
-          "plantId",
           "type"
-        ],
-        "type": "object"
-      },
-      "AuthAccountBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/AuthAccountBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "account": {
-            "description": "The user's account name or username used for authentication",
-            "examples": [
-              "viewer_user"
-            ],
-            "type": "string"
-          },
-          "password": {
-            "description": "The user's password for authentication",
-            "examples": [
-              "securepassword123"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "account"
         ],
         "type": "object"
       },
@@ -180,38 +138,6 @@
         "required": [
           "name",
           "token"
-        ],
-        "type": "object"
-      },
-      "AuthEmailBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/AuthEmailBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "email": {
-            "description": "The user's email address used for authentication",
-            "examples": [
-              "manager@example.com"
-            ],
-            "type": "string"
-          },
-          "password": {
-            "description": "The user's password for authentication",
-            "examples": [
-              "securepassword123"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "email"
         ],
         "type": "object"
       },
@@ -385,7 +311,7 @@
             "type": "string"
           },
           "email": {
-            "description": "The user's email address. Required when authenticating as a 'manager' account type.",
+            "description": "The user's email address. Accepted when authenticating as a 'manager' account type.",
             "examples": [
               "manager@example.com"
             ],
@@ -409,7 +335,7 @@
             "type": "string"
           },
           "username": {
-            "description": "The user's username. Required when authenticating as a 'viewer' or 'temporary' account type.",
+            "description": "The user's username. Accepted for 'manager' accounts and required when authenticating as a 'viewer' or 'temporary' account type.",
             "examples": [
               "viewer_user"
             ],
@@ -1263,10 +1189,6 @@
             },
             "type": "array"
           },
-          "is_private": {
-            "description": "Private flag.",
-            "type": "boolean"
-          },
           "map_ids": {
             "description": "Plant map object IDs attached to the comment.",
             "items": {
@@ -1316,10 +1238,6 @@
               "type": "string"
             },
             "type": "array"
-          },
-          "is_private": {
-            "description": "Private flag.",
-            "type": "boolean"
           },
           "map_ids": {
             "description": "Plant map object IDs attached to the comment.",
@@ -1386,9 +1304,6 @@
               "null"
             ]
           },
-          "is_private": {
-            "type": "boolean"
-          },
           "map_ids": {
             "items": {
               "type": "string"
@@ -1449,9 +1364,6 @@
               "array",
               "null"
             ]
-          },
-          "is_private": {
-            "type": "boolean"
           },
           "map_ids": {
             "items": {
@@ -1767,9 +1679,6 @@
             ]
           },
           "isArchive": {
-            "type": "boolean"
-          },
-          "isPrivate": {
             "type": "boolean"
           },
           "parent": {
@@ -2533,6 +2442,34 @@
         "required": [
           "accepted",
           "deleted"
+        ],
+        "type": "object"
+      },
+      "InternalInvalidatePlantListCacheInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "account_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_type",
+          "account_id"
+        ],
+        "type": "object"
+      },
+      "InternalInvalidatePlantListCacheOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accepted"
         ],
         "type": "object"
       },
@@ -3422,6 +3359,51 @@
         ],
         "type": "object"
       },
+      "OrgRemovePermissionOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/OrgRemovePermissionOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "User email revoked. Used when Role is manager",
+            "examples": [
+              "usr123456789012@conalog.com"
+            ],
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account whose plant access was removed.",
+            "enum": [
+              "manager",
+              "viewer",
+              "temporary"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "User username revoked. Used when Role is viewer or temporary",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "type"
+        ],
+        "type": "object"
+      },
       "OrganizationBody": {
         "additionalProperties": false,
         "properties": {
@@ -3559,6 +3541,10 @@
               "null"
             ]
           },
+          "time": {
+            "description": "Same time label as date for device panel intraday rows.",
+            "type": "string"
+          },
           "timestamp": {
             "description": "Unix timestamp of the measurement",
             "format": "int64",
@@ -3594,6 +3580,7 @@
           "cumulative_energy",
           "id",
           "date",
+          "time",
           "timestamp"
         ],
         "type": "object"
@@ -3887,6 +3874,46 @@
         ],
         "type": "object"
       },
+      "Record": {
+        "additionalProperties": false,
+        "properties": {
+          "detected": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "map_id": {
+            "type": "string"
+          },
+          "map_type": {
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "resolved": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "plant_id",
+          "map_type",
+          "map_id",
+          "type",
+          "severity",
+          "detected",
+          "resolved"
+        ],
+        "type": "object"
+      },
       "RegisterBody": {
         "additionalProperties": false,
         "properties": {
@@ -4097,6 +4124,50 @@
           "registered",
           "tag",
           "unregistered"
+        ],
+        "type": "object"
+      },
+      "RemoveOrganizationPermissionRequestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/RemoveOrganizationPermissionRequestBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "User email to revoke access from. Used when Role is manager",
+            "examples": [
+              "usr123456789012@conalog.com"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "description": "Account type of user.",
+            "enum": [
+              "viewer",
+              "manager",
+              "temporary"
+            ],
+            "examples": [
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "User username to revoke access from. Used when Role is viewer or temporary",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
         ],
         "type": "object"
       },
@@ -4472,9 +4543,6 @@
             ]
           },
           "isArchive": {
-            "type": "boolean"
-          },
-          "isPrivate": {
             "type": "boolean"
           },
           "parent": {
@@ -4875,7 +4943,7 @@
     },
     "/api/v3/account/auth-with-password": {
       "post": {
-        "description": "Authenticates users using either email (for managers) or username (for viewers and temporary accounts) with password. The response includes an authentication token for subsequent API calls. This endpoint does not require the Authorization header.",
+        "description": "Authenticates users using email or username for managers, and username for viewers and temporary accounts, with password. The response includes an authentication token for subsequent API calls. This endpoint does not require the Authorization header.",
         "operationId": "authenticate_user",
         "requestBody": {
           "content": {
@@ -5240,7 +5308,7 @@
     },
     "/api/v3/organizations/{organization_id}/members": {
       "post": {
-        "description": "Creates a new user under the specified organization. Alias of POST /api/v3/account.",
+        "description": "Creates a new user under the specified organization. Only the organization owner may create organization members. Alias of POST /api/v3/account.",
         "operationId": "create_org_member",
         "parameters": [
           {
@@ -5254,14 +5322,13 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
+            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
+              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
               "enum": [
-                "viewer",
                 "manager"
               ],
               "type": "string"
@@ -5327,9 +5394,9 @@
         ]
       }
     },
-    "/api/v3/organizations/{organization_id}/permissions": {
+    "/api/v3/organizations/{organization_id}/plants/{plant_id}/permissions/grant": {
       "post": {
-        "description": "Grants a user a specific role-based permission (viewer, manager, temporary) to access a plant under the given organization.",
+        "description": "Grants a user a specific role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may add plant permissions.",
         "operationId": "assign_plant_permission",
         "parameters": [
           {
@@ -5343,14 +5410,13 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
+            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Organization routes are available to manager and viewer accounts only.",
+              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
               "enum": [
-                "viewer",
                 "manager"
               ],
               "type": "string"
@@ -5365,6 +5431,21 @@
               "description": "Organization ID that owns the target plant.",
               "examples": [
                 "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target plant ID to grant access to.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Target plant ID to grant access to.",
+              "examples": [
+                "pln123456789012"
               ],
               "maxLength": 15,
               "minLength": 15,
@@ -5412,6 +5493,110 @@
           }
         ],
         "summary": "Assign plant permission to a user",
+        "tags": [
+          "v3/org"
+        ]
+      }
+    },
+    "/api/v3/organizations/{organization_id}/plants/{plant_id}/permissions/revoke": {
+      "post": {
+        "description": "Removes a user's role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may remove plant permissions.",
+        "operationId": "remove_plant_permission",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Organization ID that owns the target plant.",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Organization ID that owns the target plant.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target plant ID to revoke access from.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Target plant ID to revoke access from.",
+              "examples": [
+                "pln123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveOrganizationPermissionRequestBody",
+                "description": "Request body for removing plant permission from a user"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgRemovePermissionOutputBody",
+                  "description": "Response body with removal result info"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove plant permission from a user",
         "tags": [
           "v3/org"
         ]
@@ -5591,14 +5776,13 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
+            "description": "Specifies the type of user account making the request. Plant creation is available to manager accounts only.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Plant collection routes are available to manager and viewer accounts only.",
+              "description": "Specifies the type of user account making the request. Plant creation is available to manager accounts only.",
               "enum": [
-                "viewer",
                 "manager"
               ],
               "type": "string"
@@ -7169,6 +7353,787 @@
         "summary": "Rename Plant Filter",
         "tags": [
           "v3/plants/filters"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/anomaly": {
+      "get": {
+        "description": "Retrieves active anomaly snapshots from the previous date plus anomaly logs from the requested date.",
+        "operationId": "get_plant_anomaly_timeline",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "examples": [
+                "2026-06-15"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of anomaly records for the specified plant and date.",
+                  "items": {
+                    "$ref": "#/components/schemas/Record"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Anomaly Timeline",
+        "tags": [
+          "v3/plants/indicator"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/anomaly/logs": {
+      "get": {
+        "description": "Retrieves anomaly records detected or resolved on the requested date.",
+        "operationId": "get_plant_anomaly_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "examples": [
+                "2026-06-15"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional anomaly map ID filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional anomaly map type filter.",
+              "enum": [
+                "plant",
+                "inverter",
+                "string",
+                "panel"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Optional anomaly type filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional severity filter.",
+            "explode": false,
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "description": "Optional severity filter.",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of anomaly records for the specified plant and date.",
+                  "items": {
+                    "$ref": "#/components/schemas/Record"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Anomaly Logs",
+        "tags": [
+          "v3/plants/indicator"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/anomaly/logs/filter": {
+      "get": {
+        "description": "Filters anomaly records by date, map_id, map_type, type, and severity. At least one query parameter is required.",
+        "operationId": "filter_plant_anomaly_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "examples": [
+                "2026-06-15"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional anomaly map ID filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional anomaly map type filter.",
+              "enum": [
+                "plant",
+                "inverter",
+                "string",
+                "panel"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Optional anomaly type filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional severity filter.",
+            "explode": false,
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "description": "Optional severity filter.",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of anomaly records for the specified plant and date.",
+                  "items": {
+                    "$ref": "#/components/schemas/Record"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Filter Plant Anomaly Logs",
+        "tags": [
+          "v3/plants/indicator"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/indicator/anomaly/snapshots": {
+      "get": {
+        "description": "Retrieves anomalies detected before the end of the requested date that had not resolved by that time.",
+        "operationId": "get_plant_anomaly_snapshots",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patch Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Patch Plant ID.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "examples": [
+                "2026-06-15"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_id",
+            "schema": {
+              "description": "Optional anomaly map ID filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly map type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "map_type",
+            "schema": {
+              "description": "Optional anomaly map type filter.",
+              "enum": [
+                "plant",
+                "inverter",
+                "string",
+                "panel"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional anomaly type filter.",
+            "explode": false,
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "description": "Optional anomaly type filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional severity filter.",
+            "explode": false,
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "description": "Optional severity filter.",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Array of anomaly records for the specified plant and date.",
+                  "items": {
+                    "$ref": "#/components/schemas/Record"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Anomaly Snapshots",
+        "tags": [
+          "v3/plants/indicator"
         ]
       }
     },
@@ -9289,7 +10254,7 @@
     },
     "/api/v3/plants/{plant_id}/registry/logs/filter": {
       "get": {
-        "description": "Filters registry log records for the specified plant and date by asset_id, map_id, asset_type, and map_type. At least one filter parameter is required.",
+        "description": "Filters registry log records for the specified plant by date, asset_id, map_id, asset_type, and map_type. At least one query parameter is required.",
         "operationId": "filter_plant_registry_logs",
         "parameters": [
           {
@@ -9334,13 +10299,12 @@
             }
           },
           {
-            "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+            "description": "Optional target date of data. Must follow the format 'YYYY-MM-DD'.",
             "explode": false,
             "in": "query",
             "name": "date",
-            "required": true,
             "schema": {
-              "description": "Target date of data. Must follow the format 'YYYY-MM-DD'.",
+              "description": "Optional target date of data. Must follow the format 'YYYY-MM-DD'.",
               "examples": [
                 "2024-01-24"
               ],
