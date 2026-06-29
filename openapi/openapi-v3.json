@@ -8802,6 +8802,7 @@
               ],
               "maxLength": 15,
               "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
               "patternDescription": "alphanum",
               "type": "string"
             }
@@ -8831,56 +8832,6 @@
               "minimum": 1,
               "type": "integer"
             }
-          },
-          {
-            "description": "Succeeds if the server's resource matches one of the passed values.",
-            "in": "header",
-            "name": "If-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches one of the passed values.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-            "in": "header",
-            "name": "If-None-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is more recent than the passed date.",
-            "in": "header",
-            "name": "If-Modified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is more recent than the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-            "in": "header",
-            "name": "If-Unmodified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -8898,15 +8849,7 @@
                 }
               }
             },
-            "description": "OK",
-            "headers": {
-              "ETag": {
-                "schema": {
-                  "description": "Weak entity tag for conditional requests",
-                  "type": "string"
-                }
-              }
-            }
+            "description": "OK"
           },
           "default": {
             "content": {
@@ -8970,56 +8913,10 @@
               "examples": [
                 "bsajtokt84s2byf"
               ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches one of the passed values.",
-            "in": "header",
-            "name": "If-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches one of the passed values.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-            "in": "header",
-            "name": "If-None-Match",
-            "schema": {
-              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
-              "items": {
-                "type": "string"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is more recent than the passed date.",
-            "in": "header",
-            "name": "If-Modified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is more recent than the passed date.",
-              "format": "date-time-http",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-            "in": "header",
-            "name": "If-Unmodified-Since",
-            "schema": {
-              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
-              "format": "date-time-http",
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
               "type": "string"
             }
           }
@@ -9039,15 +8936,7 @@
                 }
               }
             },
-            "description": "OK",
-            "headers": {
-              "ETag": {
-                "schema": {
-                  "description": "Weak entity tag for conditional requests",
-                  "type": "string"
-                }
-              }
-            }
+            "description": "OK"
           },
           "default": {
             "content": {
