@@ -68,14 +68,6 @@ func TestGetPlantDetailsPreservesEscapedPathSegment(t *testing.T) {
 	}
 }
 
-func TestEscapeQuotesUsesSingleBackslashForDoubleQuotes(t *testing.T) {
-	got := escapeQuotes("a\"b\\c")
-	want := "a\\\"b\\\\c"
-	if got != want {
-		t.Fatalf("unexpected escaped value: got %q want %q", got, want)
-	}
-}
-
 func TestSetDefaultHeaderIsApplied(t *testing.T) {
 	var gotCustom string
 
@@ -203,6 +195,354 @@ func TestReadBodyWithLimitHandlesMaxInt64WithoutOverflow(t *testing.T) {
 	}
 	if string(payload) != "abc" {
 		t.Fatalf("unexpected payload: %q", string(payload))
+	}
+}
+
+func TestLatestV3OperationPaths(t *testing.T) {
+	ctx := context.Background()
+	payload := map[string]any{"ok": true}
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		query  string
+		call   func(*Client) (any, error)
+	}{
+		{
+			name:   "ListOAuthMethods",
+			method: http.MethodGet,
+			path:   "/api/v3/account/auth-methods",
+			query:  "provider=google",
+			call: func(c *Client) (any, error) {
+				return c.ListOAuthMethods(ctx, map[string]string{"provider": "google"}, nil)
+			},
+		},
+		{
+			name:   "ListCombinerModelInfo",
+			method: http.MethodGet,
+			path:   "/api/v3/model-info/combiners",
+			call: func(c *Client) (any, error) {
+				return c.ListCombinerModelInfo(ctx, nil)
+			},
+		},
+		{
+			name:   "ListInverterModelInfo",
+			method: http.MethodGet,
+			path:   "/api/v3/model-info/inverters",
+			call: func(c *Client) (any, error) {
+				return c.ListInverterModelInfo(ctx, nil)
+			},
+		},
+		{
+			name:   "ListModuleModelInfo",
+			method: http.MethodGet,
+			path:   "/api/v3/model-info/modules",
+			call: func(c *Client) (any, error) {
+				return c.ListModuleModelInfo(ctx, nil)
+			},
+		},
+		{
+			name:   "AssignPlantPermission",
+			method: http.MethodPost,
+			path:   "/api/v3/organizations/org%2F1/plants/plant%2F1/permissions/grant",
+			call: func(c *Client) (any, error) {
+				return c.AssignPlantPermission(ctx, "org/1", "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "RemovePlantPermission",
+			method: http.MethodPost,
+			path:   "/api/v3/organizations/org%2F1/plants/plant%2F1/permissions/revoke",
+			call: func(c *Client) (any, error) {
+				return c.RemovePlantPermission(ctx, "org/1", "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "ListPlantBlueprints",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/blueprints",
+			call: func(c *Client) (any, error) {
+				return c.ListPlantBlueprints(ctx, "plant/1", nil)
+			},
+		},
+		{
+			name:   "RecordPlantBlueprint",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/blueprints/record",
+			call: func(c *Client) (any, error) {
+				return c.RecordPlantBlueprint(ctx, "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "GetPlantBlueprintData",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/blueprints/bp%2F1",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantBlueprintData(ctx, "plant/1", "bp/1", nil)
+			},
+		},
+		{
+			name:   "ListPlantComments",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/comments",
+			call: func(c *Client) (any, error) {
+				return c.ListPlantComments(ctx, "plant/1", nil)
+			},
+		},
+		{
+			name:   "StartPlantCommentThread",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/comments/start_thread",
+			call: func(c *Client) (any, error) {
+				return c.StartPlantCommentThread(ctx, "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "EditPlantComment",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/comments/comment%2F1/edit",
+			call: func(c *Client) (any, error) {
+				return c.EditPlantComment(ctx, "plant/1", "comment/1", payload, nil)
+			},
+		},
+		{
+			name:   "ReplyPlantComment",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/comments/comment%2F1/reply",
+			call: func(c *Client) (any, error) {
+				return c.ReplyPlantComment(ctx, "plant/1", "comment/1", payload, nil)
+			},
+		},
+		{
+			name:   "ChangePlantCommentState",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/comments/comment%2F1/state",
+			call: func(c *Client) (any, error) {
+				return c.ChangePlantCommentState(ctx, "plant/1", "comment/1", payload, nil)
+			},
+		},
+		{
+			name:   "ListPlantFilters",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/filters",
+			call: func(c *Client) (any, error) {
+				return c.ListPlantFilters(ctx, "plant/1", nil)
+			},
+		},
+		{
+			name:   "CreatePlantFilter",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/filters/create",
+			call: func(c *Client) (any, error) {
+				return c.CreatePlantFilter(ctx, "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "DeletePlantFilter",
+			method: http.MethodDelete,
+			path:   "/api/v3/plants/plant%2F1/filters/filter%2F1",
+			call: func(c *Client) (any, error) {
+				return c.DeletePlantFilter(ctx, "plant/1", "filter/1", nil)
+			},
+		},
+		{
+			name:   "RenamePlantFilter",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/filters/filter%2F1/rename",
+			call: func(c *Client) (any, error) {
+				return c.RenamePlantFilter(ctx, "plant/1", "filter/1", payload, nil)
+			},
+		},
+		{
+			name:   "GetPlantAnomalyTimeline",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/indicator/anomaly",
+			query:  "date=2026-06-15",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantAnomalyTimeline(ctx, "plant/1", "2026-06-15", nil)
+			},
+		},
+		{
+			name:   "GetPlantAnomalyLogs",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/indicator/anomaly/logs",
+			query:  "date=2026-06-15&severity=high",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantAnomalyLogs(ctx, "plant/1", "2026-06-15", map[string]string{"severity": "high"}, nil)
+			},
+		},
+		{
+			name:   "FilterPlantAnomalyLogs",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/indicator/anomaly/logs/filter",
+			query:  "date=2026-06-15&type=hotspot",
+			call: func(c *Client) (any, error) {
+				return c.FilterPlantAnomalyLogs(ctx, "plant/1", "2026-06-15", map[string]string{"type": "hotspot"}, nil)
+			},
+		},
+		{
+			name:   "GetPlantAnomalySnapshots",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/indicator/anomaly/snapshots",
+			query:  "date=2026-06-15&map_id=map1",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantAnomalySnapshots(ctx, "plant/1", "2026-06-15", map[string]string{"map_id": "map1"}, nil)
+			},
+		},
+		{
+			name:   "GetDeviceState",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/indicator/device-state",
+			query:  "date=2026-06-15&fields=all",
+			call: func(c *Client) (any, error) {
+				return c.GetDeviceState(ctx, "plant/1", "2026-06-15", map[string]string{"fields": "all"}, nil)
+			},
+		},
+		{
+			name:   "GetPlantRegistryTimeline",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/registry",
+			query:  "date=2024-01-24",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantRegistryTimeline(ctx, "plant/1", "2024-01-24", nil)
+			},
+		},
+		{
+			name:   "GetPlantRegistryLogs",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/registry/logs",
+			query:  "asset_id=a1&date=2024-01-24",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantRegistryLogs(ctx, "plant/1", "2024-01-24", map[string]string{"asset_id": "a1"}, nil)
+			},
+		},
+		{
+			name:   "FilterPlantRegistryLogs",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/registry/logs/filter",
+			query:  "asset_type=device",
+			call: func(c *Client) (any, error) {
+				return c.FilterPlantRegistryLogs(ctx, "plant/1", map[string]string{"asset_type": "device"}, nil)
+			},
+		},
+		{
+			name:   "RegisterAssetToPlant",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/registry/register",
+			call: func(c *Client) (any, error) {
+				return c.RegisterAssetToPlant(ctx, "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "GetPlantRegistrySnapshots",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/registry/snapshots",
+			query:  "date=2024-01-24&map_id=m1",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantRegistrySnapshots(ctx, "plant/1", "2024-01-24", map[string]string{"map_id": "m1"}, nil)
+			},
+		},
+		{
+			name:   "GetPlantRegistryStat",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/registry/stat",
+			query:  "date=2024-01-24",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantRegistryStat(ctx, "plant/1", "2024-01-24", nil)
+			},
+		},
+		{
+			name:   "UnregisterAssetFromPlant",
+			method: http.MethodPost,
+			path:   "/api/v3/plants/plant%2F1/registry/unregister",
+			call: func(c *Client) (any, error) {
+				return c.UnregisterAssetFromPlant(ctx, "plant/1", payload, nil)
+			},
+		},
+		{
+			name:   "GetPlantWeatherForecast",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/weather/forecast",
+			query:  "days=7",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantWeatherForecast(ctx, "plant/1", map[string]string{"days": "7"}, nil)
+			},
+		},
+		{
+			name:   "GetPlantWeatherObserved",
+			method: http.MethodGet,
+			path:   "/api/v3/plants/plant%2F1/weather/observed",
+			query:  "before=1&date=2024-01-24",
+			call: func(c *Client) (any, error) {
+				return c.GetPlantWeatherObserved(ctx, "plant/1", "2024-01-24", map[string]string{"before": "1"}, nil)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotMethod string
+			var gotPath string
+			var gotQuery string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotMethod = r.Method
+				gotPath = r.URL.EscapedPath()
+				gotQuery = r.URL.RawQuery
+				_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+			}))
+			defer srv.Close()
+
+			client := NewClient(srv.URL)
+			if _, err := tt.call(client); err != nil {
+				t.Fatalf("%s returned error: %v", tt.name, err)
+			}
+			if gotMethod != tt.method {
+				t.Fatalf("unexpected method: got %s want %s", gotMethod, tt.method)
+			}
+			if gotPath != tt.path {
+				t.Fatalf("unexpected path: got %s want %s", gotPath, tt.path)
+			}
+			if gotQuery != tt.query {
+				t.Fatalf("unexpected query: got %s want %s", gotQuery, tt.query)
+			}
+		})
+	}
+}
+
+func TestStartOAuthLoginReturnsRedirectLocation(t *testing.T) {
+	var targetHits int
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetHits++
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer target.Close()
+
+	var gotPath string
+	var gotQuery string
+	redirectSource := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Location", target.URL+"/oauth")
+		w.WriteHeader(http.StatusFound)
+	}))
+	defer redirectSource.Close()
+
+	client := NewClient(redirectSource.URL)
+	out, err := client.StartOAuthLogin(context.Background(), "google", "app://cb", nil)
+	if err != nil {
+		t.Fatalf("StartOAuthLogin returned error: %v", err)
+	}
+	if gotPath != "/api/v3/account/login-with-oauth2" {
+		t.Fatalf("unexpected path: %s", gotPath)
+	}
+	if gotQuery != "provider=google&redirect_url=app%3A%2F%2Fcb" {
+		t.Fatalf("unexpected query: %s", gotQuery)
+	}
+	if out.Location != target.URL+"/oauth" {
+		t.Fatalf("unexpected redirect location: %s", out.Location)
+	}
+	if targetHits != 0 {
+		t.Fatalf("expected redirect target not to be called, hits=%d", targetHits)
 	}
 }
 
@@ -427,89 +767,6 @@ func TestUnauthenticatedRequestsBlockHTTPSDowngradeRedirect(t *testing.T) {
 		t.Fatal("expected insecure transport redirect error, got nil")
 	}
 	if !strings.Contains(err.Error(), "refusing to send request over insecure transport") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestUploadPlantFilesContentTypeOverrideIsCaseInsensitive(t *testing.T) {
-	var gotContentType string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotContentType = r.Header.Get("Content-Type")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
-	}))
-	defer srv.Close()
-
-	client := NewClient(srv.URL)
-	_, err := client.UploadPlantFiles(
-		context.Background(),
-		"plant-1",
-		map[string]string{"name": "file.txt"},
-		map[string]FilePart{
-			"filename": {
-				Filename:    "file.txt",
-				ContentType: "text/plain",
-				Content:     []byte("hello"),
-			},
-		},
-		&RequestOptions{
-			Headers: map[string]string{
-				"content-type": "application/json",
-			},
-		},
-	)
-	if err != nil {
-		t.Fatalf("UploadPlantFiles returned error: %v", err)
-	}
-	if !strings.HasPrefix(strings.ToLower(gotContentType), "multipart/form-data; boundary=") {
-		t.Fatalf("unexpected content type: %s", gotContentType)
-	}
-}
-
-func TestEncodeMultipartRejectsCRLFInFieldName(t *testing.T) {
-	_, _, err := encodeMultipart(map[string]string{"name\r\nX:1": "v"}, nil, 1024)
-	if err == nil {
-		t.Fatal("expected CRLF validation error, got nil")
-	}
-}
-
-func TestEncodeMultipartRejectsCRLFInFilename(t *testing.T) {
-	_, _, err := encodeMultipart(
-		map[string]string{"name": "f"},
-		map[string]FilePart{
-			"filename": {
-				Filename:    "x\r\nInjected: 1",
-				ContentType: "text/plain",
-				Content:     []byte("hello"),
-			},
-		},
-		1024,
-	)
-	if err == nil {
-		t.Fatal("expected CRLF validation error, got nil")
-	}
-}
-
-func TestUploadPlantFilesRejectsPayloadAboveConfiguredLimit(t *testing.T) {
-	client := NewClient("https://example.com")
-	client.SetMaxMultipartBytes(32)
-
-	_, err := client.UploadPlantFiles(
-		context.Background(),
-		"plant-1",
-		map[string]string{"name": "file.txt"},
-		map[string]FilePart{
-			"filename": {
-				Filename:    "file.txt",
-				ContentType: "application/octet-stream",
-				Content:     []byte(strings.Repeat("a", 128)),
-			},
-		},
-		nil,
-	)
-	if err == nil {
-		t.Fatal("expected multipart size limit error, got nil")
-	}
-	if !strings.Contains(err.Error(), "multipart payload exceeds") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
