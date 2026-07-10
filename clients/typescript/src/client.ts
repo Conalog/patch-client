@@ -1,7 +1,29 @@
 /**
  * Account role sent to the API via the `Account-Type` request header.
  */
-export type AccountType = "viewer" | "manager" | "admin";
+export type AccountType = "viewer" | "manager" | "temporary";
+export type MemberAccountType = "manager" | "viewer";
+export type RegistryAssetType = "device" | "inverter" | "edge" | "panel" | "panel_group" | "sensor";
+export type RegistryMapType =
+  | "device"
+  | "string"
+  | "edge"
+  | "inverter"
+  | "combiner"
+  | "panel"
+  | "panel_group"
+  | "tracker"
+  | "sensor";
+export type MetricSource = "device" | "inverter" | "ess" | "sensor";
+export type MetricUnit =
+  | "panel"
+  | "inverter"
+  | "ess"
+  | "string"
+  | "plant"
+  | "temperature"
+  | "insolation";
+export type MetricInterval = "5m" | "15m" | "1h" | "1d" | "1M" | "1y";
 
 /**
  * Allowed query parameter values.
@@ -20,6 +42,451 @@ export type QueryValue =
  * Generic JSON object payload used by this client.
  */
 export type JsonObject = Record<string, unknown>;
+
+export interface AuthWithPasswordBody {
+  type: AccountType;
+  password: string;
+  email?: string;
+  username?: string;
+}
+
+export interface AuthBody {
+  readonly "$schema"?: string;
+  name: string;
+  token: string;
+}
+
+export interface OrganizationBody {
+  id: string;
+  name: string;
+  icon?: string;
+  logo?: string;
+}
+
+export interface OrgInfo extends OrganizationBody {
+  owner?: string;
+  updated?: string;
+}
+
+export interface AccountOutputBody {
+  readonly "$schema"?: string;
+  type: AccountType;
+  name: string;
+  organizations: OrganizationBody[] | null;
+  email?: string;
+  username?: string;
+  metadata?: unknown;
+}
+
+export interface AuthOutputV3Body extends AccountOutputBody {
+  token: string;
+}
+
+export interface AuthProvider {
+  name: string;
+  state: string;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+  authUrl: string;
+}
+
+export interface AuthMethodsBody {
+  readonly "$schema"?: string;
+  authProviders: AuthProvider[] | null;
+}
+
+export interface CreateOrganizationMemberRequestBody {
+  type: MemberAccountType;
+  name: string;
+  email?: string;
+  username?: string;
+  metadata?: unknown;
+}
+
+export interface CreateAccountOutputBody extends AccountOutputBody {
+  id: string;
+  expired?: string;
+  link?: string;
+}
+
+export interface OrganizationPermissionRequestBody {
+  type: AccountType;
+  email?: string;
+  username?: string;
+}
+
+export type AssignOrganizationPermissionRequestBody = OrganizationPermissionRequestBody;
+export type RemoveOrganizationPermissionRequestBody = OrganizationPermissionRequestBody;
+
+export interface OrganizationPermissionOutputBody extends OrganizationPermissionRequestBody {
+  readonly "$schema"?: string;
+  plant_id: string;
+}
+
+export type OrgAddPermissionOutputBody = OrganizationPermissionOutputBody;
+export type OrgRemovePermissionOutputBody = OrganizationPermissionOutputBody;
+
+export interface CreatePlantInput {
+  name: string;
+  organizationId: string;
+  metadata?: JsonObject;
+}
+
+export interface PlantBody {
+  readonly "$schema"?: string;
+  created: string;
+  id: string;
+  images: string[] | null;
+  metadata: JsonObject;
+  name: string;
+  organization: string;
+  organizationData: OrgInfo;
+  updated: string;
+  refPlant?: string;
+}
+
+export interface PlantBodyV3 extends Omit<PlantBody, "organization" | "organizationData"> {
+  organization: OrgInfo;
+}
+
+export interface PlantsListV3OutputBody {
+  readonly "$schema"?: string;
+  totalPages: number;
+  totalItems: number;
+  page: number;
+  perPage: number;
+  items: PlantBodyV3[] | null;
+}
+
+export type CombinerItem = JsonObject;
+export type InverterItem = JsonObject;
+export type ModuleItem = JsonObject;
+
+export interface ListOutputCombinerItemBody {
+  readonly "$schema"?: string;
+  items: CombinerItem[] | null;
+}
+
+export interface ListOutputInverterItemBody {
+  readonly "$schema"?: string;
+  items: InverterItem[] | null;
+}
+
+export interface ListOutputModuleItemBody {
+  readonly "$schema"?: string;
+  items: ModuleItem[] | null;
+}
+
+export interface BlueprintWriteBody {
+  date: string;
+  data: unknown;
+  metadata?: unknown;
+}
+
+export interface BlueprintListItem {
+  id: string;
+  date: string;
+  updated: string;
+  created?: string;
+}
+
+export interface BlueprintRecordPayload extends BlueprintListItem {
+  readonly "$schema"?: string;
+  plant: string;
+  metadata: unknown;
+  data: unknown;
+}
+
+export interface CommentUserOutput {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+export interface CommentActionBody {
+  text: string;
+  images?: string[];
+  map_ids?: string[];
+  related?: string;
+}
+
+export interface CommentEditBody {
+  text?: string;
+  images?: string[];
+  map_ids?: string[];
+  related?: string;
+}
+
+export interface CommentStateBody {
+  transition: "resolve" | "reopen" | "archive" | "restore";
+}
+
+export interface CommentReadOutput {
+  id: string;
+  text: string;
+  user: CommentUserOutput;
+  created: string;
+  updated: string;
+  images?: string[] | null;
+  map_ids?: string[] | null;
+  parent?: string;
+  related?: string;
+  resolved?: string;
+}
+
+export interface CommentOutput extends CommentReadOutput {
+  readonly "$schema"?: string;
+  expand?: JsonObject;
+}
+
+export interface CreateFilterBody {
+  name: string;
+  map_ids: string[];
+}
+
+export interface RenameFilterBody {
+  name: string;
+}
+
+export interface FilterOutput {
+  readonly "$schema"?: string;
+  id: string;
+  name: string;
+  map_ids: string[] | null;
+  updated: string;
+  created?: string;
+  condition?: unknown;
+}
+
+export type FilterListItem = Omit<FilterOutput, "$schema">;
+
+export interface AnomalyQuery {
+  date: string;
+  map_id?: string;
+  map_type?: string;
+  type?: string;
+  severity?: string;
+}
+
+export interface RecordBody {
+  id: string;
+  plant_id: string;
+  map_type: string;
+  map_id: string;
+  type: string;
+  severity: string;
+  detected: string;
+  resolved: string;
+}
+
+export interface DeviceStateQuery {
+  date: string;
+  fields?: string[];
+}
+
+export interface DeviceStateRow {
+  id: string;
+  timestamp: number;
+  date: string;
+  is_forced_rapid_shutdown: boolean;
+  is_forced_ref: boolean;
+  is_forced_relay: boolean;
+  is_rapid_shutdown: boolean;
+  is_relay: boolean;
+}
+
+export interface DeviceStateBody {
+  plant_id: string;
+  date: string;
+  data: DeviceStateRow[];
+}
+
+export interface HealthLevelCategory {
+  count: number;
+  ids?: string[];
+}
+
+export interface HealthLevelBody {
+  readonly "$schema"?: string;
+  best: HealthLevelCategory;
+  caution: HealthLevelCategory;
+  faulty: HealthLevelCategory;
+}
+
+export interface InverterLogsResponse {
+  readonly "$schema"?: string;
+  totalPages: number;
+  totalSizes: number;
+  page: number;
+  perPage: number;
+  items: InverterLogItem[] | null;
+}
+
+export interface InverterLogItem {
+  plantId: string;
+  level: string;
+  inverterId: string;
+  timestamp: string;
+  message: unknown;
+  raw: unknown;
+}
+
+export interface LatestDeviceBody {
+  timestamp: string;
+  asset_id: string;
+  asset_type: string;
+  map_id: string;
+  map_type: string;
+  edge_id: string;
+  metrics: {
+    i_out: number;
+    v_in: number;
+    v_out: number;
+    temp: number;
+  };
+  state: Record<string, boolean>;
+}
+
+export interface InverterDataBody {
+  timestamp: string;
+  asset_id: string;
+  asset_type: string;
+  map_id: string;
+  map_type: string;
+  edge_id: string;
+  plant_id: string;
+  model: string;
+  data: JsonObject;
+}
+
+export interface MetricsByDateQuery {
+  before?: number;
+  fields?: string[];
+  id?: string[];
+}
+
+export interface MetricsBody {
+  plant_id: string;
+  unit: string;
+  source: string;
+  date: string;
+  interval: string;
+  data: JsonObject[] | null;
+  before?: number;
+}
+
+export interface RegistryQuery {
+  date?: string;
+  asset_id?: string;
+  map_id?: string;
+  asset_type?: string;
+  map_type?: string;
+}
+
+export interface RegistryMeta {
+  fielder_name?: string;
+  fielder_org?: string;
+}
+
+export interface RegistryOutputBody {
+  asset_id: string;
+  asset_type: RegistryAssetType;
+  map_id: string;
+  map_type: RegistryMapType;
+  asset_model: JsonObject;
+  registered: string;
+  tag: JsonObject | string;
+  unregistered: string;
+  registered_meta?: RegistryMeta;
+  unregistered_meta?: RegistryMeta;
+}
+
+export interface RegisterBody {
+  asset_id: string;
+  asset_type: RegistryAssetType;
+  map_id: string;
+  map_type: RegistryMapType;
+  registered: string;
+  asset_model?: JsonObject;
+  registered_meta?: JsonObject | string;
+  tag?: JsonObject | string;
+}
+
+export interface UnregisterBody {
+  asset_id: string;
+  asset_type: RegistryAssetType;
+  map_id: string;
+  map_type: RegistryMapType;
+  unregistered: string;
+  unregistered_meta?: JsonObject | string;
+}
+
+export interface StatModelCount {
+  name: string;
+  count: number;
+}
+
+export interface DeviceModelStat extends StatModelCount {
+  installed_capacity_w: number;
+}
+
+export type InverterModelStat = DeviceModelStat;
+
+export interface StatPoint {
+  readonly "$schema"?: string;
+  timestamp: string;
+  installed_capacity_w: number;
+  all_asset_models_registered: boolean;
+  module_models: StatModelCount[] | null;
+  device_models: DeviceModelStat[] | null;
+  inverter_models: InverterModelStat[] | null;
+}
+
+export interface WeatherForecastDaily {
+  img_1x?: string;
+  img_2x?: string;
+  img_4x?: string;
+  precip_prob?: number;
+  temp_max_c?: number;
+  temp_min_c?: number;
+  wmo_code?: number;
+}
+
+export interface WeatherForecastHour {
+  time: string;
+  img_1x?: string;
+  img_2x?: string;
+  img_4x?: string;
+  precip_prob?: number;
+  temp_c?: number;
+  wmo_code?: number;
+}
+
+export type WeatherObservedDaily = WeatherForecastDaily;
+export type WeatherObservedHour = WeatherForecastHour;
+
+export interface WeatherForecastRow {
+  local_date: string;
+  daily: WeatherForecastDaily;
+  hourly?: WeatherForecastHour[] | null;
+}
+
+export interface WeatherObservedRow {
+  local_date: string;
+  daily: WeatherObservedDaily;
+  hourly?: WeatherObservedHour[] | null;
+}
+
+export interface ErrorModel {
+  readonly "$schema"?: string;
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  instance?: string;
+  errors?: JsonObject[] | null;
+}
 
 /**
  * Client-wide configuration for {@link PatchClientV3}.
@@ -101,7 +568,6 @@ export interface RequestOptions {
   timeoutMs?: number;
 }
 
-type UploadFormData = { append(name: string, value: unknown, fileName?: string): unknown };
 type FetchResponseHeaders = { get(name: string): string | null };
 type FetchResponse = {
   ok: boolean;
@@ -130,9 +596,8 @@ type FetchFn = (input: string, init?: FetchInit) => Promise<FetchResponse>;
 const DEFAULT_MAX_RESPONSE_BYTES = 10 << 20;
 
 interface RequestInput {
-  query?: Record<string, QueryValue>;
+  query?: object;
   body?: unknown;
-  formData?: UploadFormData;
   options?: RequestOptions;
 }
 
@@ -259,136 +724,145 @@ export class PatchClientV3 {
     this.accountType = accountType;
   }
 
-  /**
-   * Authenticates a user with password credentials.
-   *
-   * Managers use `email` + `password`, viewers use `username` + `password`,
-   * and payload `type` must be either `"manager"` or `"viewer"`.
-   *
-   * @param payload Login payload accepted by `/api/v3/account/auth-with-password`.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async authenticateUser(payload: JsonObject): Promise<unknown> {
+  async authenticateUser(payload: AuthWithPasswordBody): Promise<AuthOutputV3Body> {
     return this.request("POST", "/api/v3/account/auth-with-password", { body: payload });
   }
 
-  /**
-   * Refreshes the current user's token.
-   *
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async refreshUserToken(options?: RequestOptions): Promise<unknown> {
+  async refreshUserToken(options?: RequestOptions): Promise<AuthBody> {
     return this.request("POST", "/api/v3/account/refresh-token", { options });
   }
 
-  /**
-   * Fetches current account information.
-   *
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getAccountInfo(options?: RequestOptions): Promise<unknown> {
+  async getAccountInfo(options?: RequestOptions): Promise<AccountOutputBody> {
     return this.request("GET", "/api/v3/account/", { options });
   }
 
-  /**
-   * Creates a member under an organization.
-   *
-   * @param organizationId Organization identifier.
-   * @param payload Member creation payload.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
+  async listOAuthMethods(
+    query?: { provider?: string; redirect_url?: string },
+    options?: RequestOptions
+  ): Promise<AuthMethodsBody> {
+    return this.request("GET", "/api/v3/account/auth-methods", { query, options });
+  }
+
+  async startOAuthLogin(
+    query: { provider: string; redirect_url?: string },
+    options?: RequestOptions
+  ): Promise<string> {
+    const method = "GET";
+    const url = this.buildUrl("/api/v3/account/login-with-oauth2", query);
+    const headers = mergeHeadersCaseInsensitive(
+      { Accept: "application/json" },
+      this.defaultHeaders,
+      this.authHeaders(options),
+      options?.headers
+    );
+    const { signal, cleanup, timeoutSupported } = createRequestSignal(
+      options?.signal,
+      options?.timeoutMs
+    );
+    const init: FetchInit = { method, headers, redirect: "manual" };
+    if (signal) {
+      init.signal = signal;
+    }
+
+    try {
+      if (hasRequestedTimeout(options) && !timeoutSupported) {
+        throw new Error("timeoutMs requires AbortController support in this runtime");
+      }
+      const response = await this.fetchFn(url.toString(), init);
+      if (response.status === 302) {
+        const location = response.headers.get("location");
+        if (location) {
+          return location;
+        }
+      }
+      const payload = await parseResponse(response, this.maxResponseBytes);
+      throw new PatchClientError(
+        response.status,
+        payload,
+        "PATCH API OAuth login expected a 302 response with a Location header",
+        { method, url: url.toString() }
+      );
+    } catch (err) {
+      if (err instanceof PatchClientError) {
+        throw err;
+      }
+      const networkError = new PatchClientError(
+        0,
+        null,
+        `PATCH API request failed: ${method} ${url.toString()}`,
+        { method, url: url.toString() }
+      );
+      (networkError as Error & { cause?: unknown }).cause = err;
+      throw networkError;
+    } finally {
+      cleanup();
+    }
+  }
+
+  async listCombinerModelInfo(options?: RequestOptions): Promise<ListOutputCombinerItemBody> {
+    return this.request("GET", "/api/v3/model-info/combiners", { options });
+  }
+
+  async listInverterModelInfo(options?: RequestOptions): Promise<ListOutputInverterItemBody> {
+    return this.request("GET", "/api/v3/model-info/inverters", { options });
+  }
+
+  async listModuleModelInfo(options?: RequestOptions): Promise<ListOutputModuleItemBody> {
+    return this.request("GET", "/api/v3/model-info/modules", { options });
+  }
+
   async createOrganizationMember(
     organizationId: string,
-    payload: JsonObject,
+    payload: CreateOrganizationMemberRequestBody,
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<CreateAccountOutputBody> {
     return this.request("POST", `/api/v3/organizations/${encodePath(organizationId)}/members`, {
       body: payload,
       options,
     });
   }
 
-  /**
-   * Assigns plant permissions within an organization.
-   *
-   * @param organizationId Organization identifier.
-   * @param payload Permission assignment payload.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
   async assignPlantPermission(
     organizationId: string,
-    payload: JsonObject,
+    plantId: string,
+    payload: AssignOrganizationPermissionRequestBody,
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<OrgAddPermissionOutputBody> {
     return this.request(
       "POST",
-      `/api/v3/organizations/${encodePath(organizationId)}/permissions`,
-      {
-        body: payload,
-        options,
-      }
+      `/api/v3/organizations/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/grant`,
+      { body: payload, options }
     );
   }
 
-  /**
-   * Lists plants.
-   *
-   * @param query Pagination options.
-   * @param query.page One-based page number (`1` is the first page).
-   * @param query.size Page size.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getPlantList(
-    query?: { page?: number; size?: number },
+  async removePlantPermission(
+    organizationId: string,
+    plantId: string,
+    payload: RemoveOrganizationPermissionRequestBody,
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<OrgRemovePermissionOutputBody> {
+    return this.request(
+      "POST",
+      `/api/v3/organizations/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/revoke`,
+      { body: payload, options }
+    );
+  }
+
+  async getPlantList(
+    query?: { page?: number; size?: number; full?: boolean },
+    options?: RequestOptions
+  ): Promise<PlantsListV3OutputBody> {
     return this.request("GET", "/api/v3/plants", { query, options });
   }
 
-  /**
-   * Creates a plant.
-   *
-   * @param payload Plant creation payload.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async createPlant(payload: JsonObject, options?: RequestOptions): Promise<unknown> {
+  async createPlant(payload: CreatePlantInput, options?: RequestOptions): Promise<PlantBody> {
     return this.request("POST", "/api/v3/plants", { body: payload, options });
   }
 
-  /**
-   * Retrieves details for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getPlantDetails(plantId: string, options?: RequestOptions): Promise<unknown> {
+  async getPlantDetails(plantId: string, options?: RequestOptions): Promise<PlantBodyV3> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}`, { options });
   }
 
-  /**
-   * Retrieves plant blueprint data for a specific date.
-   *
-   * @param plantId Plant identifier.
-   * @param date Date string expected by the API (for example `YYYY-MM-DD`).
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
   async getPlantBlueprint(
     plantId: string,
     date: string,
@@ -400,240 +874,373 @@ export class PatchClientV3 {
     });
   }
 
-  /**
-   * Uploads files for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param formData `FormData`-compatible object containing file parts.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async uploadPlantFiles(
+  async listPlantBlueprints(
     plantId: string,
-    formData: UploadFormData,
     options?: RequestOptions
-  ): Promise<unknown> {
-    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/files`, {
-      formData,
+  ): Promise<BlueprintListItem[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/blueprints`, { options });
+  }
+
+  async recordPlantBlueprint(
+    plantId: string,
+    payload: BlueprintWriteBody,
+    options?: RequestOptions
+  ): Promise<BlueprintRecordPayload> {
+    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/blueprints/record`, {
+      body: payload,
       options,
     });
   }
 
-  /**
-   * Retrieves asset health level data.
-   *
-   * @param plantId Plant identifier.
-   * @param unit Unit identifier.
-   * @param date Date string expected by the API.
-   * @param view Optional view mode. Can be "summary" or "detail".
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getAssetHealthLevel(
+  async getPlantBlueprintData(
     plantId: string,
-    unit: string,
-    date: string,
-    view?: string,
+    blueprintId: string,
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<BlueprintRecordPayload> {
     return this.request(
       "GET",
-      `/api/v3/plants/${encodePath(plantId)}/indicator/health-level/${encodePath(unit)}`,
-      {
-        query: { date, view },
-        options,
-      }
+      `/api/v3/plants/${encodePath(plantId)}/blueprints/${encodePath(blueprintId)}`,
+      { options }
     );
   }
 
-  /**
-   * Retrieves panel sequence number data for a plant and date.
-   *
-   * @param plantId Plant identifier.
-   * @param date Date string expected by the API.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getPanelSeqnum(plantId: string, date: string, options?: RequestOptions): Promise<unknown> {
-    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/seqnum`, {
+  async listPlantComments(
+    plantId: string,
+    options?: RequestOptions
+  ): Promise<CommentReadOutput[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/comments`, { options });
+  }
+
+  async startPlantCommentThread(
+    plantId: string,
+    payload: CommentActionBody,
+    options?: RequestOptions
+  ): Promise<CommentOutput> {
+    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/comments/start_thread`, {
+      body: payload,
+      options,
+    });
+  }
+
+  async editPlantComment(
+    plantId: string,
+    commentId: string,
+    payload: CommentEditBody,
+    options?: RequestOptions
+  ): Promise<CommentOutput> {
+    return this.request(
+      "POST",
+      `/api/v3/plants/${encodePath(plantId)}/comments/${encodePath(commentId)}/edit`,
+      { body: payload, options }
+    );
+  }
+
+  async replyPlantComment(
+    plantId: string,
+    commentId: string,
+    payload: CommentActionBody,
+    options?: RequestOptions
+  ): Promise<CommentOutput> {
+    return this.request(
+      "POST",
+      `/api/v3/plants/${encodePath(plantId)}/comments/${encodePath(commentId)}/reply`,
+      { body: payload, options }
+    );
+  }
+
+  async changePlantCommentState(
+    plantId: string,
+    commentId: string,
+    payload: CommentStateBody,
+    options?: RequestOptions
+  ): Promise<CommentOutput> {
+    return this.request(
+      "POST",
+      `/api/v3/plants/${encodePath(plantId)}/comments/${encodePath(commentId)}/state`,
+      { body: payload, options }
+    );
+  }
+
+  async listPlantFilters(plantId: string, options?: RequestOptions): Promise<FilterListItem[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/filters`, { options });
+  }
+
+  async createPlantFilter(
+    plantId: string,
+    payload: CreateFilterBody,
+    options?: RequestOptions
+  ): Promise<FilterOutput> {
+    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/filters/create`, {
+      body: payload,
+      options,
+    });
+  }
+
+  async deletePlantFilter(
+    plantId: string,
+    filterId: string,
+    options?: RequestOptions
+  ): Promise<null> {
+    return this.request(
+      "DELETE",
+      `/api/v3/plants/${encodePath(plantId)}/filters/${encodePath(filterId)}`,
+      { options }
+    );
+  }
+
+  async renamePlantFilter(
+    plantId: string,
+    filterId: string,
+    payload: RenameFilterBody,
+    options?: RequestOptions
+  ): Promise<FilterOutput> {
+    return this.request(
+      "POST",
+      `/api/v3/plants/${encodePath(plantId)}/filters/${encodePath(filterId)}/rename`,
+      { body: payload, options }
+    );
+  }
+
+  async getPlantAnomalyTimeline(
+    plantId: string,
+    date: string,
+    options?: RequestOptions
+  ): Promise<RecordBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/anomaly`, {
       query: { date },
       options,
     });
   }
 
-  /**
-   * Lists inverter logs for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param query Pagination options.
-   * @param query.page One-based page number (`1` is the first page).
-   * @param query.size Page size.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
+  async getPlantAnomalyLogs(
+    plantId: string,
+    query: AnomalyQuery,
+    options?: RequestOptions
+  ): Promise<RecordBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/anomaly/logs`, {
+      query,
+      options,
+    });
+  }
+
+  async filterPlantAnomalyLogs(
+    plantId: string,
+    query: AnomalyQuery,
+    options?: RequestOptions
+  ): Promise<RecordBody[] | null> {
+    return this.request(
+      "GET",
+      `/api/v3/plants/${encodePath(plantId)}/indicator/anomaly/logs/filter`,
+      { query, options }
+    );
+  }
+
+  async getPlantAnomalySnapshots(
+    plantId: string,
+    query: AnomalyQuery,
+    options?: RequestOptions
+  ): Promise<RecordBody[] | null> {
+    return this.request(
+      "GET",
+      `/api/v3/plants/${encodePath(plantId)}/indicator/anomaly/snapshots`,
+      { query, options }
+    );
+  }
+
+  async getDeviceState(
+    plantId: string,
+    query: DeviceStateQuery,
+    options?: RequestOptions
+  ): Promise<DeviceStateBody> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/device-state`, {
+      query,
+      options,
+    });
+  }
+
+  async getAssetHealthLevel(
+    plantId: string,
+    unit: string,
+    date: string,
+    view?: "summary" | "detail",
+    options?: RequestOptions
+  ): Promise<HealthLevelBody> {
+    return this.request(
+      "GET",
+      `/api/v3/plants/${encodePath(plantId)}/indicator/health-level/${encodePath(unit)}`,
+      { query: { date, view }, options }
+    );
+  }
+
   async listInverterLogs(
     plantId: string,
     query?: { page?: number; size?: number },
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<InverterLogsResponse> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/logs/inverter`, {
       query,
       options,
     });
   }
 
-  /**
-   * Lists logs for a specific inverter in a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param inverterId Inverter identifier.
-   * @param query Pagination options.
-   * @param query.page One-based page number (`1` is the first page).
-   * @param query.size Page size.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
   async listInverterLogsById(
     plantId: string,
     inverterId: string,
     query?: { page?: number; size?: number },
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<InverterLogsResponse> {
     return this.request(
       "GET",
       `/api/v3/plants/${encodePath(plantId)}/logs/inverters/${encodePath(inverterId)}`,
-      {
-        query,
-        options,
-      }
+      { query, options }
     );
   }
 
-  /**
-   * Retrieves latest device metrics for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param query Metric query options.
-   * @param query.includeState Whether to include state information.
-   * @param query.ago Time range in minutes to filter active devices (maximum `600`).
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
   async getLatestDeviceMetrics(
     plantId: string,
     query?: { includeState?: boolean; ago?: number },
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<LatestDeviceBody[] | null> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/metrics/device/latest`, {
       query,
       options,
     });
   }
 
-  /**
-   * Retrieves latest inverter metrics for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getLatestInverterMetrics(plantId: string, options?: RequestOptions): Promise<unknown> {
+  async getLatestInverterMetrics(
+    plantId: string,
+    options?: RequestOptions
+  ): Promise<InverterDataBody[] | null> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/metrics/inverter/latest`, {
       options,
     });
   }
 
-  /**
-   * Retrieves metrics by date for a specific source/unit/interval.
-   *
-   * @param plantId Plant identifier.
-   * @param source Metric source.
-   * @param unit Metric unit.
-   * @param interval Metric interval segment used in the API path.
-   * @param date Date string expected by the API.
-   * @param query Optional filters.
-   * @param query.before Number of historical intervals to include before the specified date.
-   * @param query.fields Field names to include. Sent as a comma-separated list.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
   async getMetricsByDate(
     plantId: string,
-    source: string,
-    unit: string,
-    interval: string,
+    source: MetricSource,
+    unit: MetricUnit,
+    interval: MetricInterval,
     date: string,
-    query?: { before?: number; fields?: string[] },
+    query?: MetricsByDateQuery,
     options?: RequestOptions
-  ): Promise<unknown> {
+  ): Promise<MetricsBody> {
     return this.request(
       "GET",
       `/api/v3/plants/${encodePath(plantId)}/metrics/${encodePath(source)}/${encodePath(unit)}-${encodePath(interval)}`,
       {
-        query: { date, before: query?.before, fields: query?.fields?.join(",") },
+        query: {
+          date,
+          before: query?.before,
+          fields: query?.fields?.join(","),
+          id: query?.id?.join(","),
+        },
         options,
       }
     );
   }
 
-  /**
-   * Retrieves asset registration data for a plant.
-   *
-   * @param plantId Plant identifier.
-   * @param recordType Registry record type.
-   * @param date Date string expected by the API.
-   * @param query Optional filters.
-   * @param query.asset_id Optional asset identifier.
-   * @param query.map_id Optional map identifier.
-   * @param options Optional request overrides.
-   * @returns API response body.
-   * @throws {PatchClientError} If the request fails.
-   */
-  async getAssetRegistrationOnPlant(
+  async getPlantRegistryTimeline(
     plantId: string,
-    recordType: string,
     date: string,
-    query?: { asset_id?: string; map_id?: string },
     options?: RequestOptions
-  ): Promise<unknown> {
-    return this.request(
-      "GET",
-      `/api/v3/plants/${encodePath(plantId)}/registry/${encodePath(recordType)}`,
-      {
-        query: { date, asset_id: query?.asset_id, map_id: query?.map_id },
-        options,
-      }
-    );
+  ): Promise<RegistryOutputBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry`, {
+      query: { date },
+      options,
+    });
   }
 
-  private async request(method: string, path: string, input: RequestInput = {}): Promise<unknown> {
-    const url = new URL(this.baseUrl);
-    const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
-    url.pathname = `${basePath}${path}`;
-    const query = input.query ?? {};
-    for (const [key, value] of Object.entries(query)) {
-      if (value === undefined || value === null) {
-        continue;
-      }
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          if (item !== undefined && item !== null) {
-            url.searchParams.append(key, String(item));
-          }
-        }
-      } else {
-        url.searchParams.set(key, String(value));
-      }
-    }
+  async getPlantRegistryLogs(
+    plantId: string,
+    query: RegistryQuery & { date: string },
+    options?: RequestOptions
+  ): Promise<RegistryOutputBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry/logs`, {
+      query,
+      options,
+    });
+  }
 
+  async filterPlantRegistryLogs(
+    plantId: string,
+    query?: RegistryQuery,
+    options?: RequestOptions
+  ): Promise<RegistryOutputBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry/logs/filter`, {
+      query,
+      options,
+    });
+  }
+
+  async registerAssetToPlant(
+    plantId: string,
+    payload: RegisterBody,
+    options?: RequestOptions
+  ): Promise<string> {
+    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/registry/register`, {
+      body: payload,
+      options,
+    });
+  }
+
+  async getPlantRegistrySnapshots(
+    plantId: string,
+    query: RegistryQuery & { date: string },
+    options?: RequestOptions
+  ): Promise<RegistryOutputBody[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry/snapshots`, {
+      query,
+      options,
+    });
+  }
+
+  async getPlantRegistryStat(
+    plantId: string,
+    date: string,
+    options?: RequestOptions
+  ): Promise<StatPoint> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/registry/stat`, {
+      query: { date },
+      options,
+    });
+  }
+
+  async unregisterAssetFromPlant(
+    plantId: string,
+    payload: UnregisterBody,
+    options?: RequestOptions
+  ): Promise<string> {
+    return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/registry/unregister`, {
+      body: payload,
+      options,
+    });
+  }
+
+  async getPlantWeatherForecast(
+    plantId: string,
+    query?: { days?: number },
+    options?: RequestOptions
+  ): Promise<WeatherForecastRow[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/weather/forecast`, {
+      query,
+      options,
+    });
+  }
+
+  async getPlantWeatherObserved(
+    plantId: string,
+    query: { date: string; before?: number },
+    options?: RequestOptions
+  ): Promise<WeatherObservedRow[] | null> {
+    return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/weather/observed`, {
+      query,
+      options,
+    });
+  }
+
+  private async request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
+    const url = this.buildUrl(path, input.query);
     const headers = mergeHeadersCaseInsensitive(
       { Accept: "application/json" },
       this.defaultHeaders,
@@ -643,10 +1250,7 @@ export class PatchClientV3 {
 
     const init: FetchInit = { method, headers };
 
-    if (input.formData) {
-      init.body = input.formData as unknown;
-      deleteHeaderCaseInsensitive(headers, "content-type");
-    } else if (input.body !== undefined) {
+    if (input.body !== undefined) {
       deleteHeaderCaseInsensitive(headers, "content-type");
       headers["Content-Type"] = "application/json";
       try {
@@ -674,11 +1278,7 @@ export class PatchClientV3 {
     }
 
     try {
-      const hasTimeout =
-        typeof input.options?.timeoutMs === "number" &&
-        Number.isFinite(input.options.timeoutMs) &&
-        input.options.timeoutMs > 0;
-      if (hasTimeout && !timeoutSupported) {
+      if (hasRequestedTimeout(input.options) && !timeoutSupported) {
         throw new Error("timeoutMs requires AbortController support in this runtime");
       }
       const response = await this.fetchFn(url.toString(), init);
@@ -710,7 +1310,7 @@ export class PatchClientV3 {
         });
       }
 
-      return payload;
+      return payload as T;
     } catch (err) {
       if (err instanceof PatchClientError) {
         throw err;
@@ -726,6 +1326,27 @@ export class PatchClientV3 {
     } finally {
       cleanup();
     }
+  }
+
+  private buildUrl(path: string, query: object = {}): URL {
+    const url = new URL(this.baseUrl);
+    const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
+    url.pathname = `${basePath}${path}`;
+    for (const [key, value] of Object.entries(query) as Array<[string, QueryValue]>) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item !== undefined && item !== null) {
+            url.searchParams.append(key, String(item));
+          }
+        }
+      } else {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return url;
   }
 
   private authHeaders(options?: RequestOptions): Record<string, string> {
@@ -983,6 +1604,14 @@ function mergeHeadersCaseInsensitive(
   }
 
   return Object.fromEntries(merged);
+}
+
+function hasRequestedTimeout(options?: RequestOptions): boolean {
+  return (
+    typeof options?.timeoutMs === "number" &&
+    Number.isFinite(options.timeoutMs) &&
+    options.timeoutMs > 0
+  );
 }
 
 function isLoopbackHost(hostname: string): boolean {
