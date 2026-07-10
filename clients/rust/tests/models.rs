@@ -1,8 +1,7 @@
 use patch_client::model::{
-    AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody, CreatePlantInput,
-    CreateOrgMemberRequest, ErrorModel, ListOutputModuleItemBody, MetricsBody,
-    OrgAddPermissionInputBody, OrgAddPermissionOutputBody, OrgInfo, PlantBody,
-    RegistryOutputBody, StatPoint,
+    AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody, CreateOrgMemberRequest,
+    CreatePlantInput, ErrorModel, ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody,
+    OrgAddPermissionOutputBody, OrgInfo, PlantBody, RegistryOutputBody, StatPoint,
 };
 use std::collections::HashMap;
 
@@ -18,6 +17,7 @@ fn metrics_body_deserializes_panel_intraday() {
             {
                 "id": "a1",
                 "date": "2026-01-01",
+                "time": "00:05",
                 "timestamp": 1,
                 "energy": 1.0,
                 "cumulative_energy": 2.0,
@@ -25,7 +25,10 @@ fn metrics_body_deserializes_panel_intraday() {
                 "p": 4.0,
                 "v_in": 5.0,
                 "v_out": 6.0,
-                "temp": 7.0
+                "temp": 7.0,
+                "avg_seqnum": null,
+                "min_seqnum": null,
+                "count": null
             }
         ]
     }"#;
@@ -41,7 +44,7 @@ fn metrics_body_deserializes_panel_intraday() {
             assert_eq!(data.len(), 1);
             assert_eq!(data[0].id, "a1");
             assert_eq!(data[0].timestamp, 1);
-            assert_eq!(data[0].energy, 1.0);
+            assert_eq!(data[0].energy, Some(1.0));
         }
         _ => panic!("expected PanelIntraday"),
     }
@@ -162,6 +165,7 @@ fn metrics_body_deserializes_panel_daily() {
         "data": [
             {
                 "id": "panel-1",
+                "date": "2026-01-01",
                 "energy": 12.5
             }
         ]
@@ -178,6 +182,7 @@ fn metrics_body_deserializes_panel_daily() {
             let data = v.data.unwrap();
             assert_eq!(data.len(), 1);
             assert_eq!(data[0].id, "panel-1");
+            assert_eq!(data[0].date, "2026-01-01");
             assert_eq!(data[0].energy, 12.5);
         }
         _ => panic!("expected PanelDaily"),
@@ -318,7 +323,8 @@ fn metrics_body_panel_daily_rejects_missing_energy() {
         "interval": "1d",
         "data": [
             {
-                "id": "panel-1"
+                "id": "panel-1",
+                "date": "2026-01-01"
             }
         ]
     }"#;
@@ -379,7 +385,10 @@ fn auth_body_allows_schema_but_rejects_unknown_keys() {
         "name": "manager"
     }"#;
     let body: AuthBody = serde_json::from_str(ok_json).expect("$schema should be accepted");
-    assert_eq!(body.schema.as_deref(), Some("https://patch-api.conalog.com/schemas/AuthBody.json"));
+    assert_eq!(
+        body.schema.as_deref(),
+        Some("https://patch-api.conalog.com/schemas/AuthBody.json")
+    );
 
     let unknown_json = r#"{
         "token": "tok-xyz",
@@ -461,8 +470,7 @@ fn auth_with_password_body_rejects_missing_required_identity_fields() {
         email: None,
         username: None,
     };
-    serde_json::to_string(&manager_missing_email)
-        .expect_err("manager login must require email");
+    serde_json::to_string(&manager_missing_email).expect_err("manager login must require email");
 
     let viewer_missing_username = AuthWithPasswordBody {
         account_type: "viewer".to_string(),
@@ -503,8 +511,7 @@ fn new_list_output_module_item_body_deserializes_items() {
 #[test]
 fn new_list_output_module_item_body_rejects_missing_items() {
     let json = r#"{}"#;
-    let err =
-        serde_json::from_str::<ListOutputModuleItemBody>(json).expect_err("missing items");
+    let err = serde_json::from_str::<ListOutputModuleItemBody>(json).expect_err("missing items");
     assert!(err.to_string().contains("items"));
 }
 
@@ -528,31 +535,36 @@ fn new_stat_point_deserializes_registry_stat_payload() {
     let json = r#"{
         "timestamp": "2026-01-01T14:59:59Z",
         "installed_capacity_w": 12000.0,
+        "all_asset_models_registered": true,
         "module_models": [
             {"name": "Panel X", "count": 24}
         ],
         "device_models": [
             {"name": "Device Y", "count": 24, "installed_capacity_w": 12000.0}
+        ],
+        "inverter_models": [
+            {"name": "Inverter Z", "count": 2, "installed_capacity_w": 12000.0}
         ]
     }"#;
 
     let body: StatPoint = serde_json::from_str(json).unwrap();
     assert_eq!(body.timestamp, "2026-01-01T14:59:59Z");
     assert_eq!(body.installed_capacity_w, 12000.0);
+    assert!(body.all_asset_models_registered);
     assert_eq!(body.module_models.as_ref().unwrap()[0].count, 24);
     assert_eq!(body.device_models.as_ref().unwrap()[0].name, "Device Y");
+    assert_eq!(body.inverter_models.as_ref().unwrap()[0].name, "Inverter Z");
 }
 
 #[test]
 fn new_stat_point_rejects_missing_required_model_arrays() {
     let json = r#"{
         "timestamp": "2026-01-01T14:59:59Z",
-        "installed_capacity_w": 12000.0
+        "installed_capacity_w": 12000.0,
+        "all_asset_models_registered": true
     }"#;
     let err = serde_json::from_str::<StatPoint>(json).expect_err("missing model arrays");
-    assert!(
-        err.to_string().contains("module_models") || err.to_string().contains("device_models")
-    );
+    assert!(err.to_string().contains("module_models") || err.to_string().contains("device_models"));
 }
 
 #[test]
@@ -586,6 +598,51 @@ fn new_metrics_body_deserializes_sensor_intraday() {
             assert_eq!(data[0].mean, Some(20.0));
         }
         _ => panic!("expected SensorIntraday"),
+    }
+}
+
+#[test]
+fn new_metrics_body_deserializes_ess_unit_intraday() {
+    let json = r#"{
+        "plant_id": "p1",
+        "unit": "ess",
+        "source": "ess",
+        "date": "2026-01-01",
+        "interval": "5m",
+        "data": [
+            {
+                "id": "ess-1",
+                "charge_energy": 1.0,
+                "discharge_energy": 2.0,
+                "pv_energy": 3.0,
+                "battery_power": 4.0,
+                "output_a_voltage": 5.0,
+                "output_b_voltage": 6.0,
+                "output_c_voltage": 7.0,
+                "output_a_current": 8.0,
+                "output_b_current": 9.0,
+                "output_c_current": 10.0,
+                "battery_voltage": 11.0,
+                "battery_current": 12.0,
+                "pv_voltage": 13.0,
+                "pv_current": 14.0,
+                "total_charge_energy": 15.0,
+                "total_discharge_energy": 16.0,
+                "time": "00:05",
+                "timestamp": 1
+            }
+        ]
+    }"#;
+
+    let body: MetricsBody = serde_json::from_str(json).unwrap();
+    match body {
+        MetricsBody::ESSUnitIntraday(v) => {
+            assert_eq!(v.unit, "ess");
+            let data = v.data.unwrap();
+            assert_eq!(data[0].id, "ess-1");
+            assert_eq!(data[0].battery_power, 4.0);
+        }
+        _ => panic!("expected ESSUnitIntraday"),
     }
 }
 
@@ -669,10 +726,26 @@ fn new_metrics_body_uses_1d_for_aggregated_variants() {
 }
 
 #[test]
-fn new_registry_output_body_rejects_non_object_asset_model_and_tag() {
+fn new_registry_output_body_rejects_non_object_asset_model() {
     let json = r#"{
         "asset_id": "a1",
         "asset_model": "not-an-object",
+        "asset_type": "device",
+        "map_id": "m1",
+        "map_type": "device",
+        "registered": "2026-01-01T00:00:00Z",
+        "tag": {},
+        "unregistered": ""
+    }"#;
+
+    serde_json::from_str::<RegistryOutputBody>(json).expect_err("asset_model must be an object");
+}
+
+#[test]
+fn new_registry_output_body_rejects_array_tag() {
+    let json = r#"{
+        "asset_id": "a1",
+        "asset_model": {},
         "asset_type": "device",
         "map_id": "m1",
         "map_type": "device",
@@ -681,7 +754,7 @@ fn new_registry_output_body_rejects_non_object_asset_model_and_tag() {
         "unregistered": ""
     }"#;
 
-    serde_json::from_str::<RegistryOutputBody>(json).expect_err("non-object fields");
+    serde_json::from_str::<RegistryOutputBody>(json).expect_err("tag must be object or string");
 }
 
 #[test]
@@ -737,7 +810,10 @@ fn new_plant_body_allows_schema_but_rejects_unknown_keys() {
         "images": []
     }"#;
     let body: PlantBody = serde_json::from_str(ok_json).expect("$schema should be accepted");
-    assert_eq!(body.schema.as_deref(), Some("https://patch-api.conalog.com/schemas/PlantBody.json"));
+    assert_eq!(
+        body.schema.as_deref(),
+        Some("https://patch-api.conalog.com/schemas/PlantBody.json")
+    );
 
     let unknown_json = r#"{
         "id": "ask123456789012",
@@ -839,22 +915,25 @@ fn org_permission_output_rejects_null_and_unknown_fields() {
 }
 
 #[test]
-fn org_permission_input_rejects_invalid_id_and_account_type_on_serialize() {
-    let bad_id = OrgAddPermissionInputBody {
-        plant_id: "short-id".to_string(),
-        account_type: "viewer".to_string(),
-        email: None,
-        username: Some("viewer1".to_string()),
-    };
-    serde_json::to_string(&bad_id).expect_err("plant_id must be exactly 15 characters");
-
+fn org_permission_input_rejects_invalid_account_type_on_serialize() {
     let bad_type = OrgAddPermissionInputBody {
-        plant_id: "pln123456789012".to_string(),
         account_type: "admin".to_string(),
         email: Some("manager@example.com".to_string()),
         username: None,
     };
     serde_json::to_string(&bad_type).expect_err("permission input must reject admin");
+}
+
+#[test]
+fn org_permission_input_accepts_temporary_username_on_serialize() {
+    let body = OrgAddPermissionInputBody {
+        account_type: "temporary".to_string(),
+        email: None,
+        username: Some("temp-user".to_string()),
+    };
+    let raw = serde_json::to_string(&body).expect("temporary permission body should serialize");
+    assert!(raw.contains("\"type\":\"temporary\""));
+    assert!(raw.contains("\"username\":\"temp-user\""));
 }
 
 #[test]
@@ -866,8 +945,7 @@ fn create_org_member_request_rejects_missing_identity_fields() {
         username: None,
         metadata: None,
     };
-    serde_json::to_string(&bad_manager)
-        .expect_err("manager org member request must require email");
+    serde_json::to_string(&bad_manager).expect_err("manager org member request must require email");
 
     let bad_viewer = CreateOrgMemberRequest {
         account_type: "viewer".to_string(),
@@ -897,7 +975,7 @@ fn registry_output_rejects_invalid_enum_values() {
     let json = r#"{
         "asset_id": "a1",
         "asset_model": {},
-        "asset_type": "panel",
+        "asset_type": "rack",
         "map_id": "m1",
         "map_type": "rack",
         "registered": "2026-01-01T00:00:00Z",

@@ -1,11 +1,15 @@
 use crate::error::{Error, Result};
 use crate::model::{
-    AccountOutputBody, AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody,
-    CreateAccountOutputBody, CreateOrgMemberRequest, CreatePlantInput, ErrorModel, HealthLevelBody,
+    AccountOutputBody, AssignOrganizationPermissionRequestBody, AuthBody, AuthMethodsBody,
+    AuthOutputV3Body, AuthWithPasswordBody, BlueprintListItem, BlueprintRecordPayload,
+    BlueprintWriteBody, CommentActionBody, CommentEditBody, CommentOutput, CommentReadOutput,
+    CommentStateBody, CreateAccountOutputBody, CreateFilterBody, CreateOrgMemberRequest,
+    CreatePlantInput, DeviceStateBody, ErrorModel, FilterListItem, FilterOutput, HealthLevelBody,
     InverterDataBody, InverterLogsResponse, LatestDeviceBody, ListOutputCombinerItemBody,
-    ListOutputInverterItemBody, ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody,
-    OrgAddPermissionOutputBody, PlantBody, PlantBodyV3, PlantsListV3OutputBody, RegistryOutputBody,
-    StatPoint,
+    ListOutputInverterItemBody, ListOutputModuleItemBody, MetricsBody, OrgAddPermissionOutputBody,
+    OrgRemovePermissionOutputBody, PlantBody, PlantBodyV3, PlantsListV3OutputBody, Record,
+    RegisterBody, RegistryOutputBody, RemoveOrganizationPermissionRequestBody, RenameFilterBody,
+    StatPoint, UnregisterBody, WeatherForecastRow, WeatherObservedRow,
 };
 use percent_encoding::{percent_decode_str, percent_encode_byte};
 use reqwest::{Client as HttpClient, Method, StatusCode};
@@ -404,6 +408,12 @@ impl Client {
         }
     }
 
+    fn push_opt_query(q: &mut Vec<(&str, String)>, key: &'static str, value: Option<&str>) {
+        if let Some(v) = value {
+            q.push((key, v.to_string()));
+        }
+    }
+
     pub async fn get_account(&self) -> Result<AccountOutputBody> {
         self.execute_json(
             Method::GET,
@@ -485,6 +495,45 @@ impl Client {
         self.execute_text(Method::GET, url, true).await
     }
 
+    pub async fn list_plant_blueprints_v3(
+        &self,
+        plant_id: &str,
+    ) -> Result<Option<Vec<BlueprintListItem>>> {
+        let path = format!(
+            "api/v3/plants/{}/blueprints",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn record_plant_blueprint_v3(
+        &self,
+        plant_id: &str,
+        body: &BlueprintWriteBody,
+    ) -> Result<BlueprintRecordPayload> {
+        let path = format!(
+            "api/v3/plants/{}/blueprints/record",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn get_plant_blueprint_data_v3(
+        &self,
+        plant_id: &str,
+        blueprint_id: &str,
+    ) -> Result<BlueprintRecordPayload> {
+        let path = format!(
+            "api/v3/plants/{}/blueprints/{}",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(blueprint_id)
+        );
+        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
+            .await
+    }
+
     pub async fn get_registry_v3(
         &self,
         plant_id: &str,
@@ -508,6 +557,162 @@ impl Client {
         }
         let url = self.url_with_query(&path, &q)?;
         self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_plant_registry_timeline_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        let path = format!(
+            "api/v3/plants/{}/registry",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn get_registry_records_v3(
+        &self,
+        path: &str,
+        date: Option<&str>,
+        asset_id: Option<&str>,
+        map_id: Option<&str>,
+        asset_type: Option<&str>,
+        map_type: Option<&str>,
+    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        if let Some(v) = asset_type {
+            ensure_allowed(
+                v,
+                &[
+                    "device",
+                    "inverter",
+                    "edge",
+                    "panel",
+                    "panel_group",
+                    "sensor",
+                ],
+                "asset_type",
+            )?;
+        }
+        if let Some(v) = map_type {
+            ensure_allowed(
+                v,
+                &[
+                    "device",
+                    "string",
+                    "edge",
+                    "inverter",
+                    "combiner",
+                    "panel",
+                    "panel_group",
+                    "tracker",
+                    "sensor",
+                ],
+                "map_type",
+            )?;
+        }
+        let mut q = Vec::new();
+        Self::push_opt_query(&mut q, "date", date);
+        Self::push_opt_query(&mut q, "asset_id", asset_id);
+        Self::push_opt_query(&mut q, "map_id", map_id);
+        Self::push_opt_query(&mut q, "asset_type", asset_type);
+        Self::push_opt_query(&mut q, "map_type", map_type);
+        let url = self.url_with_query(path, &q)?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn get_registry_logs_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        asset_id: Option<&str>,
+        map_id: Option<&str>,
+        asset_type: Option<&str>,
+        map_type: Option<&str>,
+    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        let path = format!(
+            "api/v3/plants/{}/registry/logs",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_registry_records_v3(&path, Some(date), asset_id, map_id, asset_type, map_type)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn filter_registry_logs_v3(
+        &self,
+        plant_id: &str,
+        date: Option<&str>,
+        asset_id: Option<&str>,
+        map_id: Option<&str>,
+        asset_type: Option<&str>,
+        map_type: Option<&str>,
+    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        if date.is_none()
+            && asset_id.is_none()
+            && map_id.is_none()
+            && asset_type.is_none()
+            && map_type.is_none()
+        {
+            return Err(Error::InvalidPath(
+                "at least one registry filter query is required".to_string(),
+            ));
+        }
+        let path = format!(
+            "api/v3/plants/{}/registry/logs/filter",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_registry_records_v3(&path, date, asset_id, map_id, asset_type, map_type)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn get_registry_snapshots_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        asset_id: Option<&str>,
+        map_id: Option<&str>,
+        asset_type: Option<&str>,
+        map_type: Option<&str>,
+    ) -> Result<Option<Vec<RegistryOutputBody>>> {
+        let path = format!(
+            "api/v3/plants/{}/registry/snapshots",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_registry_records_v3(&path, Some(date), asset_id, map_id, asset_type, map_type)
+            .await
+    }
+
+    pub async fn register_asset_to_plant_v3(
+        &self,
+        plant_id: &str,
+        body: &RegisterBody,
+    ) -> Result<String> {
+        let path = format!(
+            "api/v3/plants/{}/registry/register",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn unregister_asset_from_plant_v3(
+        &self,
+        plant_id: &str,
+        body: &UnregisterBody,
+    ) -> Result<String> {
+        let path = format!(
+            "api/v3/plants/{}/registry/unregister",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
             .await
     }
 
@@ -567,12 +772,13 @@ impl Client {
         ids: Option<&[String]>,
         fields: Option<&[String]>,
     ) -> Result<MetricsBody> {
-        ensure_allowed(source, &["device", "inverter", "sensor"], "source")?;
+        ensure_allowed(source, &["device", "inverter", "ess", "sensor"], "source")?;
         ensure_allowed(
             unit,
             &[
                 "panel",
                 "inverter",
+                "ess",
                 "string",
                 "plant",
                 "temperature",
@@ -681,17 +887,271 @@ impl Client {
             .await
     }
 
-    pub async fn get_device_state_v3(&self, plant_id: &str, date: &str, kind: &str) -> Result<()> {
-        ensure_allowed(kind, &["seqnum", "relay", "rsd"], "kind")?;
+    pub async fn get_device_state_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        fields: Option<&[String]>,
+    ) -> Result<DeviceStateBody> {
         let path = format!(
             "api/v3/plants/{}/indicator/device-state",
             Self::encode_path_segment(plant_id)
         );
-        let url = self.url_with_query(
-            &path,
-            &[("date", date.to_string()), ("kind", kind.to_string())],
-        )?;
-        self.execute_no_content(Method::GET, url).await
+        let mut q = vec![("date", date.to_string())];
+        Self::push_fields_csv_query(&mut q, fields);
+        let url = self.url_with_query(&path, &q)?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn list_plant_comments_v3(
+        &self,
+        plant_id: &str,
+    ) -> Result<Option<Vec<CommentReadOutput>>> {
+        let path = format!(
+            "api/v3/plants/{}/comments",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn start_plant_comment_thread_v3(
+        &self,
+        plant_id: &str,
+        body: &CommentActionBody,
+    ) -> Result<CommentOutput> {
+        let path = format!(
+            "api/v3/plants/{}/comments/start_thread",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn edit_plant_comment_v3(
+        &self,
+        plant_id: &str,
+        comment_id: &str,
+        body: &CommentEditBody,
+    ) -> Result<CommentOutput> {
+        let path = format!(
+            "api/v3/plants/{}/comments/{}/edit",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(comment_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn reply_plant_comment_v3(
+        &self,
+        plant_id: &str,
+        comment_id: &str,
+        body: &CommentActionBody,
+    ) -> Result<CommentOutput> {
+        let path = format!(
+            "api/v3/plants/{}/comments/{}/reply",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(comment_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn change_plant_comment_state_v3(
+        &self,
+        plant_id: &str,
+        comment_id: &str,
+        body: &CommentStateBody,
+    ) -> Result<CommentOutput> {
+        let path = format!(
+            "api/v3/plants/{}/comments/{}/state",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(comment_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn list_plant_filters_v3(
+        &self,
+        plant_id: &str,
+    ) -> Result<Option<Vec<FilterListItem>>> {
+        let path = format!(
+            "api/v3/plants/{}/filters",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::GET, self.url(&path)?, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn create_plant_filter_v3(
+        &self,
+        plant_id: &str,
+        body: &CreateFilterBody,
+    ) -> Result<FilterOutput> {
+        let path = format!(
+            "api/v3/plants/{}/filters/create",
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn delete_plant_filter_v3(&self, plant_id: &str, filter_id: &str) -> Result<()> {
+        let path = format!(
+            "api/v3/plants/{}/filters/{}",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(filter_id)
+        );
+        self.execute_no_content(Method::DELETE, self.url(&path)?)
+            .await
+    }
+
+    pub async fn rename_plant_filter_v3(
+        &self,
+        plant_id: &str,
+        filter_id: &str,
+        body: &RenameFilterBody,
+    ) -> Result<FilterOutput> {
+        let path = format!(
+            "api/v3/plants/{}/filters/{}/rename",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(filter_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn get_anomaly_records_v3(
+        &self,
+        path: &str,
+        date: &str,
+        map_id: Option<&str>,
+        map_type: Option<&str>,
+        anomaly_type: Option<&str>,
+        severity: Option<&str>,
+    ) -> Result<Option<Vec<Record>>> {
+        if let Some(v) = map_type {
+            ensure_allowed(v, &["plant", "inverter", "string", "panel"], "map_type")?;
+        }
+        if let Some(v) = severity {
+            ensure_allowed(v, &["low", "medium", "high"], "severity")?;
+        }
+        let mut q = vec![("date", date.to_string())];
+        Self::push_opt_query(&mut q, "map_id", map_id);
+        Self::push_opt_query(&mut q, "map_type", map_type);
+        Self::push_opt_query(&mut q, "type", anomaly_type);
+        Self::push_opt_query(&mut q, "severity", severity);
+        let url = self.url_with_query(path, &q)?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_plant_anomaly_timeline_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+    ) -> Result<Option<Vec<Record>>> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/anomaly",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_anomaly_records_v3(&path, date, None, None, None, None)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn get_plant_anomaly_logs_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        map_id: Option<&str>,
+        map_type: Option<&str>,
+        anomaly_type: Option<&str>,
+        severity: Option<&str>,
+    ) -> Result<Option<Vec<Record>>> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/anomaly/logs",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_anomaly_records_v3(&path, date, map_id, map_type, anomaly_type, severity)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn filter_plant_anomaly_logs_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        map_id: Option<&str>,
+        map_type: Option<&str>,
+        anomaly_type: Option<&str>,
+        severity: Option<&str>,
+    ) -> Result<Option<Vec<Record>>> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/anomaly/logs/filter",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_anomaly_records_v3(&path, date, map_id, map_type, anomaly_type, severity)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn get_plant_anomaly_snapshots_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        map_id: Option<&str>,
+        map_type: Option<&str>,
+        anomaly_type: Option<&str>,
+        severity: Option<&str>,
+    ) -> Result<Option<Vec<Record>>> {
+        let path = format!(
+            "api/v3/plants/{}/indicator/anomaly/snapshots",
+            Self::encode_path_segment(plant_id)
+        );
+        self.get_anomaly_records_v3(&path, date, map_id, map_type, anomaly_type, severity)
+            .await
+    }
+
+    pub async fn get_plant_weather_forecast_v3(
+        &self,
+        plant_id: &str,
+        days: Option<i64>,
+    ) -> Result<Option<Vec<WeatherForecastRow>>> {
+        let path = format!(
+            "api/v3/plants/{}/weather/forecast",
+            Self::encode_path_segment(plant_id)
+        );
+        let mut q = Vec::new();
+        if let Some(v) = days {
+            q.push(("days", v.to_string()));
+        }
+        let url = self.url_with_query(&path, &q)?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
+    }
+
+    pub async fn get_plant_weather_observed_v3(
+        &self,
+        plant_id: &str,
+        date: &str,
+        before: Option<i64>,
+    ) -> Result<Option<Vec<WeatherObservedRow>>> {
+        let path = format!(
+            "api/v3/plants/{}/weather/observed",
+            Self::encode_path_segment(plant_id)
+        );
+        let mut q = vec![("date", date.to_string())];
+        if let Some(v) = before {
+            q.push(("before", v.to_string()));
+        }
+        let url = self.url_with_query(&path, &q)?;
+        self.execute_json(Method::GET, url, Option::<&()>::None)
+            .await
     }
 
     pub async fn list_module_model_info_v3(&self) -> Result<ListOutputModuleItemBody> {
@@ -737,11 +1197,28 @@ impl Client {
     pub async fn assign_plant_permission_v3(
         &self,
         organization_id: &str,
-        body: &OrgAddPermissionInputBody,
+        plant_id: &str,
+        body: &AssignOrganizationPermissionRequestBody,
     ) -> Result<OrgAddPermissionOutputBody> {
         let path = format!(
-            "api/v3/organizations/{}/permissions",
-            Self::encode_path_segment(organization_id)
+            "api/v3/organizations/{}/plants/{}/permissions/grant",
+            Self::encode_path_segment(organization_id),
+            Self::encode_path_segment(plant_id)
+        );
+        self.execute_json(Method::POST, self.url(&path)?, Some(body))
+            .await
+    }
+
+    pub async fn remove_plant_permission_v3(
+        &self,
+        organization_id: &str,
+        plant_id: &str,
+        body: &RemoveOrganizationPermissionRequestBody,
+    ) -> Result<OrgRemovePermissionOutputBody> {
+        let path = format!(
+            "api/v3/organizations/{}/plants/{}/permissions/revoke",
+            Self::encode_path_segment(organization_id),
+            Self::encode_path_segment(plant_id)
         );
         self.execute_json(Method::POST, self.url(&path)?, Some(body))
             .await
@@ -1012,6 +1489,7 @@ mod tests {
                   {
                     "id":"x1",
                     "date":"2026-01-01",
+                    "time":"00:05",
                     "timestamp":1,
                     "energy":1.0,
                     "cumulative_energy":2.0,
@@ -1019,7 +1497,10 @@ mod tests {
                     "p":4.0,
                     "v_in":5.0,
                     "v_out":6.0,
-                    "temp":7.0
+                    "temp":7.0,
+                    "avg_seqnum":null,
+                    "min_seqnum":null,
+                    "count":null
                   }
                 ]
             }"#,
@@ -1063,6 +1544,7 @@ mod tests {
                   {
                     "id":"pnl-1",
                     "date":"2026-01-01",
+                    "time":"00:05",
                     "timestamp":1,
                     "energy":1.0,
                     "cumulative_energy":2.0,
@@ -1070,7 +1552,10 @@ mod tests {
                     "p":4.0,
                     "v_in":5.0,
                     "v_out":6.0,
-                    "temp":7.0
+                    "temp":7.0,
+                    "avg_seqnum":null,
+                    "min_seqnum":null,
+                    "count":null
                   }
                 ]
             }"#,
@@ -1282,8 +1767,10 @@ mod tests {
             body: r#"{
                 "timestamp":"2026-01-01T14:59:59Z",
                 "installed_capacity_w":12000.0,
+                "all_asset_models_registered":true,
                 "module_models":[{"name":"Panel X","count":24}],
-                "device_models":[{"name":"Device Y","count":24,"installed_capacity_w":12000.0}]
+                "device_models":[{"name":"Device Y","count":24,"installed_capacity_w":12000.0}],
+                "inverter_models":[{"name":"Inverter Z","count":2,"installed_capacity_w":12000.0}]
             }"#,
             stall_before_response: None,
         }]);
@@ -1301,18 +1788,32 @@ mod tests {
     async fn new_get_device_state_v3_requests_expected_path() {
         let server = spawn_mock_server(vec![MockStep {
             method: "GET",
-            path_prefix: "/api/v3/plants/p1/indicator/device-state?date=2026-01-01&kind=relay",
+            path_prefix: "/api/v3/plants/p1/indicator/device-state?date=2026-01-01",
             status: 200,
-            content_type: "text/plain",
-            body: "",
+            content_type: "application/json",
+            body: r#"{
+                "plant_id":"p1",
+                "date":"2026-01-01",
+                "data":[{
+                    "id":"dev-1",
+                    "timestamp":1,
+                    "date":"00:05",
+                    "is_forced_rapid_shutdown":false,
+                    "is_forced_ref":false,
+                    "is_forced_relay":false,
+                    "is_rapid_shutdown":true,
+                    "is_relay":true
+                }]
+            }"#,
             stall_before_response: None,
         }]);
 
         let client = Client::new(&server.base_url).expect("create client");
-        client
-            .get_device_state_v3("p1", "2026-01-01", "relay")
+        let out = client
+            .get_device_state_v3("p1", "2026-01-01", None)
             .await
             .expect("device state request should succeed");
+        assert_eq!(out.data[0].id, "dev-1");
         server.handle.join().expect("join mock server");
     }
 
