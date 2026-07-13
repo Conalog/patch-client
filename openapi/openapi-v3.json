@@ -1535,6 +1535,100 @@
         ],
         "type": "object"
       },
+      "CreateChildOrganizationBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CreateChildOrganizationBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Created child organization ID.",
+            "examples": [
+              "org123456789012"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {},
+            "description": "Additional metadata stored on the child organization.",
+            "examples": [
+              {
+                "region": "west"
+              }
+            ],
+            "type": "object"
+          },
+          "name": {
+            "description": "Display name of the child organization.",
+            "examples": [
+              "West Region"
+            ],
+            "type": "string"
+          },
+          "owner": {
+            "description": "User ID of the parent organization owner assigned as the child organization owner.",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          },
+          "parent": {
+            "description": "Parent organization ID.",
+            "examples": [
+              "org987654321098"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner",
+          "parent"
+        ],
+        "type": "object"
+      },
+      "CreateChildOrganizationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/CreateChildOrganizationInput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {},
+            "description": "Additional metadata for the child organization.",
+            "examples": [
+              {
+                "region": "west"
+              }
+            ],
+            "type": "object"
+          },
+          "name": {
+            "description": "Display name of the child organization.",
+            "examples": [
+              "West Region"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "CreateFilterBody": {
         "additionalProperties": false,
         "properties": {
@@ -2201,6 +2295,15 @@
       "FileUploadResponse": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/FileUploadResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "created": {
             "description": "Timestamp when the file was created",
             "type": "string"
@@ -2379,6 +2482,15 @@
       "ImageUploadResponse": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/ImageUploadResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "created": {
             "description": "Timestamp when the image record was created",
             "type": "string"
@@ -3283,6 +3395,74 @@
         },
         "required": [
           "id"
+        ],
+        "type": "object"
+      },
+      "MoveOrganizationPlantRequestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/MoveOrganizationPlantRequestBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "organizationId": {
+            "description": "Target organization ID under the root organization tree.",
+            "examples": [
+              "org987654321098"
+            ],
+            "maxLength": 15,
+            "minLength": 15,
+            "type": "string"
+          }
+        },
+        "required": [
+          "organizationId"
+        ],
+        "type": "object"
+      },
+      "MovePlantBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/MovePlantBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "organization_id": {
+            "description": "Target organization ID now assigned to the plant.",
+            "examples": [
+              "org123456789012"
+            ],
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Moved plant ID.",
+            "examples": [
+              "pln123456789012"
+            ],
+            "type": "string"
+          },
+          "previous_organization_id": {
+            "description": "Previous organization ID assigned to the plant.",
+            "examples": [
+              "org987654321098"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "organization_id",
+          "previous_organization_id"
         ],
         "type": "object"
       },
@@ -5306,9 +5486,97 @@
         ]
       }
     },
-    "/api/v3/organizations/{organization_id}/members": {
+    "/api/v3/orgs/{organization_id}/children": {
       "post": {
-        "description": "Creates a new user under the specified organization. Only the organization owner may create organization members. Alias of POST /api/v3/account.",
+        "description": "Organization management endpoint that creates a child organization under the specified organization. Only the organization owner may create child organizations. The child organization owner is set to the parent organization owner, and that owner is added to the child organization membership.",
+        "operationId": "create_child_org",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Parent organization ID under which the child organization will be created.",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Parent organization ID under which the child organization will be created.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChildOrganizationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChildOrganizationBody",
+                  "description": "Created child organization."
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create child organization",
+        "tags": [
+          "v3/organization-management"
+        ]
+      }
+    },
+    "/api/v3/orgs/{organization_id}/members": {
+      "post": {
+        "description": "Organization management endpoint that creates a new user under the specified organization. Only the organization owner may create organization members. Alias of POST /api/v3/account.",
         "operationId": "create_org_member",
         "parameters": [
           {
@@ -5322,12 +5590,12 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
               "enum": [
                 "manager"
               ],
@@ -5390,13 +5658,117 @@
         ],
         "summary": "Create organization member",
         "tags": [
-          "v3/org"
+          "v3/organization-management"
         ]
       }
     },
-    "/api/v3/organizations/{organization_id}/plants/{plant_id}/permissions/grant": {
+    "/api/v3/orgs/{organization_id}/plants/{plant_id}/move": {
       "post": {
-        "description": "Grants a user a specific role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may add plant permissions.",
+        "description": "Organization management endpoint that moves a plant from the specified organization tree to another organization in the same tree. Only the organization owner may move plants.",
+        "operationId": "move_plant_organization",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Root organization ID whose owner is moving the plant.",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Root organization ID whose owner is moving the plant.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target plant ID to move.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Target plant ID to move.",
+              "examples": [
+                "pln123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveOrganizationPlantRequestBody",
+                "description": "Request body for moving a plant to another organization"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovePlantBody",
+                  "description": "Moved plant organization result"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move plant to another organization",
+        "tags": [
+          "v3/organization-management"
+        ]
+      }
+    },
+    "/api/v3/orgs/{organization_id}/plants/{plant_id}/permissions/grant": {
+      "post": {
+        "description": "Organization management endpoint that grants a user a specific role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may add plant permissions.",
         "operationId": "assign_plant_permission",
         "parameters": [
           {
@@ -5410,12 +5782,12 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
               "enum": [
                 "manager"
               ],
@@ -5494,13 +5866,13 @@
         ],
         "summary": "Assign plant permission to a user",
         "tags": [
-          "v3/org"
+          "v3/organization-management"
         ]
       }
     },
-    "/api/v3/organizations/{organization_id}/plants/{plant_id}/permissions/revoke": {
+    "/api/v3/orgs/{organization_id}/plants/{plant_id}/permissions/revoke": {
       "post": {
-        "description": "Removes a user's role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may remove plant permissions.",
+        "description": "Organization management endpoint that removes a user's role-based permission (viewer, manager, temporary) to access a plant under the given organization. Only the organization owner may remove plant permissions.",
         "operationId": "remove_plant_permission",
         "parameters": [
           {
@@ -5514,12 +5886,12 @@
             }
           },
           {
-            "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
             "in": "header",
             "name": "Account-Type",
             "required": true,
             "schema": {
-              "description": "Specifies the type of user account making the request. Every v3/org route requires a manager account that owns the organization.",
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
               "enum": [
                 "manager"
               ],
@@ -5598,7 +5970,7 @@
         ],
         "summary": "Remove plant permission from a user",
         "tags": [
-          "v3/org"
+          "v3/organization-management"
         ]
       }
     },
@@ -6987,6 +7359,109 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/files": {
+      "post": {
+        "description": "Uploads files related to a specific plant including blueprints, images, and configuration files. Authorization header and Account-Type header are required.",
+        "operationId": "upload_plant_files",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload files for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload files for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "filename": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "filename of the file being uploaded",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "general purpose name for multipart form value",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileUploadResponse",
+                  "description": "Response body containing file upload details and metadata"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload Plant Files",
+        "tags": [
+          "v3/plants/files"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/filters": {
       "get": {
         "description": "Lists reusable map object filters for a specific plant, including each filter's map object IDs.",
@@ -7353,6 +7828,109 @@
         "summary": "Rename Plant Filter",
         "tags": [
           "v3/plants/filters"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/images": {
+      "post": {
+        "description": "Uploads images related to a specific plant and returns the image record ID for comment attachments. Authorization header and Account-Type header are required.",
+        "operationId": "upload_plant_images",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload images for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to upload images for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "filename": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "filename of the file being uploaded",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "general purpose name for multipart form value",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageUploadResponse",
+                  "description": "Response body containing image upload details and the record ID for comment attachments"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload Plant Images",
+        "tags": [
+          "v3/plants/images"
         ]
       }
     },
