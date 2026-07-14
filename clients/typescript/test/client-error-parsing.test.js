@@ -252,6 +252,26 @@ test("returns oauth login redirect location", async () => {
   assert.equal(location, "https://accounts.example.com/oauth/google");
 });
 
+test("preserves oauth 302 status when redirect location is missing", async () => {
+  const client = new PatchClientV3({
+    fetchFn: async (_url, init) => {
+      assert.equal(init?.redirect, "manual");
+      return new Response(null, { status: 302 });
+    },
+  });
+
+  await assert.rejects(
+    () => client.startOAuthLogin({ provider: "google" }),
+    (err) => {
+      assert.ok(err instanceof PatchClientError);
+      assert.equal(err.status, 302);
+      assert.equal(err.payload, null);
+      assert.match(err.message, /expected a 302 response with a Location header/);
+      return true;
+    }
+  );
+});
+
 test("uses latest plant permission grant path", async () => {
   let observedUrl = "";
   const client = new PatchClientV3({
@@ -273,6 +293,30 @@ test("uses latest plant permission grant path", async () => {
     /\/api\/v3\/organizations\/org-1\/plants\/plant-1\/permissions\/grant$/
   );
   assert.deepEqual(out, { plant_id: "plant-1", type: "viewer" });
+});
+
+test("serializes device-state fields as one comma-separated query value", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ plant_id: "plant-1", date: "2026-07-14", data: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.getDeviceState("plant-1", {
+    date: "2026-07-14",
+    fields: ["is_relay", "is_rapid_shutdown"],
+  });
+
+  const url = new URL(observedUrl);
+  assert.equal(url.pathname, "/api/v3/plants/plant-1/indicator/device-state");
+  assert.equal(url.searchParams.get("date"), "2026-07-14");
+  assert.deepEqual(url.searchParams.getAll("fields"), ["is_relay,is_rapid_shutdown"]);
+  assert.match(url.search, /(?:^\?|&)fields=is_relay%2Cis_rapid_shutdown(?:&|$)/);
 });
 
 test("returns Uint8Array for binary responses", async () => {

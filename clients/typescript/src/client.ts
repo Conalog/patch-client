@@ -14,6 +14,8 @@ export type RegistryMapType =
   | "panel_group"
   | "tracker"
   | "sensor";
+export type AnomalyMapType = "plant" | "inverter" | "string" | "panel";
+export type AnomalySeverity = "low" | "medium" | "high";
 export type MetricSource = "device" | "inverter" | "ess" | "sensor";
 export type MetricUnit =
   | "panel"
@@ -103,8 +105,9 @@ export interface CreateOrganizationMemberRequestBody {
   metadata?: unknown;
 }
 
-export interface CreateAccountOutputBody extends AccountOutputBody {
+export interface CreateAccountOutputBody extends Omit<AccountOutputBody, "name"> {
   id: string;
+  name?: string;
   expired?: string;
   link?: string;
 }
@@ -264,9 +267,9 @@ export type FilterListItem = Omit<FilterOutput, "$schema">;
 export interface AnomalyQuery {
   date: string;
   map_id?: string;
-  map_type?: string;
+  map_type?: AnomalyMapType;
   type?: string;
-  severity?: string;
+  severity?: AnomalySeverity;
 }
 
 export interface RecordBody {
@@ -380,8 +383,8 @@ export interface RegistryQuery {
   date?: string;
   asset_id?: string;
   map_id?: string;
-  asset_type?: string;
-  map_type?: string;
+  asset_type?: RegistryAssetType;
+  map_type?: RegistryMapType;
 }
 
 export interface RegistryMeta {
@@ -774,6 +777,12 @@ export class PatchClientV3 {
         if (location) {
           return location;
         }
+        throw new PatchClientError(
+          response.status,
+          null,
+          "PATCH API OAuth login expected a 302 response with a Location header",
+          { method, url: url.toString() }
+        );
       }
       const payload = await parseResponse(response, this.maxResponseBytes);
       throw new PatchClientError(
@@ -1053,7 +1062,7 @@ export class PatchClientV3 {
     options?: RequestOptions
   ): Promise<DeviceStateBody> {
     return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/indicator/device-state`, {
-      query,
+      query: { date: query.date, fields: query.fields?.join(",") },
       options,
     });
   }
