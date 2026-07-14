@@ -131,9 +131,30 @@ class ClientSafetyTests(unittest.TestCase):
                 payload,
             ),
             (
+                lambda client: client.list_plant_blueprints("plant"),
+                "GET",
+                "/api/v3/plants/plant/blueprints",
+                None,
+                None,
+            ),
+            (
                 lambda client: client.start_plant_comment_thread("plant", payload),
                 "POST",
                 "/api/v3/plants/plant/comments/start_thread",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.edit_plant_comment("plant", "comment"),
+                "POST",
+                "/api/v3/plants/plant/comments/comment/edit",
+                None,
+                None,
+            ),
+            (
+                lambda client: client.reply_plant_comment("plant", "comment", payload),
+                "POST",
+                "/api/v3/plants/plant/comments/comment/reply",
                 None,
                 payload,
             ),
@@ -174,6 +195,28 @@ class ClientSafetyTests(unittest.TestCase):
                 "/api/v3/plants/plant/registry/register",
                 None,
                 payload,
+            ),
+            (
+                lambda client: client.filter_plant_registry_logs(
+                    "plant", "2024-01-24", asset_id="inv-1", map_type="inverter"
+                ),
+                "GET",
+                "/api/v3/plants/plant/registry/logs/filter",
+                {
+                    "date": "2024-01-24",
+                    "asset_id": "inv-1",
+                    "map_id": None,
+                    "asset_type": None,
+                    "map_type": "inverter",
+                },
+                None,
+            ),
+            (
+                lambda client: client.get_plant_weather_forecast("plant", days=7),
+                "GET",
+                "/api/v3/plants/plant/weather/forecast",
+                {"days": 7},
+                None,
             ),
             (
                 lambda client: client.get_plant_weather_observed("plant", "2024-01-24", 3),

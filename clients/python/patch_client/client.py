@@ -395,7 +395,7 @@ class PatchClientV3:
         self,
         plant_id: str,
         comment_id: str,
-        payload: Mapping[str, Any],
+        payload: Optional[Mapping[str, Any]] = None,
         *,
         access_token: Optional[str] = None,
         account_type: Optional[AccountType] = None,
