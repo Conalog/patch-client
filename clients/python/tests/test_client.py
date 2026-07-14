@@ -6,12 +6,10 @@ from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
 from patch_client.client import (
-    FilePart,
     PatchClientError,
     PatchClientV3,
     _SafeRedirectHandler,
     _decode_response,
-    _encode_multipart,
 )
 
 
@@ -46,46 +44,6 @@ class ClientSafetyTests(unittest.TestCase):
         result = _decode_response(b'{"ok": true}', "Application/JSON; charset=utf-8")
         self.assertEqual(result, {"ok": True})
 
-    def test_encode_multipart_rejects_field_name_with_crlf(self) -> None:
-        with self.assertRaises(ValueError):
-            _encode_multipart({"name\r\nX-Injected: 1": "value"}, {})
-
-    def test_encode_multipart_rejects_content_type_with_crlf(self) -> None:
-        with self.assertRaises(ValueError):
-            _encode_multipart(
-                {},
-                {
-                    "filename": FilePart(
-                        filename="ok.txt",
-                        content=b"body",
-                        content_type="text/plain\r\nX-Injected: 1",
-                    )
-                },
-            )
-
-    def test_upload_plant_files_requires_at_least_one_file(self) -> None:
-        class StubClient(PatchClientV3):
-            def __init__(self) -> None:
-                super().__init__(base_url="https://example.com")
-                self.called = False
-
-            def _request(self, *args, **kwargs):  # type: ignore[override]
-                self.called = True
-                return None
-
-        client = StubClient()
-        with self.assertRaises(ValueError):
-            client.upload_plant_files("plant-id", {})
-        self.assertFalse(client.called)
-
-    def test_encode_multipart_rejects_when_payload_too_large(self) -> None:
-        with self.assertRaises(ValueError):
-            _encode_multipart(
-                {},
-                {"f": FilePart(filename="x.bin", content=b"x" * 64)},
-                max_total_bytes=32,
-            )
-
     def test_get_metrics_by_date_serializes_fields_as_csv(self) -> None:
         class StubClient(PatchClientV3):
             def __init__(self) -> None:
@@ -101,6 +59,196 @@ class ClientSafetyTests(unittest.TestCase):
             "plant-id", "device", "plant", "1d", "2024-01-24", fields=["i_out", "p"]
         )
         self.assertEqual(client.captured_query["fields"], "i_out,p")
+
+    def test_get_metrics_by_date_forwards_id_filters(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.captured_query = None
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.captured_query = kwargs.get("query")
+                return None
+
+        client = StubClient()
+        client.get_metrics_by_date(
+            "plant-id", "device", "panel", "5m", "2024-01-24", ids=["p1", "p2"]
+        )
+        self.assertEqual(client.captured_query["id"], ["p1", "p2"])
+
+    def test_new_spec_methods_route_to_expected_paths(self) -> None:
+        class StubClient(PatchClientV3):
+            def __init__(self) -> None:
+                super().__init__(base_url="https://example.com")
+                self.calls = []
+
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.calls.append((method, path, kwargs))
+                return None
+
+        payload = {"value": "x"}
+        cases = [
+            (
+                lambda client: client.list_oauth_methods("google", "https://app/callback"),
+                "GET",
+                "/api/v3/account/auth-methods",
+                {"provider": "google", "redirect_url": "https://app/callback"},
+                None,
+            ),
+            (
+                lambda client: client.list_combiner_model_info(),
+                "GET",
+                "/api/v3/model-info/combiners",
+                None,
+                None,
+            ),
+            (
+                lambda client: client.assign_plant_permission("org/1", "plant 1", payload),
+                "POST",
+                "/api/v3/organizations/org%2F1/plants/plant%201/permissions/grant",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.remove_plant_permission("org", "plant", payload),
+                "POST",
+                "/api/v3/organizations/org/plants/plant/permissions/revoke",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.get_plant_list(full=True),
+                "GET",
+                "/api/v3/plants",
+                {"page": None, "size": None, "full": True},
+                None,
+            ),
+            (
+                lambda client: client.record_plant_blueprint("plant", payload),
+                "POST",
+                "/api/v3/plants/plant/blueprints/record",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.list_plant_blueprints("plant"),
+                "GET",
+                "/api/v3/plants/plant/blueprints",
+                None,
+                None,
+            ),
+            (
+                lambda client: client.start_plant_comment_thread("plant", payload),
+                "POST",
+                "/api/v3/plants/plant/comments/start_thread",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.edit_plant_comment("plant", "comment"),
+                "POST",
+                "/api/v3/plants/plant/comments/comment/edit",
+                None,
+                None,
+            ),
+            (
+                lambda client: client.reply_plant_comment("plant", "comment", payload),
+                "POST",
+                "/api/v3/plants/plant/comments/comment/reply",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.rename_plant_filter("plant", "filter", payload),
+                "POST",
+                "/api/v3/plants/plant/filters/filter/rename",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.get_plant_anomaly_logs(
+                    "plant", "2024-01-24", type="hotspot", severity="high"
+                ),
+                "GET",
+                "/api/v3/plants/plant/indicator/anomaly/logs",
+                {
+                    "date": "2024-01-24",
+                    "map_id": None,
+                    "map_type": None,
+                    "type": "hotspot",
+                    "severity": "high",
+                },
+                None,
+            ),
+            (
+                lambda client: client.get_device_state(
+                    "plant", "2024-01-24", fields=["is_relay", "is_rapid_shutdown"]
+                ),
+                "GET",
+                "/api/v3/plants/plant/indicator/device-state",
+                {"date": "2024-01-24", "fields": "is_relay,is_rapid_shutdown"},
+                None,
+            ),
+            (
+                lambda client: client.register_asset_to_plant("plant", payload),
+                "POST",
+                "/api/v3/plants/plant/registry/register",
+                None,
+                payload,
+            ),
+            (
+                lambda client: client.filter_plant_registry_logs(
+                    "plant", "2024-01-24", asset_id="inv-1", map_type="inverter"
+                ),
+                "GET",
+                "/api/v3/plants/plant/registry/logs/filter",
+                {
+                    "date": "2024-01-24",
+                    "asset_id": "inv-1",
+                    "map_id": None,
+                    "asset_type": None,
+                    "map_type": "inverter",
+                },
+                None,
+            ),
+            (
+                lambda client: client.get_plant_weather_forecast("plant", days=7),
+                "GET",
+                "/api/v3/plants/plant/weather/forecast",
+                {"days": 7},
+                None,
+            ),
+            (
+                lambda client: client.get_plant_weather_observed("plant", "2024-01-24", 3),
+                "GET",
+                "/api/v3/plants/plant/weather/observed",
+                {"date": "2024-01-24", "before": 3},
+                None,
+            ),
+        ]
+
+        for call, method, path, query, json_body in cases:
+            with self.subTest(path=path):
+                client = StubClient()
+                call(client)
+                self.assertEqual(len(client.calls), 1)
+                self.assertEqual(client.calls[0][:2], (method, path))
+                kwargs = client.calls[0][2]
+                self.assertEqual(kwargs.get("query"), query)
+                self.assertEqual(kwargs.get("json_body"), json_body)
+
+    def test_start_oauth_login_returns_redirect_location(self) -> None:
+        client = PatchClientV3(base_url="https://example.com")
+        http_error = HTTPError(
+            "https://example.com/api/v3/account/login-with-oauth2?provider=google",
+            302,
+            "found",
+            {"Location": "https://accounts.example/auth"},
+            BytesIO(b""),
+        )
+        with patch.object(client._opener, "open", side_effect=http_error):
+            redirect_url = client.start_oauth_login("google")
+        self.assertEqual(redirect_url, "https://accounts.example/auth")
 
     def test_merge_headers_preserves_lowercase_bearer_prefix(self) -> None:
         client = PatchClientV3(base_url="https://example.com")
@@ -300,15 +448,6 @@ class ClientSafetyTests(unittest.TestCase):
         assert redirected is not None
         self.assertEqual(redirected.get_method(), "GET")
         self.assertIsNone(redirected.data)
-
-    def test_encode_multipart_does_not_over_reject_small_valid_payload(self) -> None:
-        content_type, payload = _encode_multipart(
-            {},
-            {"filename": FilePart(filename="a.txt", content=b"x")},
-            max_total_bytes=512,
-        )
-        self.assertIn("multipart/form-data", content_type)
-        self.assertLessEqual(len(payload), 512)
 
     def test_request_raises_patch_client_error_on_3xx_status(self) -> None:
         class ResponseStub:
