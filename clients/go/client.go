@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"mime/multipart"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -21,21 +20,15 @@ import (
 type AccountType string
 
 const (
-	AccountTypeViewer  AccountType = "viewer"
-	AccountTypeManager AccountType = "manager"
-	AccountTypeAdmin   AccountType = "admin"
+	AccountTypeViewer    AccountType = "viewer"
+	AccountTypeManager   AccountType = "manager"
+	AccountTypeTemporary AccountType = "temporary"
 )
 
 type RequestOptions struct {
 	AccessToken string
 	AccountType AccountType
 	Headers     map[string]string
-}
-
-type FilePart struct {
-	Filename    string
-	ContentType string
-	Content     []byte
 }
 
 type Client struct {
@@ -48,7 +41,6 @@ type Client struct {
 
 	defaultHeaders    map[string]string
 	maxResponseBytes  int64
-	maxMultipartBytes int64
 	allowInsecureHTTP bool
 }
 
@@ -59,8 +51,11 @@ type PatchClientError struct {
 	Body       string
 }
 
+type OAuthLoginRedirect struct {
+	Location string
+}
+
 const defaultMaxResponseBytes int64 = 10 << 20
-const defaultMaxMultipartBytes int64 = 20 << 20
 const maxInt64 = int64(^uint64(0) >> 1)
 
 var fallbackHTTPClient = &http.Client{Timeout: 30 * time.Second}
@@ -91,11 +86,10 @@ func NewClient(baseURL string) *Client {
 	}
 	baseURL = normalizeBaseURL(baseURL)
 	return &Client{
-		BaseURL:           strings.TrimRight(baseURL, "/"),
-		HTTPClient:        &http.Client{Timeout: 30 * time.Second},
-		defaultHeaders:    map[string]string{},
-		maxResponseBytes:  defaultMaxResponseBytes,
-		maxMultipartBytes: defaultMaxMultipartBytes,
+		BaseURL:          strings.TrimRight(baseURL, "/"),
+		HTTPClient:       &http.Client{Timeout: 30 * time.Second},
+		defaultHeaders:   map[string]string{},
+		maxResponseBytes: defaultMaxResponseBytes,
 	}
 }
 
@@ -142,16 +136,6 @@ func (c *Client) SetMaxResponseBytes(limit int64) {
 	c.maxResponseBytes = limit
 }
 
-func (c *Client) SetMaxMultipartBytes(limit int64) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if limit <= 0 {
-		c.maxMultipartBytes = defaultMaxMultipartBytes
-		return
-	}
-	c.maxMultipartBytes = limit
-}
-
 func (c *Client) SetAllowInsecureHTTP(allow bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -159,56 +143,157 @@ func (c *Client) SetAllowInsecureHTTP(allow bool) {
 }
 
 func (c *Client) AuthenticateUser(ctx context.Context, payload any) (any, error) {
-	return c.doJSON(ctx, http.MethodPost, "/api/v3/account/auth-with-password", nil, payload, nil, nil)
+	return c.doJSONNoAuth(ctx, http.MethodPost, "/api/v3/account/auth-with-password", nil, payload, nil)
 }
 
 func (c *Client) RefreshUserToken(ctx context.Context, opts *RequestOptions) (any, error) {
-	return c.doJSON(ctx, http.MethodPost, "/api/v3/account/refresh-token", nil, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodPost, "/api/v3/account/refresh-token", nil, nil, opts)
 }
 
 func (c *Client) GetAccountInfo(ctx context.Context, opts *RequestOptions) (any, error) {
-	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/", nil, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/", nil, nil, opts)
+}
+
+func (c *Client) ListOAuthMethods(ctx context.Context, query map[string]string, opts *RequestOptions) (any, error) {
+	return c.doJSONNoAuth(ctx, http.MethodGet, "/api/v3/account/auth-methods", query, nil, opts)
+}
+
+func (c *Client) StartOAuthLogin(ctx context.Context, provider string, redirectURL string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
+	query := map[string]string{"provider": provider}
+	if redirectURL != "" {
+		query["redirect_url"] = redirectURL
+	}
+	return c.doRedirectNoAuth(ctx, "/api/v3/account/login-with-oauth2", query, opts)
+}
+
+func (c *Client) ListCombinerModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/combiners", nil, nil, opts)
+}
+
+func (c *Client) ListInverterModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/inverters", nil, nil, opts)
+}
+
+func (c *Client) ListModuleModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/model-info/modules", nil, nil, opts)
 }
 
 func (c *Client) CreateOrganizationMember(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/organizations/%s/members", encodePath(organizationID))
-	return c.doJSON(ctx, http.MethodPost, path, nil, payload, nil, opts)
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
 }
 
-func (c *Client) AssignPlantPermission(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/organizations/%s/permissions", encodePath(organizationID))
-	return c.doJSON(ctx, http.MethodPost, path, nil, payload, nil, opts)
+func (c *Client) AssignPlantPermission(ctx context.Context, organizationID string, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/organizations/%s/plants/%s/permissions/grant", encodePath(organizationID), encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) RemovePlantPermission(ctx context.Context, organizationID string, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/organizations/%s/plants/%s/permissions/revoke", encodePath(organizationID), encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
 }
 
 func (c *Client) GetPlantList(ctx context.Context, query map[string]string, opts *RequestOptions) (any, error) {
-	return c.doJSON(ctx, http.MethodGet, "/api/v3/plants", query, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, "/api/v3/plants", query, nil, opts)
 }
 
 func (c *Client) CreatePlant(ctx context.Context, payload any, opts *RequestOptions) (any, error) {
-	return c.doJSON(ctx, http.MethodPost, "/api/v3/plants", nil, payload, nil, opts)
+	return c.doJSON(ctx, http.MethodPost, "/api/v3/plants", nil, payload, opts)
 }
 
 func (c *Client) GetPlantDetails(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, nil, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
 }
 
 func (c *Client) GetPlantBlueprint(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/blueprint", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, opts)
 }
 
-func (c *Client) UploadPlantFiles(ctx context.Context, plantID string, fields map[string]string, files map[string]FilePart, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/plants/%s/files", encodePath(plantID))
-	normalizedFields, normalizedFiles, err := normalizeUploadPayload(fields, files)
-	if err != nil {
-		return nil, err
-	}
-	contentType, payload, err := encodeMultipart(normalizedFields, normalizedFiles, c.multipartLimit())
-	if err != nil {
-		return nil, err
-	}
-	return c.doJSON(ctx, http.MethodPost, path, nil, nil, payload, withContentType(opts, contentType))
+func (c *Client) ListPlantBlueprints(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/blueprints", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) RecordPlantBlueprint(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/blueprints/record", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) GetPlantBlueprintData(ctx context.Context, plantID string, blueprintID string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/blueprints/%s", encodePath(plantID), encodePath(blueprintID))
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) ListPlantComments(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/comments", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) StartPlantCommentThread(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/comments/start_thread", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) EditPlantComment(ctx context.Context, plantID string, commentID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/comments/%s/edit", encodePath(plantID), encodePath(commentID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) ReplyPlantComment(ctx context.Context, plantID string, commentID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/comments/%s/reply", encodePath(plantID), encodePath(commentID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) ChangePlantCommentState(ctx context.Context, plantID string, commentID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/comments/%s/state", encodePath(plantID), encodePath(commentID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) ListPlantFilters(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/filters", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) CreatePlantFilter(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/filters/create", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) DeletePlantFilter(ctx context.Context, plantID string, filterID string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/filters/%s", encodePath(plantID), encodePath(filterID))
+	return c.doJSON(ctx, http.MethodDelete, path, nil, nil, opts)
+}
+
+func (c *Client) RenamePlantFilter(ctx context.Context, plantID string, filterID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/filters/%s/rename", encodePath(plantID), encodePath(filterID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) GetPlantAnomalyTimeline(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/anomaly", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, opts)
+}
+
+func (c *Client) GetPlantAnomalyLogs(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/anomaly/logs", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
+}
+
+func (c *Client) FilterPlantAnomalyLogs(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/anomaly/logs/filter", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
+}
+
+func (c *Client) GetPlantAnomalySnapshots(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/anomaly/snapshots", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
+}
+
+func (c *Client) GetDeviceState(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/indicator/device-state", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
 }
 
 func (c *Client) GetAssetHealthLevel(ctx context.Context, plantID string, unit string, date string, view string, opts *RequestOptions) (any, error) {
@@ -217,32 +302,27 @@ func (c *Client) GetAssetHealthLevel(ctx context.Context, plantID string, unit s
 	if view != "" {
 		query["view"] = view
 	}
-	return c.doJSON(ctx, http.MethodGet, path, query, nil, nil, opts)
-}
-
-func (c *Client) GetPanelSeqnum(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/plants/%s/indicator/seqnum", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
 }
 
 func (c *Client) ListInverterLogs(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/logs/inverter", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, query, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
 }
 
 func (c *Client) ListInverterLogsByID(ctx context.Context, plantID string, inverterID string, query map[string]string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/logs/inverters/%s", encodePath(plantID), encodePath(inverterID))
-	return c.doJSON(ctx, http.MethodGet, path, query, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
 }
 
 func (c *Client) GetLatestDeviceMetrics(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/metrics/device/latest", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, query, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
 }
 
 func (c *Client) GetLatestInverterMetrics(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/metrics/inverter/latest", encodePath(plantID))
-	return c.doJSON(ctx, http.MethodGet, path, nil, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
 }
 
 func (c *Client) GetMetricsByDate(
@@ -264,21 +344,52 @@ func (c *Client) GetMetricsByDate(
 	)
 	q := cloneMap(query)
 	q["date"] = date
-	return c.doJSON(ctx, http.MethodGet, path, q, nil, nil, opts)
+	return c.doJSON(ctx, http.MethodGet, path, q, nil, opts)
 }
 
-func (c *Client) GetAssetRegistrationOnPlant(
-	ctx context.Context,
-	plantID string,
-	recordType string,
-	date string,
-	query map[string]string,
-	opts *RequestOptions,
-) (any, error) {
-	path := fmt.Sprintf("/api/v3/plants/%s/registry/%s", encodePath(plantID), encodePath(recordType))
-	q := cloneMap(query)
-	q["date"] = date
-	return c.doJSON(ctx, http.MethodGet, path, q, nil, nil, opts)
+func (c *Client) GetPlantRegistryTimeline(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, opts)
+}
+
+func (c *Client) GetPlantRegistryLogs(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/logs", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
+}
+
+func (c *Client) FilterPlantRegistryLogs(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/logs/filter", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
+}
+
+func (c *Client) RegisterAssetToPlant(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/register", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) GetPlantRegistrySnapshots(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/snapshots", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
+}
+
+func (c *Client) GetPlantRegistryStat(ctx context.Context, plantID string, date string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/stat", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, map[string]string{"date": date}, nil, opts)
+}
+
+func (c *Client) UnregisterAssetFromPlant(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/registry/unregister", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) GetPlantWeatherForecast(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/weather/forecast", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
+}
+
+func (c *Client) GetPlantWeatherObserved(ctx context.Context, plantID string, date string, query map[string]string, opts *RequestOptions) (any, error) {
+	path := fmt.Sprintf("/api/v3/plants/%s/weather/observed", encodePath(plantID))
+	return c.doJSON(ctx, http.MethodGet, path, queryWithDate(query, date), nil, opts)
 }
 
 func (c *Client) doJSON(
@@ -287,8 +398,30 @@ func (c *Client) doJSON(
 	path string,
 	query map[string]string,
 	jsonBody any,
-	rawBody []byte,
 	opts *RequestOptions,
+) (any, error) {
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, true)
+}
+
+func (c *Client) doJSONNoAuth(
+	ctx context.Context,
+	method string,
+	path string,
+	query map[string]string,
+	jsonBody any,
+	opts *RequestOptions,
+) (any, error) {
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, false)
+}
+
+func (c *Client) doJSONWithAuth(
+	ctx context.Context,
+	method string,
+	path string,
+	query map[string]string,
+	jsonBody any,
+	opts *RequestOptions,
+	sendAuth bool,
 ) (any, error) {
 	target, err := c.buildURL(path, query)
 	if err != nil {
@@ -306,9 +439,6 @@ func (c *Client) doJSON(
 		body = bytes.NewReader(encoded)
 		contentType = "application/json"
 		hasBody = true
-	} else if rawBody != nil {
-		body = bytes.NewReader(rawBody)
-		hasBody = true
 	}
 
 	req, err := http.NewRequestWithContext(nonNilContext(ctx), method, target, body)
@@ -317,6 +447,9 @@ func (c *Client) doJSON(
 	}
 
 	headers := c.mergeHeaders(opts)
+	if !sendAuth {
+		suppressAuthHeaders(headers)
+	}
 	if headers["Accept"] == "" {
 		headers["Accept"] = "application/json"
 	}
@@ -375,6 +508,48 @@ func (c *Client) doJSON(
 	}
 
 	return string(payload), nil
+}
+
+func (c *Client) doRedirectNoAuth(ctx context.Context, path string, query map[string]string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
+	target, err := c.buildURL(path, query)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(nonNilContext(ctx), http.MethodGet, target, nil)
+	if err != nil {
+		return nil, err
+	}
+	headers := c.mergeHeaders(opts)
+	suppressAuthHeaders(headers)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	if c.shouldBlockInsecureRequest(target) {
+		return nil, fmt.Errorf("refusing to send request over insecure transport")
+	}
+
+	resp, err := withRedirectsDisabled(c.httpClient()).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusFound {
+		return &OAuthLoginRedirect{Location: resp.Header.Get("Location")}, nil
+	}
+
+	payload, _, err := readBodyWithLimit(resp.Body, c.responseLimit())
+	if err != nil {
+		return nil, err
+	}
+	return nil, &PatchClientError{
+		Method:     http.MethodGet,
+		URL:        target,
+		StatusCode: resp.StatusCode,
+		Body:       string(payload),
+	}
 }
 
 func (c *Client) buildURL(path string, query map[string]string) (string, error) {
@@ -436,120 +611,9 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 	return headers
 }
 
-func withContentType(opts *RequestOptions, contentType string) *RequestOptions {
-	if opts == nil {
-		return &RequestOptions{Headers: map[string]string{"Content-Type": contentType}}
-	}
-	out := &RequestOptions{
-		AccessToken: opts.AccessToken,
-		AccountType: opts.AccountType,
-		Headers:     cloneMap(opts.Headers),
-	}
-	if out.Headers == nil {
-		out.Headers = map[string]string{}
-	}
-	for k := range out.Headers {
-		if strings.EqualFold(k, "Content-Type") {
-			delete(out.Headers, k)
-		}
-	}
-	out.Headers["Content-Type"] = contentType
-	return out
-}
-
-func normalizeUploadPayload(fields map[string]string, files map[string]FilePart) (map[string]string, map[string]FilePart, error) {
-	outFields := cloneMap(fields)
-	outFiles := cloneFileMap(files)
-
-	// OpenAPI schema defines multipart keys as "name" and "filename".
-	if _, ok := outFiles["filename"]; !ok {
-		if len(outFiles) != 1 {
-			return nil, nil, fmt.Errorf("upload files must include 'filename' field")
-		}
-		for _, file := range outFiles {
-			outFiles = map[string]FilePart{"filename": file}
-			break
-		}
-	}
-
-	if _, ok := outFields["name"]; !ok {
-		if file, ok := outFiles["filename"]; ok && file.Filename != "" {
-			outFields["name"] = file.Filename
-		} else {
-			outFields["name"] = "file"
-		}
-	}
-
-	return outFields, outFiles, nil
-}
-
-func encodeMultipart(fields map[string]string, files map[string]FilePart, limit int64) (string, []byte, error) {
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
-	if limit <= 0 {
-		limit = defaultMaxMultipartBytes
-	}
-
-	for k, v := range fields {
-		safeName, err := rejectCRLF(k, "multipart field name")
-		if err != nil {
-			return "", nil, err
-		}
-		if err := writer.WriteField(safeName, v); err != nil {
-			return "", nil, err
-		}
-		if int64(buf.Len()) > limit {
-			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
-		}
-	}
-
-	for fieldName, filePart := range files {
-		safeFieldName, err := rejectCRLF(fieldName, "multipart file field name")
-		if err != nil {
-			return "", nil, err
-		}
-		safeFilename, err := rejectCRLF(filePart.Filename, "multipart filename")
-		if err != nil {
-			return "", nil, err
-		}
-		contentType := filePart.ContentType
-		if contentType == "" {
-			contentType = "application/octet-stream"
-		}
-		safeContentType, err := rejectCRLF(contentType, "multipart content type")
-		if err != nil {
-			return "", nil, err
-		}
-		header := textproto.MIMEHeader{}
-		header.Set(
-			"Content-Disposition",
-			fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(safeFieldName), escapeQuotes(safeFilename)),
-		)
-		header.Set("Content-Type", safeContentType)
-
-		part, err := writer.CreatePart(header)
-		if err != nil {
-			return "", nil, err
-		}
-		if int64(buf.Len())+int64(len(filePart.Content)) > limit {
-			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
-		}
-		if _, err := part.Write(filePart.Content); err != nil {
-			return "", nil, err
-		}
-		if int64(buf.Len()) > limit {
-			return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
-		}
-	}
-
-	if err := writer.Close(); err != nil {
-		return "", nil, err
-	}
-	if int64(buf.Len()) > limit {
-		return "", nil, fmt.Errorf("multipart payload exceeds %d bytes", limit)
-	}
-
-	return writer.FormDataContentType(), buf.Bytes(), nil
+func suppressAuthHeaders(headers map[string]string) {
+	delete(headers, "Authorization")
+	delete(headers, "Account-Type")
 }
 
 func asBearer(token string) string {
@@ -574,20 +638,10 @@ func cloneMap(in map[string]string) map[string]string {
 	return out
 }
 
-func cloneFileMap(in map[string]FilePart) map[string]FilePart {
-	if len(in) == 0 {
-		return map[string]FilePart{}
-	}
-	out := make(map[string]FilePart, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
-	return out
-}
-
-func escapeQuotes(v string) string {
-	replacer := strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
-	return replacer.Replace(v)
+func queryWithDate(query map[string]string, date string) map[string]string {
+	q := cloneMap(query)
+	q["date"] = date
+	return q
 }
 
 func canonicalHeaderKey(k string) string {
@@ -623,16 +677,6 @@ func (c *Client) responseLimit() int64 {
 	c.mu.RUnlock()
 	if limit <= 0 {
 		return defaultMaxResponseBytes
-	}
-	return limit
-}
-
-func (c *Client) multipartLimit() int64 {
-	c.mu.RLock()
-	limit := c.maxMultipartBytes
-	c.mu.RUnlock()
-	if limit <= 0 {
-		return defaultMaxMultipartBytes
 	}
 	return limit
 }
@@ -748,13 +792,6 @@ func readBodyWithLimit(body io.Reader, limit int64) ([]byte, bool, error) {
 		return payload[:limit], true, nil
 	}
 	return payload, false, nil
-}
-
-func rejectCRLF(value string, fieldName string) (string, error) {
-	if strings.ContainsAny(value, "\r\n") {
-		return "", fmt.Errorf("%s must not contain CR or LF characters", fieldName)
-	}
-	return value, nil
 }
 
 func isJSONContentType(contentType string) bool {
