@@ -736,9 +736,9 @@ pub struct CommentReadOutput {
     pub user: CommentUserOutput,
     pub created: String,
     pub updated: String,
-    #[serde(default, deserialize_with = "deserialize_optional_non_null")]
+    #[serde(default, deserialize_with = "deserialize_present_option")]
     pub images: Option<Vec<String>>,
-    #[serde(default, deserialize_with = "deserialize_optional_non_null")]
+    #[serde(default, deserialize_with = "deserialize_present_option")]
     pub map_ids: Option<Vec<String>>,
     #[serde(default, deserialize_with = "deserialize_optional_non_null")]
     pub parent: Option<String>,
@@ -764,9 +764,9 @@ pub struct CommentOutput {
     pub updated: String,
     #[serde(default, deserialize_with = "deserialize_optional_non_null")]
     pub expand: Option<HashMap<String, Value>>,
-    #[serde(default, deserialize_with = "deserialize_optional_non_null")]
+    #[serde(default, deserialize_with = "deserialize_present_option")]
     pub images: Option<Vec<String>>,
-    #[serde(default, deserialize_with = "deserialize_optional_non_null")]
+    #[serde(default, deserialize_with = "deserialize_present_option")]
     pub map_ids: Option<Vec<String>>,
     #[serde(default, deserialize_with = "deserialize_optional_non_null")]
     pub parent: Option<String>,

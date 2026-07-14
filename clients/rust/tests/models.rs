@@ -1,7 +1,8 @@
 use patch_client::model::{
-    AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody, CreateOrgMemberRequest,
-    CreatePlantInput, ErrorModel, ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody,
-    OrgAddPermissionOutputBody, OrgInfo, PlantBody, RegistryOutputBody, StatPoint,
+    AuthBody, AuthMethodsBody, AuthOutputV3Body, AuthWithPasswordBody, CommentOutput,
+    CommentReadOutput, CreateOrgMemberRequest, CreatePlantInput, ErrorModel,
+    ListOutputModuleItemBody, MetricsBody, OrgAddPermissionInputBody, OrgAddPermissionOutputBody,
+    OrgInfo, PlantBody, RegistryOutputBody, StatPoint,
 };
 use std::collections::HashMap;
 
@@ -883,6 +884,88 @@ fn new_metrics_body_keeps_sensor_hourly_unknown() {
 }
 
 #[test]
+fn comment_read_output_accepts_nullable_image_and_map_arrays() {
+    let null_json = r#"{
+        "id": "comment-1",
+        "text": "needs review",
+        "user": {
+            "id": "user-1",
+            "name": "Viewer",
+            "username": "viewer1",
+            "email": "viewer@example.com"
+        },
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-01T00:00:00Z",
+        "images": null,
+        "map_ids": null
+    }"#;
+    let model: CommentReadOutput =
+        serde_json::from_str(null_json).expect("null arrays should deserialize");
+    assert_eq!(model.images, None);
+    assert_eq!(model.map_ids, None);
+
+    let array_json = r#"{
+        "id": "comment-1",
+        "text": "needs review",
+        "user": {
+            "id": "user-1",
+            "name": "Viewer",
+            "username": "viewer1",
+            "email": "viewer@example.com"
+        },
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-01T00:00:00Z",
+        "images": ["img-1"],
+        "map_ids": ["map-1"]
+    }"#;
+    let model: CommentReadOutput =
+        serde_json::from_str(array_json).expect("arrays should deserialize");
+    assert_eq!(model.images.as_ref().unwrap()[0], "img-1");
+    assert_eq!(model.map_ids.as_ref().unwrap()[0], "map-1");
+}
+
+#[test]
+fn comment_output_accepts_nullable_image_and_map_arrays() {
+    let null_json = r#"{
+        "id": "comment-1",
+        "text": "needs review",
+        "user": {
+            "id": "user-1",
+            "name": "Viewer",
+            "username": "viewer1",
+            "email": "viewer@example.com"
+        },
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-01T00:00:00Z",
+        "images": null,
+        "map_ids": null
+    }"#;
+    let model: CommentOutput =
+        serde_json::from_str(null_json).expect("null arrays should deserialize");
+    assert_eq!(model.images, None);
+    assert_eq!(model.map_ids, None);
+
+    let array_json = r#"{
+        "id": "comment-1",
+        "text": "needs review",
+        "user": {
+            "id": "user-1",
+            "name": "Viewer",
+            "username": "viewer1",
+            "email": "viewer@example.com"
+        },
+        "created": "2026-01-01T00:00:00Z",
+        "updated": "2026-01-01T00:00:00Z",
+        "images": ["img-1"],
+        "map_ids": ["map-1"]
+    }"#;
+    let model: CommentOutput =
+        serde_json::from_str(array_json).expect("arrays should deserialize");
+    assert_eq!(model.images.as_ref().unwrap()[0], "img-1");
+    assert_eq!(model.map_ids.as_ref().unwrap()[0], "map-1");
+}
+
+#[test]
 fn org_permission_output_accepts_snake_case_plant_id() {
     let raw = r#"{
         "plant_id": "plant-2",
@@ -898,7 +981,7 @@ fn org_permission_output_accepts_snake_case_plant_id() {
 #[test]
 fn org_permission_output_rejects_null_and_unknown_fields() {
     let null_json = r#"{
-        "plantId": "plant-3",
+        "plant_id": "plant-3",
         "type": "viewer",
         "username": null
     }"#;
@@ -906,7 +989,7 @@ fn org_permission_output_rejects_null_and_unknown_fields() {
         .expect_err("username must not accept null");
 
     let unknown_json = r#"{
-        "plantId": "plant-3",
+        "plant_id": "plant-3",
         "type": "viewer",
         "extra": true
     }"#;
