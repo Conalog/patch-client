@@ -22,7 +22,6 @@ type AccountType string
 const (
 	AccountTypeViewer    AccountType = "viewer"
 	AccountTypeManager   AccountType = "manager"
-	AccountTypeAdmin     AccountType = "admin"
 	AccountTypeTemporary AccountType = "temporary"
 )
 
@@ -144,7 +143,7 @@ func (c *Client) SetAllowInsecureHTTP(allow bool) {
 }
 
 func (c *Client) AuthenticateUser(ctx context.Context, payload any) (any, error) {
-	return c.doJSON(ctx, http.MethodPost, "/api/v3/account/auth-with-password", nil, payload, nil)
+	return c.doJSONNoAuth(ctx, http.MethodPost, "/api/v3/account/auth-with-password", nil, payload, nil)
 }
 
 func (c *Client) RefreshUserToken(ctx context.Context, opts *RequestOptions) (any, error) {
@@ -156,7 +155,7 @@ func (c *Client) GetAccountInfo(ctx context.Context, opts *RequestOptions) (any,
 }
 
 func (c *Client) ListOAuthMethods(ctx context.Context, query map[string]string, opts *RequestOptions) (any, error) {
-	return c.doJSON(ctx, http.MethodGet, "/api/v3/account/auth-methods", query, nil, opts)
+	return c.doJSONNoAuth(ctx, http.MethodGet, "/api/v3/account/auth-methods", query, nil, opts)
 }
 
 func (c *Client) StartOAuthLogin(ctx context.Context, provider string, redirectURL string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
@@ -164,7 +163,7 @@ func (c *Client) StartOAuthLogin(ctx context.Context, provider string, redirectU
 	if redirectURL != "" {
 		query["redirect_url"] = redirectURL
 	}
-	return c.doRedirect(ctx, "/api/v3/account/login-with-oauth2", query, opts)
+	return c.doRedirectNoAuth(ctx, "/api/v3/account/login-with-oauth2", query, opts)
 }
 
 func (c *Client) ListCombinerModelInfo(ctx context.Context, opts *RequestOptions) (any, error) {
@@ -401,6 +400,29 @@ func (c *Client) doJSON(
 	jsonBody any,
 	opts *RequestOptions,
 ) (any, error) {
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, true)
+}
+
+func (c *Client) doJSONNoAuth(
+	ctx context.Context,
+	method string,
+	path string,
+	query map[string]string,
+	jsonBody any,
+	opts *RequestOptions,
+) (any, error) {
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, false)
+}
+
+func (c *Client) doJSONWithAuth(
+	ctx context.Context,
+	method string,
+	path string,
+	query map[string]string,
+	jsonBody any,
+	opts *RequestOptions,
+	sendAuth bool,
+) (any, error) {
 	target, err := c.buildURL(path, query)
 	if err != nil {
 		return nil, err
@@ -425,6 +447,9 @@ func (c *Client) doJSON(
 	}
 
 	headers := c.mergeHeaders(opts)
+	if !sendAuth {
+		suppressAuthHeaders(headers)
+	}
 	if headers["Accept"] == "" {
 		headers["Accept"] = "application/json"
 	}
@@ -485,7 +510,7 @@ func (c *Client) doJSON(
 	return string(payload), nil
 }
 
-func (c *Client) doRedirect(ctx context.Context, path string, query map[string]string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
+func (c *Client) doRedirectNoAuth(ctx context.Context, path string, query map[string]string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
 	target, err := c.buildURL(path, query)
 	if err != nil {
 		return nil, err
@@ -496,6 +521,7 @@ func (c *Client) doRedirect(ctx context.Context, path string, query map[string]s
 		return nil, err
 	}
 	headers := c.mergeHeaders(opts)
+	suppressAuthHeaders(headers)
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
@@ -583,6 +609,11 @@ func (c *Client) mergeHeaders(opts *RequestOptions) map[string]string {
 	}
 
 	return headers
+}
+
+func suppressAuthHeaders(headers map[string]string) {
+	delete(headers, "Authorization")
+	delete(headers, "Account-Type")
 }
 
 func asBearer(token string) string {

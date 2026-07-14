@@ -546,6 +546,120 @@ func TestStartOAuthLoginReturnsRedirectLocation(t *testing.T) {
 	}
 }
 
+func TestListOAuthMethodsOmitsAuthDefaults(t *testing.T) {
+	var gotAuth string
+	var gotAccountType string
+	var gotCustom string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotAccountType = r.Header.Get("Account-Type")
+		gotCustom = r.Header.Get("X-Custom")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	client.SetDefaultHeader("X-Custom", "yes")
+
+	_, err := client.ListOAuthMethods(context.Background(), nil, nil)
+	if err != nil {
+		t.Fatalf("ListOAuthMethods returned error: %v", err)
+	}
+	if gotAuth != "" {
+		t.Fatalf("unexpected Authorization header: %s", gotAuth)
+	}
+	if gotAccountType != "" {
+		t.Fatalf("unexpected Account-Type header: %s", gotAccountType)
+	}
+	if gotCustom != "yes" {
+		t.Fatalf("unexpected custom header: %s", gotCustom)
+	}
+}
+
+func TestStartOAuthLoginOmitsAuthDefaults(t *testing.T) {
+	var gotAuth string
+	var gotAccountType string
+	var gotCustom string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotAccountType = r.Header.Get("Account-Type")
+		gotCustom = r.Header.Get("X-Custom")
+		w.Header().Set("Location", "https://example.com/oauth")
+		w.WriteHeader(http.StatusFound)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	client.SetDefaultHeader("X-Custom", "yes")
+
+	_, err := client.StartOAuthLogin(context.Background(), "google", "", nil)
+	if err != nil {
+		t.Fatalf("StartOAuthLogin returned error: %v", err)
+	}
+	if gotAuth != "" {
+		t.Fatalf("unexpected Authorization header: %s", gotAuth)
+	}
+	if gotAccountType != "" {
+		t.Fatalf("unexpected Account-Type header: %s", gotAccountType)
+	}
+	if gotCustom != "yes" {
+		t.Fatalf("unexpected custom header: %s", gotCustom)
+	}
+}
+
+func TestAuthenticateUserOmitsAuthDefaults(t *testing.T) {
+	var gotAuth string
+	var gotAccountType string
+	var gotCustom string
+	var gotMethod string
+	var gotPath string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotAccountType = r.Header.Get("Account-Type")
+		gotCustom = r.Header.Get("X-Custom")
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token-value")
+	client.SetAccountType(AccountTypeManager)
+	client.SetDefaultHeader("X-Custom", "yes")
+
+	_, err := client.AuthenticateUser(context.Background(), map[string]any{
+		"type":     "manager",
+		"email":    "manager@example.com",
+		"password": "pw",
+	})
+	if err != nil {
+		t.Fatalf("AuthenticateUser returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Fatalf("unexpected method: %s", gotMethod)
+	}
+	if gotPath != "/api/v3/account/auth-with-password" {
+		t.Fatalf("unexpected path: %s", gotPath)
+	}
+	if gotAuth != "" {
+		t.Fatalf("unexpected Authorization header: %s", gotAuth)
+	}
+	if gotAccountType != "" {
+		t.Fatalf("unexpected Account-Type header: %s", gotAccountType)
+	}
+	if gotCustom != "yes" {
+		t.Fatalf("unexpected custom header: %s", gotCustom)
+	}
+}
+
 func TestRequestOptionsAcceptHeaderOverridesDefault(t *testing.T) {
 	var (
 		mu        sync.Mutex
