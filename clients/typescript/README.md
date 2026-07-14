@@ -17,11 +17,11 @@ If you store tokens in env vars, load that issued token from `process.env.PATCH_
 import { PatchClientV3 } from "patch-client";
 
 const authClient = new PatchClientV3();
-const auth = (await authClient.authenticateUser({
+const auth = await authClient.authenticateUser({
   type: "manager",
   email: process.env.PATCH_EMAIL,
   password: process.env.PATCH_PASSWORD,
-})) as { token: string };
+});
 
 const token = auth.token;
 authClient.setAccessToken(token);
@@ -37,7 +37,33 @@ const client = new PatchClientV3({
   accountType: "manager",
 });
 
-const plants = await client.getPlantList({ page: 0, size: 20 });
+const plants = await client.getPlantList({ page: 1, size: 20, full: true });
+```
+
+## Current v3 API Examples
+
+```ts
+const authMethods = await client.listOAuthMethods({ provider: "google" });
+const oauthLocation = await client.startOAuthLogin({
+  provider: "google",
+  redirect_url: "myscheme://callback",
+});
+
+const weather = await client.getPlantWeatherForecast("your-plant-id", { days: 3 });
+const registry = await client.getPlantRegistryLogs("your-plant-id", {
+  date: "2026-07-07",
+  asset_type: "inverter",
+});
+
+await client.assignPlantPermission("your-org-id", "your-plant-id", {
+  type: "viewer",
+  username: "viewer-user",
+});
+
+void authMethods;
+void oauthLocation;
+void weather;
+void registry;
 ```
 
 ## Also Usable from JavaScript
@@ -56,7 +82,7 @@ const { PatchClientV3 } = require("patch-client");
     accountType: "manager",
   });
 
-  const plants = await client.getPlantList({ page: 0, size: 20 });
+  const plants = await client.getPlantList({ page: 1, size: 20, full: true });
   console.log("Successfully fetched plants:", plants);
 })();
 ```
@@ -72,7 +98,7 @@ import { PatchClientV3 } from "patch-client";
     accountType: "manager",
   });
 
-  const plants = await client.getPlantList({ page: 0, size: 20 });
+  const plants = await client.getPlantList({ page: 1, size: 20, full: true });
   console.log("Successfully fetched plants:", plants);
 })();
 ```
@@ -86,10 +112,6 @@ import { PatchClientV3 } from "patch-client";
     (`ReadableStream.getReader()` or async-iterable body) so byte limits can be enforced safely.
   - If your runtime cannot expose streaming response bodies, set `maxResponseBytes: Infinity` to
     opt out of response-size enforcement.
-- `FormData` is required when using the file upload API (`uploadPlantFiles`).
-  - Node.js 18+ and modern browsers provide it by default.
-  - Native `FormData` expects `Blob`/`File` values (not `fs.createReadStream`).
-  - In older Node.js environments, install `form-data` and pass the created instance to `uploadPlantFiles`.
 
 ### `fetchFn` Injection Example (Legacy Node.js)
 
@@ -112,7 +134,7 @@ const { PatchClientV3 } = require("patch-client");
     fetchFn: fetch,
   });
 
-  const plants = await client.getPlantList({ page: 0, size: 20 });
+  const plants = await client.getPlantList({ page: 1, size: 20, full: true });
   console.log("Successfully fetched plants:", plants);
 })();
 ```
@@ -134,124 +156,8 @@ import { PatchClientV3 } from "patch-client";
     fetchFn: fetch,
   });
 
-  const plants = await client.getPlantList({ page: 0, size: 20 });
+  const plants = await client.getPlantList({ page: 1, size: 20, full: true });
   console.log("Successfully fetched plants:", plants);
-})();
-```
-
-### File Upload Examples
-
-### Native `FormData` Example (Node.js 18+)
-
-Use this when you rely on Node's built-in `fetch` and `FormData`.
-
-```js
-const fs = require("fs/promises");
-const path = require("path");
-const { PatchClientV3, PatchClientError } = require("patch-client");
-
-(async () => {
-  try {
-    const client = new PatchClientV3({
-      accessToken: "<issued-jwt-token>",
-      accountType: "manager",
-    });
-
-    const formData = new FormData();
-    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
-    const bytes = await fs.readFile(filePath);
-    const blob = new Blob([bytes], { type: "text/csv" });
-    formData.append("filename", blob, path.basename(filePath));
-
-    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
-    console.log("Successfully uploaded files:", result);
-  } catch (err) {
-    if (err instanceof PatchClientError) {
-      console.error("File upload API error:", err.status, err.payload);
-    } else {
-      console.error("Error while uploading files:", err);
-    }
-  }
-})();
-```
-
-### `form-data` Injection Example (Legacy Node.js)
-
-#### CommonJS (`node-fetch@2`)
-
-Install `form-data` and `node-fetch@2`.
-
-```bash
-npm install form-data node-fetch@2
-```
-
-```js
-const fs = require("fs");
-const path = require("path");
-const FormData = require("form-data");
-const fetch = require("node-fetch");
-const { PatchClientV3, PatchClientError } = require("patch-client");
-
-(async () => {
-  try {
-    const client = new PatchClientV3({
-      accessToken: "<issued-jwt-token>",
-      accountType: "manager",
-      fetchFn: fetch,
-    });
-
-    const formData = new FormData();
-    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
-    formData.append("filename", fs.createReadStream(filePath), path.basename(filePath));
-
-    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
-    console.log("Successfully uploaded files:", result);
-  } catch (err) {
-    if (err instanceof PatchClientError) {
-      console.error("File upload API error:", err.status, err.payload);
-    } else {
-      console.error("Error while uploading files:", err);
-    }
-  }
-})();
-```
-
-#### ESM (`node-fetch@3+`)
-
-Install `form-data` and `node-fetch`.
-
-```bash
-npm install form-data node-fetch
-```
-
-```js
-import fs from "fs";
-import path from "path";
-import FormData from "form-data";
-import fetch from "node-fetch";
-import { PatchClientV3, PatchClientError } from "patch-client";
-
-(async () => {
-  try {
-    const client = new PatchClientV3({
-      accessToken: "<issued-jwt-token>",
-      accountType: "manager",
-      fetchFn: fetch,
-    });
-
-    const formData = new FormData();
-    const filePath = "/path/to/your/actual/file.csv"; // Replace with a real file path.
-    formData.append("filename", fs.createReadStream(filePath), path.basename(filePath));
-
-    const result = await client.uploadPlantFiles("your-plant-id", formData); // Replace with a real plant ID.
-    console.log("Successfully uploaded files:", result);
-  } catch (err) {
-    if (err instanceof PatchClientError) {
-      console.error("File upload API error:", err.status, err.payload);
-    } else {
-      console.error("Error while uploading files:", err);
-    }
-  }
 })();
 ```
 
@@ -261,7 +167,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
 - Issue a token with `authenticateUser(...)`, then pass it via `accessToken` (or `setAccessToken(...)`).
 - Refresh an existing token with `refreshUserToken(...)` and update the client with the returned token.
 - `accessToken` accepts either `Bearer <token>` or a raw token.
-- `accountType` should be one of `"viewer"`, `"manager"`, or `"admin"`.
+- `accountType` should be one of `"viewer"`, `"manager"`, or `"temporary"`.
 
 ## Error Handling
 
@@ -278,7 +184,7 @@ const { PatchClientV3, PatchClientError } = require("patch-client");
       accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
-    const plants = await client.getPlantList({ page: 0, size: 20 });
+    const plants = await client.getPlantList({ page: 1, size: 20, full: true });
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {
@@ -301,7 +207,7 @@ import { PatchClientV3, PatchClientError } from "patch-client";
       accessToken: "<issued-jwt-token>",
       accountType: "manager",
     });
-    const plants = await client.getPlantList({ page: 0, size: 20 });
+    const plants = await client.getPlantList({ page: 1, size: 20, full: true });
     console.log("Successfully fetched plants:", plants);
   } catch (err) {
     if (err instanceof PatchClientError) {

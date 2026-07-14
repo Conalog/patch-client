@@ -43,24 +43,6 @@ test("parses mixed-case +json error content-type as object payload", async () =>
   );
 });
 
-test("removes content-type header case-insensitively for multipart uploads", async () => {
-  const client = new PatchClientV3({
-    defaultHeaders: { "content-type": "application/json" },
-    fetchFn: async (_url, init) => {
-      const headers = new Headers(init?.headers);
-      assert.equal(headers.has("content-type"), false);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    },
-  });
-
-  const form = new FormData();
-  form.append("filename", new Blob(["hello"], { type: "text/plain" }), "hello.txt");
-  await client.uploadPlantFiles("plant-1", form);
-});
-
 test("aborts request when timeoutMs is set", async () => {
   const client = new PatchClientV3({
     fetchFn: (_url, init) =>
@@ -249,6 +231,92 @@ test("sets redirect=manual when request has credential-bearing body", async () =
   });
   await client.authenticateUser({ email: "u@example.com", password: "pw" });
   assert.equal(observedRedirectPolicy, "manual");
+});
+
+test("returns oauth login redirect location", async () => {
+  const client = new PatchClientV3({
+    fetchFn: async (url, init) => {
+      assert.match(url, /\/api\/v3\/account\/login-with-oauth2\?provider=google&redirect_url=myscheme%3A%2F%2Fcallback$/);
+      assert.equal(init?.redirect, "manual");
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://accounts.example.com/oauth/google" },
+      });
+    },
+  });
+
+  const location = await client.startOAuthLogin({
+    provider: "google",
+    redirect_url: "myscheme://callback",
+  });
+  assert.equal(location, "https://accounts.example.com/oauth/google");
+});
+
+test("preserves oauth 302 status when redirect location is missing", async () => {
+  const client = new PatchClientV3({
+    fetchFn: async (_url, init) => {
+      assert.equal(init?.redirect, "manual");
+      return new Response(null, { status: 302 });
+    },
+  });
+
+  await assert.rejects(
+    () => client.startOAuthLogin({ provider: "google" }),
+    (err) => {
+      assert.ok(err instanceof PatchClientError);
+      assert.equal(err.status, 302);
+      assert.equal(err.payload, null);
+      assert.match(err.message, /expected a 302 response with a Location header/);
+      return true;
+    }
+  );
+});
+
+test("uses latest plant permission grant path", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ plant_id: "plant-1", type: "viewer" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  const out = await client.assignPlantPermission("org-1", "plant-1", {
+    type: "viewer",
+    username: "viewer1",
+  });
+  assert.match(
+    observedUrl,
+    /\/api\/v3\/organizations\/org-1\/plants\/plant-1\/permissions\/grant$/
+  );
+  assert.deepEqual(out, { plant_id: "plant-1", type: "viewer" });
+});
+
+test("serializes device-state fields as one comma-separated query value", async () => {
+  let observedUrl = "";
+  const client = new PatchClientV3({
+    fetchFn: async (url) => {
+      observedUrl = url;
+      return new Response(JSON.stringify({ plant_id: "plant-1", date: "2026-07-14", data: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.getDeviceState("plant-1", {
+    date: "2026-07-14",
+    fields: ["is_relay", "is_rapid_shutdown"],
+  });
+
+  const url = new URL(observedUrl);
+  assert.equal(url.pathname, "/api/v3/plants/plant-1/indicator/device-state");
+  assert.equal(url.searchParams.get("date"), "2026-07-14");
+  assert.deepEqual(url.searchParams.getAll("fields"), ["is_relay,is_rapid_shutdown"]);
+  assert.match(url.search, /(?:^\?|&)fields=is_relay%2Cis_rapid_shutdown(?:&|$)/);
 });
 
 test("returns Uint8Array for binary responses", async () => {
