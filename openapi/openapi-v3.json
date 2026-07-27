@@ -1692,6 +1692,11 @@
             "description": "Display name of the user.",
             "type": "string"
           },
+          "password": {
+            "description": "Password for a viewer account. Required for viewers and must be 6 to 71 characters without exceeding 72 UTF-8 bytes. Not accepted for managers.",
+            "type": "string",
+            "writeOnly": true
+          },
           "type": {
             "description": "The type of account for the new member.",
             "enum": [
