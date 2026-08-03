@@ -549,6 +549,206 @@
         "title": "ESS Plant Intraday Metrics",
         "type": "object"
       },
+      "BodyESSReadyBatteryData": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSReadyBatteryData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Ready Battery Intraday Metrics",
+        "type": "object"
+      },
+      "BodyESSReadyPCSDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSReadyPCSDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Ready PCS Daily Metrics",
+        "type": "object"
+      },
+      "BodyESSReadyPCSIntradayData": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSReadyPCSIntradayData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Ready PCS Intraday Metrics",
+        "type": "object"
+      },
+      "BodyESSReadyRackData": {
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/ESSReadyRackData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "ESS Ready Rack Intraday Metrics",
+        "type": "object"
+      },
       "BodyESSUnitDailyData": {
         "additionalProperties": false,
         "description": "Energy storage system unit daily metrics at 1-day intervals.",
@@ -2027,6 +2227,249 @@
           "total_discharge_energy",
           "time",
           "timestamp"
+        ],
+        "type": "object"
+      },
+      "ESSReadyBatteryData": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "dc_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "dc_voltage": {
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "module_temp_max": {
+            "format": "double",
+            "type": "number"
+          },
+          "module_temp_min": {
+            "format": "double",
+            "type": "number"
+          },
+          "online_rack_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "soc": {
+            "format": "double",
+            "type": "number"
+          },
+          "soh": {
+            "format": "double",
+            "type": "number"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "timestamp",
+          "date",
+          "dc_current",
+          "dc_voltage",
+          "module_temp_max",
+          "module_temp_min",
+          "online_rack_count",
+          "soc",
+          "soh"
+        ],
+        "type": "object"
+      },
+      "ESSReadyPCSDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "charge_energy": {
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "discharge_energy": {
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "timestamp",
+          "date",
+          "charge_energy",
+          "discharge_energy"
+        ],
+        "type": "object"
+      },
+      "ESSReadyPCSIntradayData": {
+        "additionalProperties": false,
+        "properties": {
+          "a_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "ab_voltage": {
+            "format": "double",
+            "type": "number"
+          },
+          "active_power": {
+            "format": "double",
+            "type": "number"
+          },
+          "b_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "bc_voltage": {
+            "format": "double",
+            "type": "number"
+          },
+          "c_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "ca_voltage": {
+            "format": "double",
+            "type": "number"
+          },
+          "charge_energy": {
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "dc_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "dc_voltage": {
+            "format": "double",
+            "type": "number"
+          },
+          "discharge_energy": {
+            "format": "double",
+            "type": "number"
+          },
+          "grid_frequency": {
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "timestamp",
+          "date",
+          "active_power",
+          "charge_energy",
+          "discharge_energy",
+          "a_current",
+          "b_current",
+          "c_current",
+          "dc_current",
+          "grid_frequency",
+          "ab_voltage",
+          "bc_voltage",
+          "ca_voltage",
+          "dc_voltage"
+        ],
+        "type": "object"
+      },
+      "ESSReadyRackData": {
+        "additionalProperties": false,
+        "properties": {
+          "cell_voltage_max": {
+            "format": "double",
+            "type": "number"
+          },
+          "cell_voltage_min": {
+            "format": "double",
+            "type": "number"
+          },
+          "cell_voltage_sum": {
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "dc_current": {
+            "format": "double",
+            "type": "number"
+          },
+          "device_info_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "module_temp_max": {
+            "format": "double",
+            "type": "number"
+          },
+          "module_temp_min": {
+            "format": "double",
+            "type": "number"
+          },
+          "rack_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "soc": {
+            "format": "double",
+            "type": "number"
+          },
+          "soh": {
+            "format": "double",
+            "type": "number"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "device_info_id",
+          "rack_id",
+          "timestamp",
+          "date",
+          "cell_voltage_max",
+          "cell_voltage_min",
+          "cell_voltage_sum",
+          "module_temp_max",
+          "module_temp_min",
+          "dc_current",
+          "soc",
+          "soh"
         ],
         "type": "object"
       },
@@ -4618,6 +5061,88 @@
           "module_models",
           "device_models",
           "inverter_models"
+        ],
+        "type": "object"
+      },
+      "TransitionItem": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "eventTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "ingestedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {}
+        },
+        "required": [
+          "assetType",
+          "assetId",
+          "field",
+          "eventTime",
+          "ingestedAt",
+          "value"
+        ],
+        "type": "object"
+      },
+      "TransitionPage": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TransitionPage.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TransitionItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "perPage": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalSizes": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalPages",
+          "totalSizes",
+          "page",
+          "perPage",
+          "items"
         ],
         "type": "object"
       },
@@ -9079,6 +9604,294 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/logs/device": {
+      "get": {
+        "description": "Retrieves page-paginated device transition logs ordered by event time and internal ID.",
+        "operationId": "list_device_transition_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact asset ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "Exact asset ID filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact transition field filter.",
+            "explode": false,
+            "in": "query",
+            "name": "field",
+            "schema": {
+              "description": "Exact transition field filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive RFC3339 UTC event-time bound.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Inclusive RFC3339 UTC event-time bound.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive RFC3339 UTC event-time bound.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "Exclusive RFC3339 UTC event-time bound.",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "default": 100,
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionPage"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Device Transition Logs",
+        "tags": [
+          "v3/plants/logs"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/logs/ess": {
+      "get": {
+        "description": "Retrieves page-paginated ESS transition logs ordered by event time and internal ID.",
+        "operationId": "list_ess_transition_logs",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact asset ID filter.",
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "description": "Exact asset ID filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact transition field filter.",
+            "explode": false,
+            "in": "query",
+            "name": "field",
+            "schema": {
+              "description": "Exact transition field filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive RFC3339 UTC event-time bound.",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "Inclusive RFC3339 UTC event-time bound.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive RFC3339 UTC event-time bound.",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "Exclusive RFC3339 UTC event-time bound.",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "default": 100,
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionPage"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve ESS Transition Logs",
+        "tags": [
+          "v3/plants/logs"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/logs/inverter": {
       "get": {
         "description": "Retrieves paginated log entries for all inverters within a plant. Includes status messages, error codes, timestamps, and raw log data with Korean message translations.",
@@ -9605,13 +10418,13 @@
             }
           },
           {
-            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess' and 'plant'.",
+            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', and 'rack'.",
             "in": "path",
             "name": "source",
             "required": true,
             "schema": {
               "default": "device",
-              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess' and 'plant'.",
+              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', and 'rack'.",
               "enum": [
                 "device",
                 "inverter",
@@ -9625,19 +10438,22 @@
             }
           },
           {
-            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Unit 'ess' is valid only with source 'ess'.",
+            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', and 'rack' are valid only with source 'ess'.",
             "in": "path",
             "name": "unit",
             "required": true,
             "schema": {
               "default": "plant",
-              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Unit 'ess' is valid only with source 'ess'.",
+              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', and 'rack' are valid only with source 'ess'.",
               "enum": [
                 "panel",
                 "inverter",
                 "ess",
                 "string",
                 "plant",
+                "pcs",
+                "battery",
+                "rack",
                 "temperature",
                 "insolation"
               ],
@@ -10262,6 +11078,206 @@
                         "data"
                       ],
                       "title": "ESS Plant Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSReadyPCSIntradayData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Ready PCS Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSReadyPCSDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Ready PCS Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSReadyBatteryData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Ready Battery Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSReadyRackData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Ready Rack Intraday Metrics",
                       "type": "object"
                     },
                     {
