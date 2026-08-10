@@ -1580,6 +1580,11 @@
           "related": {
             "type": "string"
           },
+          "reply_count": {
+            "description": "Number of visible replies to this top-level comment.",
+            "format": "int64",
+            "type": "integer"
+          },
           "resolved": {
             "type": "string"
           },
@@ -3005,6 +3010,18 @@
         ],
         "type": "object"
       },
+      "InternalInvalidateOwnershipCacheOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accepted"
+        ],
+        "type": "object"
+      },
       "InternalInvalidatePlantListCacheInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -3631,6 +3648,48 @@
         ],
         "type": "object"
       },
+      "LatestEdgeBody": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "asset_type": {
+            "type": "string"
+          },
+          "network": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "sticks": {
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "system": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_type",
+          "timestamp",
+          "system",
+          "network",
+          "sticks"
+        ],
+        "type": "object"
+      },
       "ListOutputCombinerItemBody": {
         "additionalProperties": false,
         "properties": {
@@ -4070,6 +4129,35 @@
         ],
         "type": "object"
       },
+      "OwnershipCacheInvalidation": {
+        "additionalProperties": false,
+        "properties": {
+          "organization_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "plant_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "previous_owner_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id",
+          "previous_owner_id",
+          "owner_id"
+        ],
+        "type": "object"
+      },
       "PanelDailyData": {
         "additionalProperties": false,
         "properties": {
@@ -4435,6 +4523,10 @@
             "description": "Total energy production for the time interval (kWh)",
             "format": "double",
             "type": "number"
+          },
+          "time": {
+            "description": "Time label duplicated from date for device plant intraday compatibility",
+            "type": "string"
           },
           "timestamp": {
             "description": "Unix timestamp of the measurement",
@@ -5061,6 +5153,78 @@
           "module_models",
           "device_models",
           "inverter_models"
+        ],
+        "type": "object"
+      },
+      "ThreadReadOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/ThreadReadOutput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "comment": {
+            "$ref": "#/components/schemas/CommentReadOutput"
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/CommentReadOutput"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "comment",
+          "replies"
+        ],
+        "type": "object"
+      },
+      "TransferOwnershipBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TransferOwnershipBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "organizationId": {
+            "description": "Organization whose ownership was transferred.",
+            "examples": [
+              "org123456789012"
+            ],
+            "type": "string"
+          },
+          "ownerId": {
+            "description": "New organization owner user ID.",
+            "examples": [
+              "usr987654321098"
+            ],
+            "type": "string"
+          },
+          "previousOwnerId": {
+            "description": "Previous organization owner user ID.",
+            "examples": [
+              "usr123456789012"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "organizationId",
+          "previousOwnerId",
+          "ownerId"
         ],
         "type": "object"
       },
@@ -6187,6 +6351,99 @@
           }
         ],
         "summary": "Create organization member",
+        "tags": [
+          "v3/organization-management"
+        ]
+      }
+    },
+    "/api/v3/orgs/{organization_id}/members/{member_id}/transfer-ownership": {
+      "post": {
+        "description": "Organization management endpoint that transfers ownership to another manager member of the organization. Only the organization owner may transfer ownership.",
+        "operationId": "transfer_org_ownership",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Every organization management route requires a manager account that owns the organization.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Organization whose ownership will be transferred.",
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "description": "Organization whose ownership will be transferred.",
+              "examples": [
+                "org123456789012"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Manager member who will become the new organization owner.",
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "description": "Manager member who will become the new organization owner.",
+              "examples": [
+                "usr987654321098"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferOwnershipBody",
+                  "description": "Completed organization ownership transfer."
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transfer organization ownership",
         "tags": [
           "v3/organization-management"
         ]
@@ -7564,6 +7821,163 @@
           }
         ],
         "summary": "Start Plant Comment Thread",
+        "tags": [
+          "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/comments/{comment_id}": {
+      "get": {
+        "description": "Gets a specific comment for a plant.",
+        "operationId": "get_plant_comment",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadReadOutput",
+                  "description": "Plant comment thread detail."
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Plant Comment",
         "tags": [
           "v3/plants/comments"
         ]
@@ -9645,46 +10059,6 @@
             }
           },
           {
-            "description": "Exact asset ID filter.",
-            "explode": false,
-            "in": "query",
-            "name": "asset_id",
-            "schema": {
-              "description": "Exact asset ID filter.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Exact transition field filter.",
-            "explode": false,
-            "in": "query",
-            "name": "field",
-            "schema": {
-              "description": "Exact transition field filter.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Inclusive RFC3339 UTC event-time bound.",
-            "explode": false,
-            "in": "query",
-            "name": "from",
-            "schema": {
-              "description": "Inclusive RFC3339 UTC event-time bound.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Exclusive RFC3339 UTC event-time bound.",
-            "explode": false,
-            "in": "query",
-            "name": "to",
-            "schema": {
-              "description": "Exclusive RFC3339 UTC event-time bound.",
-              "type": "string"
-            }
-          },
-          {
             "explode": false,
             "in": "query",
             "name": "page",
@@ -9725,6 +10099,56 @@
                 }
               }
             }
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "504": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
           },
           "default": {
             "content": {
@@ -9789,46 +10213,6 @@
             }
           },
           {
-            "description": "Exact asset ID filter.",
-            "explode": false,
-            "in": "query",
-            "name": "asset_id",
-            "schema": {
-              "description": "Exact asset ID filter.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Exact transition field filter.",
-            "explode": false,
-            "in": "query",
-            "name": "field",
-            "schema": {
-              "description": "Exact transition field filter.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Inclusive RFC3339 UTC event-time bound.",
-            "explode": false,
-            "in": "query",
-            "name": "from",
-            "schema": {
-              "description": "Inclusive RFC3339 UTC event-time bound.",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Exclusive RFC3339 UTC event-time bound.",
-            "explode": false,
-            "in": "query",
-            "name": "to",
-            "schema": {
-              "description": "Exclusive RFC3339 UTC event-time bound.",
-              "type": "string"
-            }
-          },
-          {
             "explode": false,
             "in": "query",
             "name": "page",
@@ -9869,6 +10253,56 @@
                 }
               }
             }
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          },
+          "504": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
           },
           "default": {
             "content": {
@@ -10156,6 +10590,660 @@
         ]
       }
     },
+    "/api/v3/plants/{plant_id}/memos": {
+      "get": {
+        "description": "Lists memos for a specific plant.",
+        "operationId": "list_plant_memos",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CommentReadOutput"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Plant Memos",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/memos/start_thread": {
+      "post": {
+        "description": "Starts a memo thread for a specific plant.",
+        "operationId": "start_plant_memo_thread",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+              "enum": [
+                "viewer",
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start Plant Memo Thread",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/memos/{comment_id}": {
+      "get": {
+        "description": "Gets a specific memo for a plant.",
+        "operationId": "get_plant_memo",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadReadOutput",
+                  "description": "Plant comment thread detail."
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Weak entity tag for conditional requests.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Plant Memo",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/memos/{comment_id}/edit": {
+      "post": {
+        "description": "Edits a specific plant memo.",
+        "operationId": "edit_plant_memo",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+              "enum": [
+                "viewer",
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentEditBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit Plant Memo",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/memos/{comment_id}/reply": {
+      "post": {
+        "description": "Creates a reply under a specific plant memo.",
+        "operationId": "reply_plant_memo",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+              "enum": [
+                "viewer",
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reply To Plant Memo",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/memos/{comment_id}/state": {
+      "post": {
+        "description": "Applies a state transition to a specific plant memo.",
+        "operationId": "change_plant_memo_state",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Plant comment mutation routes are available to manager and viewer accounts only.",
+              "enum": [
+                "viewer",
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "description": "Comment ID. A unique alphanumeric identifier representing the comment. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentStateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentOutput"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change Plant Memo State",
+        "tags": [
+          "v3/plants/memos"
+        ]
+      }
+    },
     "/api/v3/plants/{plant_id}/metrics/device/latest": {
       "get": {
         "description": "Retrieves the most recent metrics data for all devices (panels) in the specified plant. Includes current, voltage, temperature, and status information.",
@@ -10264,6 +11352,98 @@
           }
         ],
         "summary": "Retrieve Latest Device Metrics",
+        "tags": [
+          "v3/plants/metrics"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/metrics/edge/latest": {
+      "get": {
+        "operationId": "get_latest_edge_metrics",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "asset_id",
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:@+-]{1,100}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LatestEdgeBody"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Latest Edge Metrics",
         "tags": [
           "v3/plants/metrics"
         ]
