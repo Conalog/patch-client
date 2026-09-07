@@ -953,6 +953,108 @@
         "title": "Inverter Intraday Metrics",
         "type": "object"
       },
+      "BodyInverterStringDailyData": {
+        "additionalProperties": false,
+        "description": "Daily aggregated metrics for individual inverter strings at 1-day intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/InverterStringDailyData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Inverter String Daily Metrics",
+        "type": "object"
+      },
+      "BodyInverterStringData": {
+        "additionalProperties": false,
+        "description": "Metrics for individual inverter strings at 5-minute, 15-minute, and 1-hour intervals.",
+        "properties": {
+          "before": {
+            "description": "Number of historical intervals included in the response",
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "Array of time-series data points matching the specified parameters",
+            "items": {
+              "$ref": "#/components/schemas/InverterStringData"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Target date for the data retrieval",
+            "type": "string"
+          },
+          "interval": {
+            "description": "Time interval used for data aggregation",
+            "type": "string"
+          },
+          "plant_id": {
+            "description": "Plant identifier that was queried",
+            "type": "string"
+          },
+          "source": {
+            "description": "Data source type that was queried",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Data aggregation unit that was requested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "unit",
+          "source",
+          "date",
+          "interval",
+          "data"
+        ],
+        "title": "Inverter String Intraday Metrics",
+        "type": "object"
+      },
       "BodyPanelDailyData": {
         "additionalProperties": false,
         "description": "Daily aggregated metrics for individual panels at 1-day intervals.",
@@ -3573,6 +3675,99 @@
           "name",
           "count",
           "installed_capacity_w"
+        ],
+        "type": "object"
+      },
+      "InverterStringDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "Local bucket-end date of the daily aggregate",
+            "type": "string"
+          },
+          "energy": {
+            "description": "Total daily energy (Wh)",
+            "format": "double",
+            "type": "number"
+          },
+          "id": {
+            "description": "Registry map_id for the inverter string",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "energy"
+        ],
+        "type": "object"
+      },
+      "InverterStringData": {
+        "additionalProperties": false,
+        "properties": {
+          "cumulative_energy": {
+            "description": "Cumulative energy at the bucket end (Wh)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "energy": {
+            "description": "Energy during the bucket interval (Wh)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "i_in": {
+            "description": "Input current at the bucket end (A)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Registry map_id for the inverter string",
+            "type": "string"
+          },
+          "p": {
+            "description": "Power at the bucket end (W)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "time": {
+            "description": "Local bucket-end time label of the measurement",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Unix timestamp in seconds at the local bucket end",
+            "format": "int64",
+            "type": "integer"
+          },
+          "v_in": {
+            "description": "Input voltage at the bucket end (V)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "timestamp",
+          "cumulative_energy",
+          "energy",
+          "i_in",
+          "p",
+          "v_in"
         ],
         "type": "object"
       },
@@ -10020,7 +10215,7 @@
     },
     "/api/v3/plants/{plant_id}/logs/device": {
       "get": {
-        "description": "Retrieves page-paginated device transition logs ordered by event time and internal ID.",
+        "description": "Retrieves page-paginated device transition logs. Results default to newest event time first, breaking equal timestamps by stable ID descending; sort=oldest reverses both. Offset pages may shift as new records arrive, so no cross-request snapshot guarantee is provided.",
         "operationId": "list_device_transition_logs",
         "parameters": [
           {
@@ -10079,6 +10274,21 @@
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "Transition timestamp order.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "newest",
+              "description": "Transition timestamp order.",
+              "enum": [
+                "oldest",
+                "newest"
+              ],
+              "type": "string"
             }
           }
         ],
@@ -10174,7 +10384,7 @@
     },
     "/api/v3/plants/{plant_id}/logs/ess": {
       "get": {
-        "description": "Retrieves page-paginated ESS transition logs ordered by event time and internal ID.",
+        "description": "Retrieves page-paginated ESS transition logs. Results default to newest event time first, breaking equal timestamps by stable ID descending; sort=oldest reverses both. Offset pages may shift as new records arrive, so no cross-request snapshot guarantee is provided.",
         "operationId": "list_ess_transition_logs",
         "parameters": [
           {
@@ -10233,6 +10443,21 @@
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "Transition timestamp order.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "newest",
+              "description": "Transition timestamp order.",
+              "enum": [
+                "oldest",
+                "newest"
+              ],
+              "type": "string"
             }
           }
         ],
@@ -11538,7 +11763,7 @@
     },
     "/api/v3/plants/{plant_id}/metrics/{source}/{unit}-{interval}": {
       "get": {
-        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, ESS, and plant-level data aggregation across different time intervals. ESS supports ess and plant units at 5m, 15m, 1h, and 1d intervals only.",
+        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, ESS, and plant-level data aggregation across different time intervals. Inverter/string supports 5m, 15m, 1h, and 1d for one date only; intraday rows use registry map_id, local bucket-end time, Unix bucket-end timestamp, A/V/W/Wh measurements, and daily rows use local bucket-end date and Wh energy. ESS supports ess and plant units at 5m, 15m, 1h, and 1d intervals only.",
         "operationId": "get_metrics_by_date",
         "parameters": [
           {
@@ -11722,12 +11947,12 @@
             }
           },
           {
-            "description": "Device panel or inverter ID filters. Supported only for intraday device/panel and inverter/inverter requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
+            "description": "Device panel, inverter, or inverter string registry map_id filters. Supported only for intraday device/panel, inverter/inverter, and inverter/string requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
             "explode": false,
             "in": "query",
             "name": "id",
             "schema": {
-              "description": "Device panel or inverter ID filters. Supported only for intraday device/panel and inverter/inverter requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
+              "description": "Device panel, inverter, or inverter string registry map_id filters. Supported only for intraday device/panel, inverter/inverter, and inverter/string requests (5m, 15m, 1h). Multiple id query parameters are allowed (e.g., id=pnl-001&id=pnl-002).",
               "examples": [
                 [
                   "pnl-001",
@@ -11952,6 +12177,108 @@
                         "data"
                       ],
                       "title": "Inverter Daily Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Metrics for individual inverter strings at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/InverterStringData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Inverter String Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Daily aggregated metrics for individual inverter strings at 1-day intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/InverterStringDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "Inverter String Daily Metrics",
                       "type": "object"
                     },
                     {
