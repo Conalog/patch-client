@@ -4861,7 +4861,8 @@
               "edge",
               "panel",
               "panel_group",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "examples": [
               "device"
@@ -4886,7 +4887,8 @@
               "panel",
               "panel_group",
               "tracker",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "examples": [
               "panel"
@@ -4976,7 +4978,8 @@
               "edge",
               "panel",
               "panel_group",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "type": "string"
           },
@@ -4995,7 +4998,8 @@
               "panel",
               "panel_group",
               "tracker",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "type": "string"
           },
@@ -5161,6 +5165,121 @@
           "id",
           "organization",
           "title"
+        ],
+        "type": "object"
+      },
+      "RouterMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "description": "Registry asset ID mapped from the Router API serial.",
+            "type": "string"
+          },
+          "state": {
+            "additionalProperties": false,
+            "description": "Current connectivity and freshness state.",
+            "properties": {
+              "elapsed": {
+                "description": "Seconds between the Router API current time and the last notification.",
+                "format": "int64",
+                "type": "integer"
+              },
+              "online": {
+                "description": "NMS connection decision: true, false, or null while rebooting.",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "time": {
+            "$ref": "#/components/schemas/RouterMetricsTime",
+            "description": "Router API current time, latest notification time, and NMS resend interval."
+          },
+          "traffic": {
+            "$ref": "#/components/schemas/RouterMetricsTraffic",
+            "description": "Router mobile signal quality classification and measurements."
+          }
+        },
+        "required": [
+          "asset_id",
+          "state",
+          "time",
+          "traffic"
+        ],
+        "type": "object"
+      },
+      "RouterMetricsSignal": {
+        "additionalProperties": false,
+        "properties": {
+          "class": {
+            "description": "Signal quality classification.",
+            "enum": [
+              "good",
+              "fair",
+              "poor",
+              "critical",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "rsrp": {
+            "description": "Reference signal received power.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "rsrq": {
+            "description": "Reference signal received quality.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "rssi": {
+            "description": "Received signal strength indicator.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "sinr": {
+            "description": "Signal-to-interference-plus-noise ratio.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "class"
+        ],
+        "type": "object"
+      },
+      "RouterMetricsTime": {
+        "additionalProperties": false,
+        "properties": {
+          "notified": {
+            "description": "Time of the latest router status notification.",
+            "type": "string"
+          },
+          "now": {
+            "description": "Current time reported by Router API.",
+            "type": "string"
+          },
+          "sending_duration": {
+            "description": "NMS router status resend interval in seconds reported by Router API.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "RouterMetricsTraffic": {
+        "additionalProperties": false,
+        "properties": {
+          "signal": {
+            "$ref": "#/components/schemas/RouterMetricsSignal",
+            "description": "Mobile network signal quality."
+          }
+        },
+        "required": [
+          "signal"
         ],
         "type": "object"
       },
@@ -5532,7 +5651,8 @@
               "edge",
               "panel",
               "panel_group",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "examples": [
               "device"
@@ -5557,7 +5677,8 @@
               "panel",
               "panel_group",
               "tracker",
-              "sensor"
+              "sensor",
+              "router"
             ],
             "examples": [
               "panel"
@@ -13122,7 +13243,8 @@
                 "edge",
                 "panel",
                 "panel_group",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
@@ -13143,7 +13265,8 @@
                 "panel",
                 "panel_group",
                 "tracker",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
@@ -13342,7 +13465,8 @@
                 "edge",
                 "panel",
                 "panel_group",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
@@ -13363,7 +13487,8 @@
                 "panel",
                 "panel_group",
                 "tracker",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
@@ -13654,7 +13779,8 @@
                 "edge",
                 "panel",
                 "panel_group",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
@@ -13675,7 +13801,8 @@
                 "panel",
                 "panel_group",
                 "tracker",
-                "sensor"
+                "sensor",
+                "router"
               ],
               "type": "string"
             }
