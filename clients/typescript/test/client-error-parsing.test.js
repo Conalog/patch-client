@@ -290,7 +290,7 @@ test("uses latest plant permission grant path", async () => {
   });
   assert.match(
     observedUrl,
-    /\/api\/v3\/organizations\/org-1\/plants\/plant-1\/permissions\/grant$/
+    /\/api\/v3\/orgs\/org-1\/plants\/plant-1\/permissions\/grant$/
   );
   assert.deepEqual(out, { plant_id: "plant-1", type: "viewer" });
 });

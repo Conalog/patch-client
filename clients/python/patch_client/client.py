@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import json
+import re
 from json import JSONDecodeError
-from typing import Any, Mapping, Optional
+from typing import Any, Iterator, Mapping, Optional
 from urllib import parse, request
 from urllib.error import HTTPError, URLError
+from uuid import uuid4
+
+from ._operations import OPERATIONS
 
 AccountType = str
 DEFAULT_MAX_RESPONSE_BYTES = 10 << 20
+DEFAULT_MAX_MULTIPART_BYTES = 10 << 20
+_REMOVE_HEADER = object()
 
 
 class PatchClientError(Exception):
@@ -70,6 +76,7 @@ class PatchClientV3:
             self._opener = request.build_opener(_SafeRedirectHandler())
         else:
             self._opener = request.build_opener(_NoRedirectHandler())
+        self._no_redirect_opener = request.build_opener(_NoRedirectHandler())
 
     def set_access_token(self, token: Optional[str]) -> None:
         self.access_token = token
@@ -189,7 +196,7 @@ class PatchClientV3:
     ) -> Any:
         return self._request(
             "POST",
-            f"/api/v3/organizations/{_encode_path(organization_id)}/members",
+            f"/api/v3/orgs/{_encode_path(organization_id)}/members",
             json_body=payload,
             headers=self._merge_headers(headers, access_token, account_type),
         )
@@ -224,7 +231,7 @@ class PatchClientV3:
         return self._request(
             "POST",
             (
-                f"/api/v3/organizations/{_encode_path(organization_id)}/plants/"
+                f"/api/v3/orgs/{_encode_path(organization_id)}/plants/"
                 f"{_encode_path(plant_id)}/permissions/grant"
             ),
             json_body=payload,
@@ -244,7 +251,7 @@ class PatchClientV3:
         return self._request(
             "POST",
             (
-                f"/api/v3/organizations/{_encode_path(organization_id)}/plants/"
+                f"/api/v3/orgs/{_encode_path(organization_id)}/plants/"
                 f"{_encode_path(plant_id)}/permissions/revoke"
             ),
             json_body=payload,
@@ -916,6 +923,185 @@ class PatchClientV3:
             headers=self._merge_headers(headers, access_token, account_type),
         )
 
+    def fieldwork_events(
+        self,
+        watch: Optional[str] = None,
+        work_id: Optional[str] = None,
+        surface: Optional[str] = None,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> "PatchEventStream":
+        if watch == "unread" and (work_id is not None or surface is not None):
+            raise ValueError("watch='unread' cannot be combined with work_id or surface")
+        merged_headers = self._merge_headers(headers, access_token, account_type)
+        effective_headers = _merge_final_headers(self.default_headers, merged_headers)
+        if not _has_non_empty_header(effective_headers, "Authorization"):
+            raise ValueError("fieldwork_events requires Authorization")
+        return self._stream(
+            "/api/v3/fieldwork/events",
+            query={"watch": watch, "work_id": work_id, "surface": surface},
+            headers=merged_headers,
+        )
+
+    def fieldwork_upload_attachment(
+        self, file: Any, work_id: str, parent_kind: str, parent_id: str,
+        operation: str, command_key: str, ordinal: int, *,
+        access_token: Optional[str] = None, account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._request(
+            "POST", "/api/v3/fieldwork/attachments",
+            multipart=({"work_id": work_id, "parent_kind": parent_kind, "parent_id": parent_id,
+                        "operation": operation, "command_key": command_key, "ordinal": ordinal},
+                       {"file": file}),
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def fieldwork_attachment_download(
+        self,
+        work_id: str,
+        object_key: str,
+        expires: str,
+        signature: str,
+        *,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> bytes:
+        return self._request(
+            "GET",
+            "/api/v3/fieldwork/attachments/download",
+            query={
+                "work_id": work_id,
+                "object_key": object_key,
+                "expires": expires,
+                "signature": signature,
+            },
+            headers=_without_credentials(headers),
+            raw_response=True,
+            no_redirect=True,
+            suppress_credentials=True,
+        )
+
+    def fieldwork_attachment_content(
+        self,
+        work_id: str,
+        object_key: str,
+        *,
+        access_token: Optional[str] = None,
+        account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> bytes:
+        return self._request(
+            "GET",
+            "/api/v3/fieldwork/attachments/content",
+            query={"work_id": work_id, "object_key": object_key},
+            headers=self._merge_headers(headers, access_token, account_type),
+            raw_response=True,
+        )
+
+    def upload_plant_files(
+        self, plant_id: str, file: Any, name: Optional[str] = None, *,
+        access_token: Optional[str] = None, account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._upload_plant_media("files", plant_id, file, name, access_token, account_type, headers)
+
+    def upload_plant_images(
+        self, plant_id: str, file: Any, name: Optional[str] = None, *,
+        access_token: Optional[str] = None, account_type: Optional[AccountType] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        return self._upload_plant_media("images", plant_id, file, name, access_token, account_type, headers)
+
+    def _upload_plant_media(
+        self, kind: str, plant_id: str, file: Any, name: Optional[str],
+        access_token: Optional[str], account_type: Optional[AccountType],
+        headers: Optional[Mapping[str, str]],
+    ) -> Any:
+        return self._request(
+            "POST", f"/api/v3/plants/{_encode_path(plant_id)}/{kind}",
+            multipart=({"name": name} if name is not None else {}, {"filename": file}),
+            headers=self._merge_headers(headers, access_token, account_type),
+        )
+
+    def call_operation(self, operation_id: str, **values: Any) -> Any:
+        spec = OPERATIONS[operation_id]
+        payload = values.pop("payload", None)
+        headers = self._merge_headers(
+            values.pop("headers", None), values.pop("access_token", None), values.pop("account_type", None)
+        )
+        if not spec["security"]:
+            headers = _without_credentials(headers)
+        effective_headers = _merge_final_headers(self.default_headers, headers)
+        if spec["security"] and not _has_non_empty_header(effective_headers, "Authorization"):
+            raise ValueError(f"{operation_id} requires Authorization")
+        path = spec["path"]
+        query: dict[str, Any] = {}
+        for parameter in spec["params"]:
+            name, location = parameter["name"], parameter["in"]
+            key = name.lower().replace("-", "_")
+            value = values.pop(key, None)
+            if location == "path":
+                if value is None:
+                    raise ValueError(f"{operation_id} requires {key}")
+                path = path.replace("{" + name + "}", _encode_path(str(value)))
+            elif location == "query":
+                if value is None and parameter["required"]:
+                    raise ValueError(f"{operation_id} requires {key}")
+                if value is not None:
+                    query[name] = ",".join(map(_serialize_query_value, value)) if isinstance(value, (list, tuple)) and not parameter["explode"] else value
+            elif location == "header" and value is not None:
+                headers[name] = str(value)
+            effective_headers = _merge_final_headers(self.default_headers, headers)
+            if parameter["required"] and location == "header" and not _has_non_empty_header(effective_headers, name):
+                raise ValueError(f"{operation_id} requires {name}")
+            if name == "Idempotency-Key" and _has_non_empty_header(effective_headers, name):
+                if not re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", _header_value(effective_headers, name)):
+                    raise ValueError("Idempotency-Key must use 8-128 safe characters")
+                _set_header(headers, name, _header_value(effective_headers, name))
+        if values:
+            raise TypeError(f"unexpected arguments: {', '.join(sorted(values))}")
+        content = spec["content"]
+        if content == "multipart/form-data":
+            raise TypeError(f"{operation_id} has a dedicated multipart method")
+        if content == "application/json" and payload is None:
+            raise ValueError(f"{operation_id} requires payload")
+        return self._request(
+            spec["method"], path, query=query, json_body=payload, headers=headers,
+            suppress_credentials=not spec["security"],
+            no_redirect=not spec["security"],
+            raw_response=operation_id in {"fieldwork_attachment_content", "fieldwork_attachment_download"},
+        )
+
+    def _stream(
+        self, path: str, *, query: Mapping[str, Any], headers: Mapping[str, str]
+    ) -> "PatchEventStream":
+        url = self._url(path, query)
+        merged_headers = _merge_final_headers(
+            self.default_headers, headers, {"Accept": "text/event-stream"}
+        )
+        _validate_headers(merged_headers)
+        try:
+            response = self._opener.open(request.Request(url, headers=merged_headers), timeout=self.timeout)
+        except HTTPError as err:
+            try:
+                payload = _decode_response(self._read_limited(err), err.headers.get("Content-Type", ""))
+            finally:
+                err.close()
+            raise PatchClientError(err.code, payload, method="GET", url=url) from err
+        except URLError as err:
+            raise PatchClientError(0, {"error": str(err.reason)}, method="GET", url=url) from err
+        status_code = _response_status_code(response)
+        content_type = response.headers.get("Content-Type", "")
+        if status_code is None or not 200 <= status_code < 300:
+            response.close()
+            raise PatchClientError(status_code or 0, {"error": "SSE request failed"}, method="GET", url=url)
+        if content_type.split(";", 1)[0].strip().lower() != "text/event-stream":
+            response.close()
+            raise PatchClientError(status_code, {"error": "expected text/event-stream"}, method="GET", url=url)
+        return PatchEventStream(response)
+
     def _request(
         self,
         method: str,
@@ -923,34 +1109,38 @@ class PatchClientV3:
         *,
         query: Optional[Mapping[str, Any]] = None,
         json_body: Optional[Any] = None,
+        multipart: Optional[tuple[Mapping[str, Any], Mapping[str, Any]]] = None,
         headers: Optional[Mapping[str, str]] = None,
+        raw_response: bool = False,
+        no_redirect: bool = False,
+        suppress_credentials: bool = False,
     ) -> Any:
-        url = f"{self.base_url}{path}"
-        if query:
-            query_items: list[tuple[str, str]] = []
-            for key, value in query.items():
-                if value is None:
-                    continue
-                if isinstance(value, (list, tuple)):
-                    for item in value:
-                        if item is not None:
-                            query_items.append((key, _serialize_query_value(item)))
-                else:
-                    query_items.append((key, _serialize_query_value(value)))
-            if query_items:
-                url = f"{url}?{parse.urlencode(query_items, doseq=True)}"
+        url = self._url(path, query)
 
-        merged_headers = {"Accept": "application/json", **self.default_headers, **(headers or {})}
+        merged_headers = _merge_final_headers(
+            {"Accept": "application/json"}, self.default_headers, headers or {}
+        )
+        if suppress_credentials:
+            merged_headers = _without_credentials(merged_headers)
         body: Optional[bytes] = None
 
         if json_body is not None:
+            merged_headers = _without_headers(merged_headers, {"content-length", "content-type"})
             merged_headers["Content-Type"] = "application/json"
             body = json.dumps(json_body).encode("utf-8")
+        elif multipart is not None:
+            merged_headers = _without_headers(merged_headers, {"content-length", "content-type"})
+            body, content_type = _encode_multipart(
+                *multipart, max_bytes=DEFAULT_MAX_MULTIPART_BYTES
+            )
+            merged_headers["Content-Type"] = content_type
+        _validate_headers(merged_headers)
 
         req = request.Request(url=url, method=method, headers=merged_headers, data=body)
 
         try:
-            with self._opener.open(req, timeout=self.timeout) as resp:
+            opener = self._no_redirect_opener if no_redirect else self._opener
+            with opener.open(req, timeout=self.timeout) as resp:
                 try:
                     payload = self._read_limited(resp)
                 except OverflowError as err:
@@ -961,7 +1151,7 @@ class PatchClientV3:
                         url=url,
                     ) from err
                 content_type = resp.headers.get("Content-Type", "")
-                decoded = _decode_response(payload, content_type)
+                decoded = payload if raw_response else _decode_response(payload, content_type)
                 status_code = _response_status_code(resp)
                 if status_code is not None and (status_code < 200 or status_code >= 300):
                     raise PatchClientError(status_code, decoded, method=method, url=url)
@@ -1001,6 +1191,18 @@ class PatchClientV3:
                 url=url,
             ) from err
 
+    def _url(self, path: str, query: Optional[Mapping[str, Any]] = None) -> str:
+        url = f"{self.base_url}{path}"
+        query_items: list[tuple[str, str]] = []
+        for key, value in (query or {}).items():
+            if value is None:
+                continue
+            if isinstance(value, (list, tuple)):
+                query_items.extend((key, _serialize_query_value(item)) for item in value if item is not None)
+            else:
+                query_items.append((key, _serialize_query_value(value)))
+        return f"{url}?{parse.urlencode(query_items, doseq=True)}" if query_items else url
+
     def _read_limited(self, response: Any) -> bytes:
         payload = response.read(self.max_response_bytes + 1)
         if len(payload) > self.max_response_bytes:
@@ -1026,7 +1228,9 @@ class PatchClientV3:
                     if normalized_token.lower().startswith("bearer ")
                     else f"Bearer {normalized_token}"
                 )
-        if resolved_account_type:
+        if account_type == "":
+            headers["Account-Type"] = _REMOVE_HEADER
+        elif resolved_account_type:
             headers["Account-Type"] = resolved_account_type
 
         return headers
@@ -1051,6 +1255,8 @@ def _decode_response(payload: bytes, content_type: str) -> Any:
 
 
 def _encode_path(value: str) -> str:
+    if value in {".", ".."}:
+        raise ValueError("path values must not be '.' or '..'")
     return parse.quote(value, safe="")
 
 
@@ -1058,6 +1264,146 @@ def _serialize_query_value(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)
+
+
+def _validate_headers(headers: Mapping[str, str]) -> None:
+    for name, value in headers.items():
+        if "\r" in str(name) or "\n" in str(name) or "\r" in str(value) or "\n" in str(value):
+            raise ValueError("headers must not contain CR or LF")
+
+
+def _merge_final_headers(*sources: Mapping[str, Any]) -> dict[str, str]:
+    merged: dict[str, tuple[str, str]] = {}
+    for source in sources:
+        for name, value in source.items():
+            key = name.lower()
+            if value is _REMOVE_HEADER:
+                merged.pop(key, None)
+            else:
+                merged[key] = (name, str(value))
+    return dict(merged.values())
+
+
+def _set_header(headers: dict[str, Any], name: str, value: Any) -> None:
+    for existing in [key for key in headers if key.lower() == name.lower()]:
+        del headers[existing]
+    headers[name] = value
+
+
+def _encode_multipart(
+    fields: Mapping[str, Any],
+    files: Mapping[str, Any],
+    *,
+    max_bytes: int = DEFAULT_MAX_MULTIPART_BYTES,
+) -> tuple[bytes, str]:
+    boundary = uuid4().hex
+    chunks: list[bytes] = []
+
+    # ponytail: 10 MiB in-memory multipart ceiling; stream files if uploads need to exceed it.
+    def add(*parts: bytes) -> None:
+        chunks.extend(parts)
+        if sum(map(len, chunks)) > max_bytes:
+            raise ValueError(f"multipart body exceeded {max_bytes} bytes")
+
+    for name, value in fields.items():
+        if value is None:
+            continue
+        disposition_name = _multipart_token(name)
+        _validate_headers({"field": str(name), "value": str(value)})
+        add(
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="{disposition_name}"\r\n\r\n'.encode(),
+            str(value).encode(),
+            b"\r\n",
+        )
+    for name, value in files.items():
+        filename = getattr(value, "name", name)
+        data = _read_multipart_file(value, max_bytes)
+        if not isinstance(data, bytes):
+            raise TypeError("multipart files must be bytes or binary file objects")
+        disposition_name = _multipart_token(name)
+        disposition_filename = _multipart_token(filename)
+        add(
+            f"--{boundary}\r\n".encode(),
+            (
+                f'Content-Disposition: form-data; name="{disposition_name}"; '
+                f'filename="{disposition_filename}"\r\n'
+            ).encode(),
+            b"Content-Type: application/octet-stream\r\n\r\n",
+            data,
+            b"\r\n",
+        )
+    add(f"--{boundary}--\r\n".encode())
+    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
+
+
+def _read_multipart_file(value: Any, max_bytes: int) -> bytes:
+    if isinstance(value, bytes):
+        if len(value) > max_bytes:
+            raise ValueError(f"multipart body exceeded {max_bytes} bytes")
+        return value
+    if not hasattr(value, "read"):
+        raise TypeError("multipart files must be bytes or binary file objects")
+    chunks = bytearray()
+    size = 0
+    while True:
+        chunk = value.read(max_bytes - size + 1)
+        if not isinstance(chunk, bytes):
+            raise TypeError("multipart files must be bytes or binary file objects")
+        if not chunk:
+            return bytes(chunks)
+        size += len(chunk)
+        if size > max_bytes:
+            raise ValueError(f"multipart body exceeded {max_bytes} bytes")
+        chunks.extend(chunk)
+
+
+def _multipart_token(value: Any) -> str:
+    text = str(value)
+    _validate_headers({"multipart value": text})
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _without_credentials(headers: Optional[Mapping[str, str]]) -> dict[str, str]:
+    return _without_headers(headers or {}, {"authorization", "account-type"})
+
+
+def _without_headers(headers: Mapping[str, str], names: set[str]) -> dict[str, str]:
+    return {
+        name: value
+        for name, value in headers.items()
+        if name.lower() not in names
+    }
+
+
+class PatchEventStream:
+    def __init__(self, response: Any):
+        self._response = response
+
+    def __enter__(self) -> "PatchEventStream":
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.close()
+
+    def __iter__(self) -> Iterator[bytes]:
+        return iter(self._response)
+
+    def close(self) -> None:
+        self._response.close()
+
+
+def _operation_method(operation_id: str) -> Any:
+    def method(self: PatchClientV3, **kwargs: Any) -> Any:
+        return self.call_operation(operation_id, **kwargs)
+    method.__name__ = operation_id
+    return method
+
+
+for _operation_id in OPERATIONS:
+    if not hasattr(PatchClientV3, _operation_id):
+        setattr(PatchClientV3, _operation_id, _operation_method(_operation_id))
+
 
 class _NoRedirectHandler(request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
@@ -1099,6 +1445,11 @@ def _has_non_empty_header(headers: Mapping[str, str], name: str) -> bool:
         if key.lower() == lowered and bool(str(value).strip()):
             return True
     return False
+
+
+def _header_value(headers: Mapping[str, str], name: str) -> str:
+    lowered = name.lower()
+    return next((str(value).strip() for key, value in headers.items() if key.lower() == lowered), "")
 
 
 def _normalized_port(parts: parse.SplitResult) -> Optional[int]:

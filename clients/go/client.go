@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -26,9 +27,10 @@ const (
 )
 
 type RequestOptions struct {
-	AccessToken string
-	AccountType AccountType
-	Headers     map[string]string
+	AccessToken     string
+	AccountType     AccountType
+	OmitAccountType bool
+	Headers         map[string]string
 }
 
 type Client struct {
@@ -179,18 +181,30 @@ func (c *Client) ListModuleModelInfo(ctx context.Context, opts *RequestOptions) 
 }
 
 func (c *Client) CreateOrganizationMember(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/organizations/%s/members", encodePath(organizationID))
+	path := fmt.Sprintf("/api/v3/orgs/%s/members", encodePath(organizationID))
 	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
 }
 
 func (c *Client) AssignPlantPermission(ctx context.Context, organizationID string, plantID string, payload any, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/organizations/%s/plants/%s/permissions/grant", encodePath(organizationID), encodePath(plantID))
+	path := fmt.Sprintf("/api/v3/orgs/%s/plants/%s/permissions/grant", encodePath(organizationID), encodePath(plantID))
 	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
 }
 
 func (c *Client) RemovePlantPermission(ctx context.Context, organizationID string, plantID string, payload any, opts *RequestOptions) (any, error) {
-	path := fmt.Sprintf("/api/v3/organizations/%s/plants/%s/permissions/revoke", encodePath(organizationID), encodePath(plantID))
+	path := fmt.Sprintf("/api/v3/orgs/%s/plants/%s/permissions/revoke", encodePath(organizationID), encodePath(plantID))
 	return c.doJSON(ctx, http.MethodPost, path, nil, payload, opts)
+}
+
+func (c *Client) CreateChildOrg(ctx context.Context, organizationID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/orgs/%s/children", encodePath(organizationID)), nil, payload, opts)
+}
+
+func (c *Client) MovePlantOrganization(ctx context.Context, organizationID, plantID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/orgs/%s/plants/%s/move", encodePath(organizationID), encodePath(plantID)), nil, payload, opts)
+}
+
+func (c *Client) TransferOrgOwnership(ctx context.Context, organizationID, memberID string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/orgs/%s/members/%s/transfer-ownership", encodePath(organizationID), encodePath(memberID)), nil, nil, opts)
 }
 
 func (c *Client) GetPlantList(ctx context.Context, query map[string]string, opts *RequestOptions) (any, error) {
@@ -229,6 +243,29 @@ func (c *Client) GetPlantBlueprintData(ctx context.Context, plantID string, blue
 func (c *Client) ListPlantComments(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/comments", encodePath(plantID))
 	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) GetPlantComment(ctx context.Context, plantID, commentID string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/comments/%s", encodePath(plantID), encodePath(commentID)), nil, nil, opts)
+}
+
+func (c *Client) ListPlantMemos(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/memos", encodePath(plantID)), nil, nil, opts)
+}
+func (c *Client) GetPlantMemo(ctx context.Context, plantID, commentID string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/memos/%s", encodePath(plantID), encodePath(commentID)), nil, nil, opts)
+}
+func (c *Client) StartPlantMemoThread(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/plants/%s/memos/start_thread", encodePath(plantID)), nil, payload, opts)
+}
+func (c *Client) EditPlantMemo(ctx context.Context, plantID, commentID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/plants/%s/memos/%s/edit", encodePath(plantID), encodePath(commentID)), nil, payload, opts)
+}
+func (c *Client) ReplyPlantMemo(ctx context.Context, plantID, commentID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/plants/%s/memos/%s/reply", encodePath(plantID), encodePath(commentID)), nil, payload, opts)
+}
+func (c *Client) ChangePlantMemoState(ctx context.Context, plantID, commentID string, payload any, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/v3/plants/%s/memos/%s/state", encodePath(plantID), encodePath(commentID)), nil, payload, opts)
 }
 
 func (c *Client) StartPlantCommentThread(ctx context.Context, plantID string, payload any, opts *RequestOptions) (any, error) {
@@ -310,6 +347,13 @@ func (c *Client) ListInverterLogs(ctx context.Context, plantID string, query map
 	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
 }
 
+func (c *Client) ListDeviceTransitionLogs(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/logs/device", encodePath(plantID)), query, nil, opts)
+}
+func (c *Client) ListESSTransitionLogs(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/logs/ess", encodePath(plantID)), query, nil, opts)
+}
+
 func (c *Client) ListInverterLogsByID(ctx context.Context, plantID string, inverterID string, query map[string]string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/logs/inverters/%s", encodePath(plantID), encodePath(inverterID))
 	return c.doJSON(ctx, http.MethodGet, path, query, nil, opts)
@@ -323,6 +367,17 @@ func (c *Client) GetLatestDeviceMetrics(ctx context.Context, plantID string, que
 func (c *Client) GetLatestInverterMetrics(ctx context.Context, plantID string, opts *RequestOptions) (any, error) {
 	path := fmt.Sprintf("/api/v3/plants/%s/metrics/inverter/latest", encodePath(plantID))
 	return c.doJSON(ctx, http.MethodGet, path, nil, nil, opts)
+}
+
+func (c *Client) GetLatestEdgeMetrics(ctx context.Context, plantID string, query map[string]string, opts *RequestOptions) (any, error) {
+	return c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/v3/plants/%s/metrics/edge/latest", encodePath(plantID)), query, nil, opts)
+}
+
+func (c *Client) UploadPlantFiles(ctx context.Context, plantID, name, filename string, file io.Reader, opts *RequestOptions) (any, error) {
+	return c.doMultipart(ctx, fmt.Sprintf("/api/v3/plants/%s/files", encodePath(plantID)), map[string]string{"name": name}, "filename", filename, file, opts, false)
+}
+func (c *Client) UploadPlantImages(ctx context.Context, plantID, name, filename string, file io.Reader, opts *RequestOptions) (any, error) {
+	return c.doMultipart(ctx, fmt.Sprintf("/api/v3/plants/%s/images", encodePath(plantID)), map[string]string{"name": name}, "filename", filename, file, opts, false)
 }
 
 func (c *Client) GetMetricsByDate(
@@ -400,7 +455,11 @@ func (c *Client) doJSON(
 	jsonBody any,
 	opts *RequestOptions,
 ) (any, error) {
-	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, true)
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, true, false, false)
+}
+
+func (c *Client) doJSONFieldwork(ctx context.Context, method, path string, query map[string]string, jsonBody any, opts *RequestOptions) (any, error) {
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, true, true, false)
 }
 
 func (c *Client) doJSONNoAuth(
@@ -411,7 +470,15 @@ func (c *Client) doJSONNoAuth(
 	jsonBody any,
 	opts *RequestOptions,
 ) (any, error) {
-	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, false)
+	return c.doJSONWithAuth(ctx, method, path, query, jsonBody, opts, false, false, false)
+}
+
+func (c *Client) doBytesWithAuth(ctx context.Context, method, path string, query map[string]string, opts *RequestOptions, sendAuth, fieldwork bool) ([]byte, error) {
+	value, err := c.doJSONWithAuth(ctx, method, path, query, nil, opts, sendAuth, fieldwork, true)
+	if err != nil {
+		return nil, err
+	}
+	return value.([]byte), nil
 }
 
 func (c *Client) doJSONWithAuth(
@@ -422,6 +489,8 @@ func (c *Client) doJSONWithAuth(
 	jsonBody any,
 	opts *RequestOptions,
 	sendAuth bool,
+	fieldwork bool,
+	rawBytes bool,
 ) (any, error) {
 	target, err := c.buildURL(path, query)
 	if err != nil {
@@ -431,7 +500,13 @@ func (c *Client) doJSONWithAuth(
 	var body io.Reader
 	contentType := ""
 	hasBody := false
-	if jsonBody != nil {
+	multipartUpload := false
+	if multipart, ok := jsonBody.(multipartBody); ok {
+		body = multipart.reader
+		contentType = multipart.contentType
+		hasBody = true
+		multipartUpload = true
+	} else if jsonBody != nil {
 		encoded, marshalErr := json.Marshal(jsonBody)
 		if marshalErr != nil {
 			return nil, marshalErr
@@ -445,8 +520,14 @@ func (c *Client) doJSONWithAuth(
 	if err != nil {
 		return nil, err
 	}
+	if hasBody && (fieldwork || multipartUpload) {
+		req.GetBody = nil
+	}
 
 	headers := c.mergeHeaders(opts)
+	if opts != nil && opts.OmitAccountType {
+		delete(headers, "Account-Type")
+	}
 	if !sendAuth {
 		suppressAuthHeaders(headers)
 	}
@@ -494,6 +575,9 @@ func (c *Client) doJSONWithAuth(
 	if overflowed {
 		return nil, fmt.Errorf("response body exceeds %d bytes", limit)
 	}
+	if rawBytes {
+		return payload, nil
+	}
 
 	if len(payload) == 0 {
 		return nil, nil
@@ -508,6 +592,44 @@ func (c *Client) doJSONWithAuth(
 	}
 
 	return string(payload), nil
+}
+
+func (c *Client) doMultipart(ctx context.Context, path string, fields map[string]string, fileField, filename string, file io.Reader, opts *RequestOptions, fieldwork bool) (any, error) {
+	if file == nil {
+		return nil, fmt.Errorf("file is required")
+	}
+	if strings.ContainsAny(filename, "\r\n") {
+		return nil, fmt.Errorf("filename cannot contain carriage return or newline")
+	}
+	reader, pipeWriter := io.Pipe()
+	writer := multipart.NewWriter(pipeWriter)
+	go func() {
+		var err error
+		for k, v := range fields {
+			if err = writer.WriteField(k, v); err != nil {
+				break
+			}
+		}
+		if err == nil {
+			var part io.Writer
+			part, err = writer.CreateFormFile(fileField, filename)
+			if err == nil {
+				_, err = io.Copy(part, file)
+			}
+		}
+		if closeErr := writer.Close(); err == nil {
+			err = closeErr
+		}
+		_ = pipeWriter.CloseWithError(err)
+	}()
+	value, err := c.doJSONWithAuth(ctx, http.MethodPost, path, nil, multipartBody{reader, writer.FormDataContentType()}, opts, true, fieldwork, false)
+	_ = reader.Close()
+	return value, err
+}
+
+type multipartBody struct {
+	reader      io.Reader
+	contentType string
 }
 
 func (c *Client) doRedirectNoAuth(ctx context.Context, path string, query map[string]string, opts *RequestOptions) (*OAuthLoginRedirect, error) {
@@ -553,6 +675,15 @@ func (c *Client) doRedirectNoAuth(ctx context.Context, path string, query map[st
 }
 
 func (c *Client) buildURL(path string, query map[string]string) (string, error) {
+	for _, segment := range strings.Split(path, "/") {
+		decoded, err := url.PathUnescape(segment)
+		if err != nil {
+			return "", err
+		}
+		if decoded == "." || decoded == ".." {
+			return "", fmt.Errorf("path cannot contain dot segments")
+		}
+	}
 	target, err := url.Parse(strings.TrimRight(c.BaseURL, "/") + path)
 	if err != nil {
 		return "", err
@@ -751,6 +882,28 @@ func withRedirectsDisabled(in *http.Client) *http.Client {
 	return &out
 }
 
+func withStreamTimeoutDisabled(in *http.Client) *http.Client {
+	out := *withRedirectsDisabled(in)
+	if in.Timeout > 0 {
+		var transport *http.Transport
+		switch current := out.Transport.(type) {
+		case nil:
+			transport = http.DefaultTransport.(*http.Transport).Clone()
+		case *http.Transport:
+			transport = current.Clone()
+		}
+		if transport != nil {
+			if transport.ResponseHeaderTimeout == 0 {
+				transport.ResponseHeaderTimeout = in.Timeout
+			}
+			out.Transport = transport
+		}
+	}
+	// SSE has no response end. The request context and transport still control cancellation and connection setup.
+	out.Timeout = 0
+	return &out
+}
+
 func withRedirectSecurityChecks(in *http.Client, shouldBlock func(string) bool) *http.Client {
 	out := *in
 	previous := in.CheckRedirect
@@ -801,4 +954,12 @@ func isJSONContentType(contentType string) bool {
 	}
 	mediaType = strings.ToLower(mediaType)
 	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
+}
+
+func isEventStreamContentType(contentType string) bool {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		mediaType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	}
+	return strings.EqualFold(mediaType, "text/event-stream")
 }

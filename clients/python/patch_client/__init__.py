@@ -1,3 +1,3 @@
-from .client import PatchClientError, PatchClientV3
+from .client import PatchClientError, PatchClientV3, PatchEventStream
 
-__all__ = ["PatchClientError", "PatchClientV3"]
+__all__ = ["PatchClientError", "PatchClientV3", "PatchEventStream"]
