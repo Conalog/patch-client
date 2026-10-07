@@ -218,7 +218,7 @@ test("native fetch sends signed downloads without auth and serializes multipart 
     defaultHeaders: { Authorization: "Bearer default", "Account-Type": "manager" },
   });
   const downloaded = await client.fieldworkAttachmentDownload(
-    { work_id: "w", object_key: "o", expires: "1", signature: "s" },
+    { work_id: "w", object_key: "o", expires: 123, signature: "s" },
     { headers: { Authorization: "Bearer override", "Account-Type": "manager" } }
   );
   await client.uploadPlantFiles("plant-1", { file: new Blob([new Uint8Array([1, 2])]), filename: "report.bin", name: "report" });
@@ -226,6 +226,7 @@ test("native fetch sends signed downloads without auth and serializes multipart 
   assert.equal(requests[0].headers.authorization, undefined);
   assert.equal(requests[0].headers["account-type"], undefined);
   assert.match(requests[0].url, /work_id=w/);
+  assert.match(requests[0].url, /expires=123/);
   assert.match(requests[1].headers["content-type"], /^multipart\/form-data; boundary=/);
   const wire = requests[1].body.toString("latin1");
   assert.match(wire, /name="filename"; filename="report.bin"/);

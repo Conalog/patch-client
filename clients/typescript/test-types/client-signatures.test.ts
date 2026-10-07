@@ -24,6 +24,7 @@ const auth: Promise<AuthOutputV3Body> = client.authenticateUser({
 void auth;
 void client.getPlantList({ page: 1, size: 20, full: true });
 void client.fieldworkMessagePreviews({ work_id: ["work-1", "work-2"] });
+void client.fieldworkAttachmentDownload({ work_id: "work-1", object_key: "photo", expires: 123, signature: "signed" });
 
 // @ts-expect-error message previews require an array of work IDs
 void client.fieldworkMessagePreviews({ work_id: "work-1" });
