@@ -21,7 +21,7 @@ let result = client.fieldwork_messages_read_v3(
 Fieldwork commands send once. Keep the same body and command key if you explicitly retry.
 Use `reqwest::multipart::Form` for the three upload APIs. Attachment forms require the fields listed in the specification.
 `fieldwork_events_v3` returns a native `reqwest::Response`; read each chunk with `chunk().await` and drop it to close the stream.
-`watch=unread` must be the only query pair. Streams have a connection and idle-read timeout, without a total response deadline.
+`watch=unread` must be the only query pair. Streams use the configured timeout for connection setup and idle reads, without a total response deadline.
 Binary attachment APIs return bounded `Vec<u8>` values.
 
 Run `cargo test --locked` from the repository root.

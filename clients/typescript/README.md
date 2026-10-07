@@ -182,7 +182,7 @@ await client.fieldworkWorkCreate({ plant_id: "plant-1", title: "Inspect" }, {
 
 You can also provide `Idempotency-Key` in `options.headers`. The client rejects absent or malformed keys before it sends the request. Fieldwork bodies and results use `JsonObject` or `unknown` when the API schema is open-ended.
 
-`fieldworkEvents()` returns a `ReadableStream` of raw SSE bytes. It does not parse or buffer SSE. For `watch: "unread"`, do not pass `work_id` or `surface`. A 30-second default timeout covers connection setup and a bounded non-2xx error body read. A positive `timeoutMs` overrides that budget. The timer stops after a valid SSE response arrives. The caller owns cancellation of an open stream through `signal` or the returned body.
+`fieldworkEvents()` returns raw SSE bytes. It does not parse or buffer SSE. It requires `AbortController` for its default setup timeout. For `watch: "unread"`, do not pass `work_id` or `surface`. A 30-second default timeout covers connection setup and a bounded non-2xx error body read. A positive `timeoutMs` overrides that budget. The timer stops after a valid SSE response arrives. The caller owns cancellation of an open stream through `signal` or the returned body. WHATWG bodies support `getReader()`. Legacy Node async-iterable bodies support `for await...of` and close through `body.cancel()` or `iterator.return()`; custom sources must unblock their own pending reads.
 
 The upload methods use native `FormData`: `fieldworkUploadAttachment`, `uploadPlantFiles`, and `uploadPlantImages`.
 

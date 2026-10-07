@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("node:http");
+const { Readable } = require("node:stream");
 const { PatchClientV3 } = require("../dist");
 
 test("fieldwork commands validate idempotency before network and preserve auth", async () => {
@@ -122,6 +123,66 @@ test("fieldwork stream releases its abort listener at EOF and read errors", asyn
   const failedBody = await failedClient.fieldworkEvents({}, { timeoutMs: 20, signal: failed.signal });
   await assert.rejects(() => failedBody.getReader().read(), /stream failed/);
   assert.equal(failed.removed(), 1);
+});
+
+test("fieldwork streams async-iterable bodies with cleanup and abort forwarding", async () => {
+  const trackedSignal = () => {
+    let listener; let removed = 0;
+    return { signal: { aborted: false, addEventListener(_type, fn) { listener = fn; }, removeEventListener(_type, fn) { if (fn === listener) removed++; } }, abort() { listener(); }, removed: () => removed };
+  };
+  const response = (body) => ({ ok: true, status: 200, headers: new Headers({ "content-type": "text/event-stream" }), text: async () => "", arrayBuffer: async () => new ArrayBuffer(0), body });
+  const eofSignal = trackedSignal();
+  const eofClient = new PatchClientV3({ fetchFn: async () => response({ async *[Symbol.asyncIterator]() { yield "x"; } }) });
+  const eofIterator = (await eofClient.fieldworkEvents({}, { timeoutMs: 20, signal: eofSignal.signal }))[Symbol.asyncIterator]();
+  assert.deepEqual([...((await eofIterator.next()).value)], [...new TextEncoder().encode("x")]);
+  assert.equal((await eofIterator.next()).done, true);
+  assert.equal(eofSignal.removed(), 1);
+  const errorSignal = trackedSignal();
+  const errorClient = new PatchClientV3({ fetchFn: async () => response({ async *[Symbol.asyncIterator]() { yield "x"; throw new Error("async stream failed"); } }) });
+  const errorIterator = (await errorClient.fieldworkEvents({}, { timeoutMs: 20, signal: errorSignal.signal }))[Symbol.asyncIterator]();
+  await errorIterator.next();
+  await assert.rejects(() => errorIterator.next(), /async stream failed/);
+  assert.equal(errorSignal.removed(), 1);
+  let abortedSignal;
+  const abortSignal = trackedSignal();
+  const abortClient = new PatchClientV3({ fetchFn: async (_url, init) => { abortedSignal = init.signal; return response({ async *[Symbol.asyncIterator]() { yield "x"; } }); } });
+  const abortIterator = (await abortClient.fieldworkEvents({}, { timeoutMs: 20, signal: abortSignal.signal }))[Symbol.asyncIterator]();
+  await abortIterator.next();
+  abortSignal.abort();
+  assert.equal(abortedSignal.aborted, true);
+  await abortIterator.return();
+  assert.equal(abortSignal.removed(), 1);
+});
+
+test("async-iterable stream cancellation destroys a blocked Node readable", async () => {
+  let nextStarted;
+  const nextStartedPromise = new Promise((resolve) => { nextStarted = resolve; });
+  const source = new Readable({ read() { nextStarted(); } });
+  source.push(Buffer.from([1]));
+  const client = new PatchClientV3({ fetchFn: async () => ({ ok: true, status: 200, headers: new Headers({ "content-type": "text/event-stream" }), text: async () => "", arrayBuffer: async () => new ArrayBuffer(0), body: source }) });
+  const originalReadableStream = globalThis.ReadableStream;
+  try {
+    globalThis.ReadableStream = undefined;
+    const body = await client.fieldworkEvents();
+    const iterator = body[Symbol.asyncIterator]();
+    assert.deepEqual([...((await iterator.next()).value)], [1]);
+    const pendingNext = iterator.next();
+    await nextStartedPromise;
+    await body.cancel();
+    await pendingNext.catch(() => {});
+    assert.equal(source.destroyed, true);
+  } finally {
+    globalThis.ReadableStream = originalReadableStream;
+  }
+});
+
+test("async-iterable stream closes its iterator on invalid chunks", async () => {
+  let closed = false;
+  const source = { async *[Symbol.asyncIterator]() { try { yield {}; } finally { closed = true; } } };
+  const client = new PatchClientV3({ fetchFn: async () => ({ ok: true, status: 200, headers: new Headers({ "content-type": "text/event-stream" }), text: async () => "", arrayBuffer: async () => new ArrayBuffer(0), body: source }) });
+  const iterator = (await client.fieldworkEvents())[Symbol.asyncIterator]();
+  await assert.rejects(() => iterator.next(), /unsupported response body chunk type/);
+  assert.equal(closed, true);
 });
 
 test("native fetch sends signed downloads without auth and serializes multipart uploads", async (t) => {

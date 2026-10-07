@@ -114,6 +114,45 @@ async fn signed_download_omits_credentials_and_preserves_json_file_bytes() {
 }
 
 #[tokio::test]
+async fn events_honor_configured_timeout_for_headers_and_idle_reads() {
+    for send_headers in [false, true] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let (finish_tx, finish_rx) = mpsc::channel();
+        let task = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            read_request(&mut stream);
+            if send_headers {
+                stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n").unwrap();
+            }
+            finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        });
+        let client = Client::new_with_timeout(&url, Duration::from_millis(200)).unwrap();
+        let response =
+            tokio::time::timeout(Duration::from_secs(2), client.fieldwork_events_v3(&[])).await;
+        let timed_out = if send_headers {
+            match response {
+                Ok(Ok(mut response)) => {
+                    match tokio::time::timeout(Duration::from_secs(2), response.chunk()).await {
+                        Ok(Err(error)) => error.is_timeout(),
+                        _ => false,
+                    }
+                }
+                _ => false,
+            }
+        } else {
+            matches!(response, Ok(Err(Error::Request(error))) if error.is_timeout())
+        };
+        finish_tx.send(()).unwrap();
+        task.join().unwrap();
+        assert!(
+            timed_out,
+            "SSE must retain the configured header/idle timeout"
+        );
+    }
+}
+
+#[tokio::test]
 async fn required_parameters_fail_before_network() {
     let client = Client::new("http://127.0.0.1:1").unwrap();
     for key in ["short", "bad key with spaces", "invalid\r\nheader"] {

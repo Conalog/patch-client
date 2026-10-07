@@ -1733,6 +1733,13 @@ async function cancelResponseBody(response: FetchResponse, reason?: Error): Prom
   if (!body) {
     return;
   }
+  await cancelBody(body, reason);
+}
+
+async function cancelBody(
+  body: NonNullable<FetchResponse["body"]>,
+  reason?: Error
+): Promise<void> {
   try {
     if (typeof body.cancel === "function") {
       await body.cancel();
@@ -1925,26 +1932,80 @@ function createStreamSignal(
 }
 
 function wrapStream(body: ReadableResponseBody, cleanup: () => void): ReadableResponseBody {
-  if (!body.getReader) {
+  if (body.getReader) {
+    const reader = body.getReader();
+    return new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            cleanup();
+            controller.close();
+          } else if (value) controller.enqueue(value);
+        } catch (err) {
+          await safeCancelReader(reader);
+          cleanup();
+          controller.error(err);
+        }
+      },
+      async cancel() {
+        try { await reader.cancel?.(); } finally { cleanup(); }
+      },
+    }) as unknown as ReadableResponseBody;
+  }
+  const asyncIterator = body[Symbol.asyncIterator];
+  if (asyncIterator) {
+    const iterator = asyncIterator.call(body);
+    let closed = false;
+    const close = () => {
+      if (!closed) {
+        closed = true;
+        cleanup();
+      }
+    };
+    const returnIterator = () => {
+      void Promise.resolve().then(() => iterator.return?.()).catch(() => {});
+    };
+    return {
+      async cancel() {
+        try {
+          await cancelBody(body);
+        } finally {
+          returnIterator();
+          close();
+        }
+      },
+      [Symbol.asyncIterator](): AsyncIterator<Uint8Array> {
+        return {
+          async next() {
+            try {
+              const result = await iterator.next();
+              if (result.done) close();
+              return result.done
+                ? { done: true, value: undefined }
+                : { done: false, value: toUint8Array(result.value) };
+            } catch (err) {
+              await cancelBody(body, err instanceof Error ? err : undefined);
+              returnIterator();
+              close();
+              throw err;
+            }
+          },
+          async return() {
+            try {
+              await cancelBody(body);
+              return { done: true, value: undefined };
+            } finally {
+              returnIterator();
+              close();
+            }
+          },
+        };
+      },
+    } as ReadableResponseBody;
+  }
+  {
     cleanup();
     throw new Error("PATCH API stream response has no readable body");
   }
-  const reader = body.getReader();
-  return new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      try {
-        const { done, value } = await reader.read();
-        if (done) {
-          cleanup();
-          controller.close();
-        } else if (value) controller.enqueue(value);
-      } catch (err) {
-        cleanup();
-        controller.error(err);
-      }
-    },
-    async cancel() {
-      try { await reader.cancel?.(); } finally { cleanup(); }
-    },
-  }) as unknown as ReadableResponseBody;
 }

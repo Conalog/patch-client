@@ -55,6 +55,7 @@ impl std::fmt::Debug for AuthState {
 pub struct Client {
     base_url: Url,
     http: HttpClient,
+    request_timeout: Duration,
     auth: Arc<RwLock<Option<AuthState>>>,
 }
 
@@ -88,6 +89,7 @@ impl Client {
         Ok(Self {
             base_url,
             http,
+            request_timeout: timeout,
             auth: Arc::new(RwLock::new(None)),
         })
     }

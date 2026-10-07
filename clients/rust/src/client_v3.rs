@@ -56,8 +56,8 @@ impl Client {
         let http = if stream {
             HttpClient::builder()
                 .retry(reqwest::retry::never())
-                .connect_timeout(DEFAULT_HTTP_TIMEOUT)
-                .read_timeout(DEFAULT_HTTP_TIMEOUT)
+                .connect_timeout(self.request_timeout)
+                .read_timeout(self.request_timeout)
                 .redirect(reqwest::redirect::Policy::none())
                 .build()?
         } else {
