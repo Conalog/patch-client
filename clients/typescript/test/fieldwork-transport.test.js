@@ -28,6 +28,10 @@ test("fieldwork uses encoded paths and comma-joined arrays", async () => {
   await client.getMetricsByDate("plant/a", "device", "plant", "1d", "2026-01-01", { fields: ["a", "b"] });
   assert.match(url, /plant%2Fa/);
   assert.match(url, /fields=a%2Cb/);
+  await client.fieldworkMessagePreviews({ work_id: ["work/a", "work-b"] });
+  const previewUrl = new URL(url);
+  assert.equal(previewUrl.pathname, "/api/v3/fieldwork/latest-message-previews");
+  assert.deepEqual(previewUrl.searchParams.getAll("work_id"), ["work/a,work-b"]);
 });
 
 test("uploads native FormData without a JSON content type", async () => {

@@ -23,6 +23,10 @@ const auth: Promise<AuthOutputV3Body> = client.authenticateUser({
 
 void auth;
 void client.getPlantList({ page: 1, size: 20, full: true });
+void client.fieldworkMessagePreviews({ work_id: ["work-1", "work-2"] });
+
+// @ts-expect-error message previews require an array of work IDs
+void client.fieldworkMessagePreviews({ work_id: "work-1" });
 void client.assignPlantPermission("org123", "unw4id41ud2p0wt", {
   type: "viewer",
   username: "viewer1",
