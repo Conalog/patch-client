@@ -168,6 +168,23 @@ import { PatchClientV3 } from "patch-client";
 - Refresh an existing token with `refreshUserToken(...)` and update the client with the returned token.
 - `accessToken` accepts either `Bearer <token>` or a raw token.
 - `accountType` should be one of `"viewer"`, `"manager"`, or `"temporary"`.
+- Set a request `accountType` to `null` for participant bearer tokens. This omits `Account-Type`.
+
+## Fieldwork
+
+Fieldwork methods use camel-cased OpenAPI operation IDs. Command methods require an idempotency key:
+
+```ts
+await client.fieldworkWorkCreate({ plant_id: "plant-1", title: "Inspect" }, {
+  idempotencyKey: "work-create-001",
+});
+```
+
+You can also provide `Idempotency-Key` in `options.headers`. The client rejects absent or malformed keys before it sends the request. Fieldwork bodies and results use `JsonObject` or `unknown` when the API schema is open-ended.
+
+`fieldworkEvents()` returns raw SSE bytes. It does not parse or buffer SSE. It requires `AbortController` for its default setup timeout. For `watch: "unread"`, do not pass `work_id` or `surface`. A 30-second default timeout covers connection setup and a bounded non-2xx error body read. A positive `timeoutMs` overrides that budget. The timer stops after a valid SSE response arrives. The caller owns cancellation of an open stream through `signal` or the returned body. WHATWG bodies support `getReader()`. Legacy Node async-iterable bodies support `for await...of` and close through `body.cancel()` or `iterator.return()`; custom sources must unblock their own pending reads.
+
+The upload methods use native `FormData`: `fieldworkUploadAttachment`, `uploadPlantFiles`, and `uploadPlantImages`.
 
 ## Error Handling
 

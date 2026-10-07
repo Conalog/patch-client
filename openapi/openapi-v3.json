@@ -5078,6 +5078,12 @@
                   "format": "int64",
                   "type": "integer"
                 },
+                "sequence": {
+                  "format": "int64",
+                  "maximum": 9007199254740991,
+                  "minimum": 1,
+                  "type": "integer"
+                },
                 "updated_at": {
                   "type": "string"
                 },
@@ -5086,6 +5092,7 @@
                 }
               },
               "required": [
+                "sequence",
                 "id",
                 "work_id",
                 "kind",
@@ -5215,6 +5222,12 @@
                   "format": "int64",
                   "type": "integer"
                 },
+                "sequence": {
+                  "format": "int64",
+                  "maximum": 9007199254740991,
+                  "minimum": 1,
+                  "type": "integer"
+                },
                 "updated_at": {
                   "type": "string"
                 },
@@ -5223,6 +5236,7 @@
                 }
               },
               "required": [
+                "sequence",
                 "id",
                 "work_id",
                 "kind",
@@ -5743,6 +5757,12 @@
                           "format": "int64",
                           "type": "integer"
                         },
+                        "sequence": {
+                          "format": "int64",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
                         "updated_at": {
                           "type": "string"
                         },
@@ -5751,6 +5771,7 @@
                         }
                       },
                       "required": [
+                        "sequence",
                         "id",
                         "work_id",
                         "kind",
@@ -5863,6 +5884,9 @@
               "array",
               "null"
             ]
+          },
+          "message_read_state": {
+            "$ref": "#/components/schemas/PublicMessageReadState"
           },
           "message_revision": {
             "format": "int64",
@@ -6107,6 +6131,12 @@
                           "format": "int64",
                           "type": "integer"
                         },
+                        "sequence": {
+                          "format": "int64",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
                         "updated_at": {
                           "type": "string"
                         },
@@ -6115,6 +6145,7 @@
                         }
                       },
                       "required": [
+                        "sequence",
                         "id",
                         "work_id",
                         "kind",
@@ -6308,6 +6339,12 @@
                     "format": "int64",
                     "type": "integer"
                   },
+                  "sequence": {
+                    "format": "int64",
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
                   "updated_at": {
                     "type": "string"
                   },
@@ -6316,6 +6353,7 @@
                   }
                 },
                 "required": [
+                  "sequence",
                   "id",
                   "work_id",
                   "kind",
@@ -6444,6 +6482,12 @@
                         "format": "int64",
                         "type": "integer"
                       },
+                      "sequence": {
+                        "format": "int64",
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
                       "updated_at": {
                         "type": "string"
                       },
@@ -6452,6 +6496,7 @@
                       }
                     },
                     "required": [
+                      "sequence",
                       "id",
                       "work_id",
                       "kind",
@@ -7646,6 +7691,42 @@
         ],
         "type": "object"
       },
+      "PublicMessageReadState": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "last_read_sequence": {
+            "format": "int64",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "read_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "work_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "work_id",
+          "last_read_sequence",
+          "read_at",
+          "revision"
+        ],
+        "type": "object"
+      },
       "PublicMessageUpdate": {
         "additionalProperties": false,
         "properties": {
@@ -8195,6 +8276,28 @@
         ],
         "type": "object"
       },
+      "PublicReadMessages": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicReadMessages.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "through_message_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "through_message_id"
+        ],
+        "type": "object"
+      },
       "PublicReceipt": {
         "additionalProperties": false,
         "properties": {
@@ -8547,11 +8650,23 @@
           "item_progress": {
             "$ref": "#/components/schemas/PublicProgress"
           },
+          "unread_message_count": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unread_work_count": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "work_counts": {
             "$ref": "#/components/schemas/PublicWorkCounts"
           }
         },
         "required": [
+          "unread_message_count",
+          "unread_work_count",
           "work_counts",
           "item_progress"
         ],
@@ -8741,9 +8856,19 @@
           },
           "membership_state": {
             "type": "string"
+          },
+          "message_read_state": {
+            "$ref": "#/components/schemas/PublicMessageReadState"
+          },
+          "unread_message_count": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
+          "message_read_state",
+          "unread_message_count",
           "member_id",
           "membership_state",
           "is_responsible",
@@ -11052,7 +11177,7 @@
     },
     "/api/v3/fieldwork/command-receipts": {
       "get": {
-        "description": "Reads supported command outcomes after checking current access. Participant and read-state commands have no durable replay contract. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Reads supported command outcomes after checking current access. Participant, notification and seen commands have no durable replay contract. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_receipt_get",
         "parameters": [
           {
@@ -11147,7 +11272,7 @@
     },
     "/api/v3/fieldwork/events": {
       "get": {
-        "description": "Streams authorized changes and resynchronization signals. No event replay or global order guarantee; refresh snapshots after ready. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Streams authorized changes and resynchronization signals. watch=unread is standalone and delivers FW-UNREAD-SSE-v1 ready followed by complete unread.snapshot frames with connection-local event_sequence. It cannot be combined with work_id, surface or another watch. Existing list/inbox/work modes require snapshot refresh after ready. No Last-Event-ID replay or global order guarantee. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_events",
         "parameters": [
           {
@@ -11183,7 +11308,6 @@
             "in": "query",
             "name": "surface",
             "schema": {
-              "default": "full",
               "enum": [
                 "full",
                 "work-list",
@@ -11202,7 +11326,7 @@
                 }
               }
             },
-            "description": "Server-sent events: ready, change, list.changed, inbox.changed, resync.required, access.ended; heartbeat comments."
+            "description": "Server-sent events: ready, unread.snapshot (watch=unread), change, list.changed, inbox.changed, resync.required, access.ended; heartbeat comments."
           },
           "default": {
             "content": {
@@ -14346,6 +14470,93 @@
           }
         ],
         "summary": "message.create",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
+    "/api/v3/fieldwork/works/{work_id}/messages/read": {
+      "post": {
+        "description": "Advances the current actor's read position through the specified message. Does not change notification read state. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_messages_read",
+        "parameters": [
+          {
+            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicReadMessages"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommandOutputBody"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark fieldwork messages as read.",
         "tags": [
           "v3/fieldwork"
         ]

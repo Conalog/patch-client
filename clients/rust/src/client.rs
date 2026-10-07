@@ -1,3 +1,6 @@
+#[path = "client_v3.rs"]
+mod v3;
+
 use crate::error::{Error, Result};
 use crate::model::{
     AccountOutputBody, AssignOrganizationPermissionRequestBody, AuthBody, AuthMethodsBody,
@@ -52,6 +55,7 @@ impl std::fmt::Debug for AuthState {
 pub struct Client {
     base_url: Url,
     http: HttpClient,
+    request_timeout: Duration,
     auth: Arc<RwLock<Option<AuthState>>>,
 }
 
@@ -78,12 +82,14 @@ impl Client {
         Self::validate_base_url(&base_url)?;
         Self::normalize_base_url(&mut base_url);
         let http = HttpClient::builder()
+            .retry(reqwest::retry::never())
             .timeout(timeout)
             .redirect(reqwest::redirect::Policy::none())
             .build()?;
         Ok(Self {
             base_url,
             http,
+            request_timeout: timeout,
             auth: Arc::new(RwLock::new(None)),
         })
     }
@@ -333,9 +339,10 @@ impl Client {
                 (None, false)
             };
             if let Some(auth) = auth {
-                req = req
-                    .header("Authorization", format!("Bearer {}", auth.token))
-                    .header("Account-Type", &auth.account_type);
+                req = req.header("Authorization", format!("Bearer {}", auth.token));
+                if !auth.account_type.is_empty() {
+                    req = req.header("Account-Type", &auth.account_type);
+                }
             }
 
             if let Some(b) = body {
@@ -1187,7 +1194,7 @@ impl Client {
         body: &CreateOrgMemberRequest,
     ) -> Result<CreateAccountOutputBody> {
         let path = format!(
-            "api/v3/organizations/{}/members",
+            "api/v3/orgs/{}/members",
             Self::encode_path_segment(organization_id)
         );
         self.execute_json(Method::POST, self.url(&path)?, Some(body))
@@ -1201,7 +1208,7 @@ impl Client {
         body: &AssignOrganizationPermissionRequestBody,
     ) -> Result<OrgAddPermissionOutputBody> {
         let path = format!(
-            "api/v3/organizations/{}/plants/{}/permissions/grant",
+            "api/v3/orgs/{}/plants/{}/permissions/grant",
             Self::encode_path_segment(organization_id),
             Self::encode_path_segment(plant_id)
         );
@@ -1216,7 +1223,7 @@ impl Client {
         body: &RemoveOrganizationPermissionRequestBody,
     ) -> Result<OrgRemovePermissionOutputBody> {
         let path = format!(
-            "api/v3/organizations/{}/plants/{}/permissions/revoke",
+            "api/v3/orgs/{}/plants/{}/permissions/revoke",
             Self::encode_path_segment(organization_id),
             Self::encode_path_segment(plant_id)
         );

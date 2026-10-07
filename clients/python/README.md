@@ -25,6 +25,33 @@ client.assign_plant_permission(
 client.start_plant_comment_thread("plant-id", {"text": "Check inverter 1"})
 ```
 
+The client covers all v3 operations. New JSON methods use the snake_case
+operation ID and accept named path and query values plus payload. Fieldwork command methods
+require idempotency_key with 8-128 safe characters.
+
+```python
+client.fieldwork_work_create(
+    payload={"title": "Inspection"},
+    idempotency_key="work-create-20261008",
+)
+
+with client.fieldwork_events(watch="unread") as events:
+    for line in events:
+        print(line.decode("utf-8").rstrip())
+```
+
+Fieldwork participant tokens omit account_type. Managers can provide it.
+Event streams keep the urllib timeout for each blocking read and must be closed.
+fieldwork_events with watch="unread" cannot include work_id or surface.
+Use fieldwork_upload_attachment, upload_plant_files, and upload_plant_images
+for multipart uploads. They accept bytes or a binary file object.
+Multipart requests buffer at most 10 MiB of encoded wire data. Add streaming
+uploads if larger files become necessary.
+If a client was configured for a manager, call set_account_type(None) before
+using a participant token.
+For one participant request with inherited manager headers, pass account_type=""
+to remove Account-Type from the final request.
+
 OAuth login endpoints are also exposed:
 
 ```python

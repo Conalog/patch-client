@@ -1,14 +1,39 @@
 package patchclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return fn(req) }
+
+type contextBody struct{ ctx context.Context }
+
+func (body contextBody) Read([]byte) (int, error) { <-body.ctx.Done(); return 0, body.ctx.Err() }
+func (contextBody) Close() error                  { return nil }
+
+type blockedReader struct {
+	started chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (reader *blockedReader) Read([]byte) (int, error) {
+	reader.once.Do(func() { close(reader.started) })
+	<-reader.release
+	return 0, io.EOF
+}
 
 func TestGetPlantListBuildsV3PathAndHeaders(t *testing.T) {
 	var gotAuth string
@@ -244,7 +269,7 @@ func TestLatestV3OperationPaths(t *testing.T) {
 		{
 			name:   "AssignPlantPermission",
 			method: http.MethodPost,
-			path:   "/api/v3/organizations/org%2F1/plants/plant%2F1/permissions/grant",
+			path:   "/api/v3/orgs/org%2F1/plants/plant%2F1/permissions/grant",
 			call: func(c *Client) (any, error) {
 				return c.AssignPlantPermission(ctx, "org/1", "plant/1", payload, nil)
 			},
@@ -252,7 +277,7 @@ func TestLatestV3OperationPaths(t *testing.T) {
 		{
 			name:   "RemovePlantPermission",
 			method: http.MethodPost,
-			path:   "/api/v3/organizations/org%2F1/plants/plant%2F1/permissions/revoke",
+			path:   "/api/v3/orgs/org%2F1/plants/plant%2F1/permissions/revoke",
 			call: func(c *Client) (any, error) {
 				return c.RemovePlantPermission(ctx, "org/1", "plant/1", payload, nil)
 			},
@@ -916,5 +941,276 @@ func TestPatchClientErrorBodySnippetTruncatesByRune(t *testing.T) {
 	want := "가나다라마..."
 	if got != want {
 		t.Fatalf("unexpected snippet: got %q want %q", got, want)
+	}
+}
+
+func TestFieldworkCommandRequiresValidIdempotencyKeyBeforeNetwork(t *testing.T) {
+	client := NewClient("https://example.invalid")
+	_, err := client.FieldworkWorkCreate(context.Background(), map[string]any{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "Idempotency-Key") {
+		t.Fatalf("expected idempotency validation error, got %v", err)
+	}
+}
+
+func TestFieldworkCommandUsesPathEncodingAndOmitsDefaultAccountType(t *testing.T) {
+	var path, key, accountType string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path, key, accountType = r.RequestURI, r.Header.Get("Idempotency-Key"), r.Header.Get("Account-Type")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	client.SetAccessToken("participant-token")
+	client.SetAccountType(AccountTypeManager)
+	_, err := client.FieldworkWorkUpdate(context.Background(), "work/a", map[string]any{"name": "x"}, &RequestOptions{OmitAccountType: true, Headers: map[string]string{"Idempotency-Key": "command-01"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != "/api/v3/fieldwork/works/work%2Fa/update" || key != "command-01" || accountType != "" {
+		t.Fatalf("path=%q key=%q account-type=%q", path, key, accountType)
+	}
+}
+
+func TestFieldworkCommandUsesConfiguredAccountType(t *testing.T) {
+	var accountType string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accountType = r.Header.Get("Account-Type")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	client.SetAccountType(AccountTypeManager)
+	_, err := client.FieldworkWorkCreate(context.Background(), map[string]any{}, &RequestOptions{Headers: map[string]string{"Idempotency-Key": "command-01"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accountType != "manager" {
+		t.Fatalf("account-type=%q", accountType)
+	}
+}
+
+func TestFieldworkUploadAttachmentUsesMultipart(t *testing.T) {
+	var fields = map[string]string{}
+	var file string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range []string{"work_id", "parent_kind", "parent_id", "operation", "command_key", "ordinal"} {
+			fields[name] = r.FormValue(name)
+		}
+		f, _, err := r.FormFile("file")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+		data, _ := io.ReadAll(f)
+		file = string(data)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	_, err := client.FieldworkUploadAttachment(context.Background(), FieldworkAttachment{WorkID: "w", ParentKind: "message", ParentID: "m", Operation: "message.create", CommandKey: "command-01", Ordinal: 0, Filename: "note.txt", File: bytes.NewBufferString("body")}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["work_id"] != "w" || fields["command_key"] != "command-01" || file != "body" {
+		t.Fatalf("fields=%v file=%q", fields, file)
+	}
+}
+
+func TestFieldworkEventsStreamsUnreadWithoutOtherScope(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery != "watch=unread" {
+			t.Errorf("query=%q", r.URL.RawQuery)
+		}
+		if r.Header.Get("Accept") != "text/event-stream" {
+			t.Errorf("accept=%q", r.Header.Get("Accept"))
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: one\n\n"))
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		close(started)
+		<-release
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	body, err := client.FieldworkEvents(context.Background(), map[string]string{"watch": "unread"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer body.Close()
+	<-started
+	buf := make([]byte, len("data: one\n\n"))
+	if _, err := io.ReadFull(body, buf); err != nil {
+		t.Fatal(err)
+	}
+	if string(buf) != "data: one\n\n" {
+		t.Fatalf("stream=%q", buf)
+	}
+	close(release)
+	if _, err := client.FieldworkEvents(context.Background(), map[string]string{"watch": "unread", "work_id": "w"}, nil); err == nil {
+		t.Fatal("expected unread scope validation")
+	}
+}
+
+func TestFieldworkAttachmentBytesHonorSecurity(t *testing.T) {
+	var downloadAuth, contentAuth, contentAccountType string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v3/fieldwork/attachments/download" {
+			downloadAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+		} else {
+			contentAuth, contentAccountType = r.Header.Get("Authorization"), r.Header.Get("Account-Type")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"looks":"json"}`))
+			return
+		}
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	client.SetAccessToken("token")
+	client.SetAccountType(AccountTypeManager)
+	download, err := client.FieldworkAttachmentDownload(context.Background(), "w", "key", "1", "sig", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := client.FieldworkAttachmentContent(context.Background(), "w", "key", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(download) != 0 || string(content) != `{"looks":"json"}` || downloadAuth != "" || contentAuth != "Bearer token" || contentAccountType != "manager" {
+		t.Fatalf("download=%v content=%v download-auth=%q content-auth=%q account-type=%q", download, content, downloadAuth, contentAuth, contentAccountType)
+	}
+}
+
+func TestFieldworkReceiptRequiresOperationAndCommandKeyBeforeNetwork(t *testing.T) {
+	client := NewClient("https://example.invalid")
+	_, err := client.FieldworkReceiptGet(context.Background(), "", "short", nil, nil)
+	if err == nil || !strings.Contains(err.Error(), "command_key") {
+		t.Fatalf("expected receipt validation error, got %v", err)
+	}
+}
+
+func TestFieldworkAttachmentDownloadRequiresSignedQueryBeforeNetwork(t *testing.T) {
+	_, err := NewClient("https://example.invalid").FieldworkAttachmentDownload(context.Background(), "w", "key", "", "sig", nil)
+	if err == nil || !strings.Contains(err.Error(), "signature") {
+		t.Fatalf("expected download query validation error, got %v", err)
+	}
+}
+
+func TestFieldworkMutationsAndUploadsCannotReplayBodies(t *testing.T) {
+	client := NewClient("https://example.invalid")
+	client.HTTPClient = &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		if req.GetBody != nil {
+			t.Fatal("GetBody must be nil")
+		}
+		_, _ = io.Copy(io.Discard, req.Body)
+		return &http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(`{}`)), Request: req}, nil
+	})}
+	opts := &RequestOptions{Headers: map[string]string{"Idempotency-Key": "command-01"}}
+	if _, err := client.FieldworkWorkCreate(context.Background(), map[string]any{}, opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.UploadPlantFiles(context.Background(), "p", "name", "file.txt", strings.NewReader("body"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.UploadPlantFiles(context.Background(), "p", "name", "bad\r\nfile.txt", strings.NewReader("body"), nil); err == nil {
+		t.Fatal("expected unsafe filename error")
+	}
+	if _, err := client.FieldworkWorkCreate(context.Background(), nil, opts); err == nil {
+		t.Fatal("expected missing command body error")
+	}
+}
+
+func TestMultipartCancellationDoesNotWaitForBlockedReader(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer srv.Close()
+	reader := &blockedReader{started: make(chan struct{}), release: make(chan struct{})}
+	defer close(reader.release)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, err := NewClient(srv.URL).UploadPlantFiles(ctx, "p", "name", "file.txt", reader, nil)
+		done <- err
+	}()
+	<-reader.started
+	cancel()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("expected cancellation error")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("multipart upload waited for caller-owned blocked reader")
+	}
+}
+
+func TestFieldworkEventsRejectsNonSSE(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	_, err := NewClient(srv.URL).FieldworkEvents(context.Background(), nil, nil)
+	if err == nil || !strings.Contains(err.Error(), "text/event-stream") {
+		t.Fatalf("expected SSE media type error, got %v", err)
+	}
+}
+
+func TestFieldworkEventsCancelsStalledErrorBody(t *testing.T) {
+	client := NewClient("https://example.invalid")
+	client.HTTPClient = &http.Client{Timeout: 20 * time.Millisecond, Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusBadGateway, Header: make(http.Header), Body: contextBody{ctx: req.Context()}, Request: req}, nil
+	})}
+	started := time.Now()
+	_, err := client.FieldworkEvents(context.Background(), nil, nil)
+	if err == nil || time.Since(started) > time.Second {
+		t.Fatalf("stalled error body was not cancelled: %v", err)
+	}
+}
+
+func TestBuildURLRejectsDecodedDotSegments(t *testing.T) {
+	client := NewClient("https://example.invalid")
+	for _, path := range []string{"/api/v3/plants/.", "/api/v3/plants/%2E%2E"} {
+		if _, err := client.buildURL(path, nil); err == nil {
+			t.Fatalf("expected dot segment rejection for %q", path)
+		}
+	}
+}
+
+func TestFieldworkCommandDoesNotRetryAfterReusedConnectionCloses(t *testing.T) {
+	var commandCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v3/plants" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+			return
+		}
+		commandCount.Add(1)
+		conn, _, err := w.(http.Hijacker).Hijack()
+		if err == nil {
+			_ = conn.Close()
+		}
+	}))
+	defer srv.Close()
+	client := NewClient(srv.URL)
+	client.HTTPClient = srv.Client()
+	if _, err := client.GetPlantList(context.Background(), nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err := client.FieldworkWorkCreate(context.Background(), map[string]any{}, &RequestOptions{Headers: map[string]string{"Idempotency-Key": "command-01"}})
+	if err == nil {
+		t.Fatal("expected connection-close error")
+	}
+	if commandCount.Load() != 1 {
+		t.Fatalf("command deliveries=%d", commandCount.Load())
 	}
 }

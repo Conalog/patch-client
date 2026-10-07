@@ -32,7 +32,7 @@ For language-specific usage, see each client README:
 - TypeScript: `clients/typescript/README.md`
 - Python: `clients/python/README.md`
 - Go: `clients/go/README.md`
-- Rust: `clients/rust` (crate: `patch-client`)
+- Rust: `clients/rust/README.md` (crate: `patch-client`)
 
 ## API spec sync (v3 only)
 
@@ -92,4 +92,5 @@ cargo test
 ## Notes
 
 - The default API base URL is `https://patch-api.conalog.com` across clients.
-- Authentication generally uses an `access token` and the `Account-Type` header (`viewer`, `manager`, `admin`).
+- The clients cover all 124 v3 operations in the current OpenAPI snapshot, including fieldwork commands, multipart uploads, binary attachments, and event streams.
+- Manager authentication uses an access token and `Account-Type: manager`. Fieldwork participant tokens omit `Account-Type`; see each client README.

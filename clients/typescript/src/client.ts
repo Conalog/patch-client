@@ -30,7 +30,7 @@ export type MetricInterval = "5m" | "15m" | "1h" | "1d" | "1M" | "1y";
 /**
  * Allowed query parameter values.
  *
- * Arrays are encoded as repeated key/value pairs in the query string.
+ * Arrays are encoded as comma-separated values in the query string.
  */
 export type QueryValue =
   | string
@@ -44,6 +44,11 @@ export type QueryValue =
  * Generic JSON object payload used by this client.
  */
 export type JsonObject = Record<string, unknown>;
+export type FieldworkCommandOptions = RequestOptions & { idempotencyKey?: string };
+export interface FieldworkAttachmentInput { file: Blob; work_id: string; parent_kind: string; parent_id: string; operation: string; command_key: string; ordinal: number; filename?: string; }
+export interface PlantUploadInput { file: Blob; name?: string; filename?: string; }
+export interface FieldworkEventsQuery { watch?: string; work_id?: string; surface?: string; }
+export type ReadableResponseBody = NonNullable<FetchResponse["body"]>;
 
 export interface AuthWithPasswordBody {
   type: AccountType;
@@ -554,7 +559,7 @@ export interface RequestOptions {
   /**
    * Overrides the client-level account type for one request.
    */
-  accountType?: AccountType;
+  accountType?: AccountType | null;
   /**
    * Additional headers merged last (highest precedence, case-insensitive).
    */
@@ -597,6 +602,7 @@ type FetchInit = {
 };
 type FetchFn = (input: string, init?: FetchInit) => Promise<FetchResponse>;
 const DEFAULT_MAX_RESPONSE_BYTES = 10 << 20;
+const DEFAULT_STREAM_TIMEOUT_MS = 30_000;
 
 interface RequestInput {
   query?: object;
@@ -758,6 +764,7 @@ export class PatchClientV3 {
       this.authHeaders(options),
       options?.headers
     );
+    applyRequestHeaderOverrides(headers, options);
     const { signal, cleanup, timeoutSupported } = createRequestSignal(
       options?.signal,
       options?.timeoutMs
@@ -825,7 +832,7 @@ export class PatchClientV3 {
     payload: CreateOrganizationMemberRequestBody,
     options?: RequestOptions
   ): Promise<CreateAccountOutputBody> {
-    return this.request("POST", `/api/v3/organizations/${encodePath(organizationId)}/members`, {
+    return this.request("POST", `/api/v3/orgs/${encodePath(organizationId)}/members`, {
       body: payload,
       options,
     });
@@ -839,7 +846,7 @@ export class PatchClientV3 {
   ): Promise<OrgAddPermissionOutputBody> {
     return this.request(
       "POST",
-      `/api/v3/organizations/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/grant`,
+      `/api/v3/orgs/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/grant`,
       { body: payload, options }
     );
   }
@@ -852,7 +859,7 @@ export class PatchClientV3 {
   ): Promise<OrgRemovePermissionOutputBody> {
     return this.request(
       "POST",
-      `/api/v3/organizations/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/revoke`,
+      `/api/v3/orgs/${encodePath(organizationId)}/plants/${encodePath(plantId)}/permissions/revoke`,
       { body: payload, options }
     );
   }
@@ -1248,6 +1255,168 @@ export class PatchClientV3 {
     });
   }
 
+  async createChildOrg(organizationId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/orgs/${encodePath(organizationId)}/children`, { body: payload, options }); }
+  async createOrgMember(organizationId: string, payload: CreateOrganizationMemberRequestBody, options?: RequestOptions): Promise<CreateAccountOutputBody> { return this.createOrganizationMember(organizationId, payload, options); }
+  async transferOrgOwnership(organizationId: string, memberId: string, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/orgs/${encodePath(organizationId)}/members/${encodePath(memberId)}/transfer-ownership`, { options }); }
+  async movePlantOrganization(organizationId: string, plantId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/orgs/${encodePath(organizationId)}/plants/${encodePath(plantId)}/move`, { body: payload, options }); }
+  async getPlantComment(plantId: string, commentId: string, options?: RequestOptions): Promise<CommentOutput> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/comments/${encodePath(commentId)}`, { options }); }
+  async listDeviceTransitionLogs(plantId: string, query?: { page?: number; size?: number; sort?: string }, options?: RequestOptions): Promise<InverterLogsResponse> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/logs/device`, { query, options }); }
+  async listEssTransitionLogs(plantId: string, query?: { page?: number; size?: number; sort?: string }, options?: RequestOptions): Promise<InverterLogsResponse> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/logs/ess`, { query, options }); }
+  async listPlantMemos(plantId: string, options?: RequestOptions): Promise<CommentReadOutput[] | null> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/memos`, { options }); }
+  async startPlantMemoThread(plantId: string, payload: CommentActionBody, options?: RequestOptions): Promise<CommentOutput> { return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/memos/start_thread`, { body: payload, options }); }
+  async getPlantMemo(plantId: string, commentId: string, options?: RequestOptions): Promise<CommentOutput> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/memos/${encodePath(commentId)}`, { options }); }
+  async editPlantMemo(plantId: string, commentId: string, payload: CommentEditBody, options?: RequestOptions): Promise<CommentOutput> { return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/memos/${encodePath(commentId)}/edit`, { body: payload, options }); }
+  async replyPlantMemo(plantId: string, commentId: string, payload: CommentActionBody, options?: RequestOptions): Promise<CommentOutput> { return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/memos/${encodePath(commentId)}/reply`, { body: payload, options }); }
+  async changePlantMemoState(plantId: string, commentId: string, payload: CommentStateBody, options?: RequestOptions): Promise<CommentOutput> { return this.request("POST", `/api/v3/plants/${encodePath(plantId)}/memos/${encodePath(commentId)}/state`, { body: payload, options }); }
+  async getLatestEdgeMetrics(plantId: string, query?: { asset_id?: string }, options?: RequestOptions): Promise<unknown> { return this.request("GET", `/api/v3/plants/${encodePath(plantId)}/metrics/edge/latest`, { query, options }); }
+  async uploadPlantFiles(plantId: string, input: PlantUploadInput, options?: RequestOptions): Promise<unknown> { return this.requestForm("POST", `/api/v3/plants/${encodePath(plantId)}/files`, plantForm(input), options); }
+  async uploadPlantImages(plantId: string, input: PlantUploadInput, options?: RequestOptions): Promise<unknown> { return this.requestForm("POST", `/api/v3/plants/${encodePath(plantId)}/images`, plantForm(input), options); }
+
+  async fieldworkUploadAttachment(input: FieldworkAttachmentInput, options?: RequestOptions): Promise<unknown> { const form = new FormData(); form.append("file", input.file, input.filename); for (const key of ["work_id", "parent_kind", "parent_id", "operation", "command_key", "ordinal"] as const) form.append(key, String(input[key])); return this.requestForm("POST", "/api/v3/fieldwork/attachments", form, options); }
+  async fieldworkAttachmentContent(query: { work_id: string; object_key: string }, options?: RequestOptions): Promise<Uint8Array> { return this.requestBytes("/api/v3/fieldwork/attachments/content", query, options); }
+  async fieldworkAttachmentDownload(query: { work_id: string; object_key: string; expires: number | string; signature: string }, options?: RequestOptions): Promise<Uint8Array> { return this.requestBytes("/api/v3/fieldwork/attachments/download", query, options, true); }
+  async fieldworkReceiptGet(query: { operation: string; command_key: string; work_id?: string; plant_id?: string }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/command-receipts", { query, options }); }
+  async fieldworkEvents(query: FieldworkEventsQuery = {}, options?: RequestOptions): Promise<ReadableResponseBody> { if (query.watch === "unread" && (query.work_id || query.surface)) throw new Error("unread watch must not include work_id or surface"); return this.stream("/api/v3/fieldwork/events", query, options); }
+  async fieldworkMessagePreviews(query: { work_id: string[] }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/latest-message-previews", { query, options }); }
+  async fieldworkNotificationsList(query?: { plant_id?: string; work_id?: string; unread_only?: boolean; cursor?: string; limit?: number }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/notifications", { query, options }); }
+  async fieldworkNotificationsSummary(query?: { plant_id?: string }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/notifications/summary", { query, options }); }
+  async fieldworkNotificationArchive(notificationId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/notifications/${encodePath(notificationId)}/archive`, { body: payload, options }); }
+  async fieldworkNotificationRead(notificationId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/notifications/${encodePath(notificationId)}/read`, { body: payload, options }); }
+  async fieldworkParticipantSessionCreate(payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", "/api/v3/fieldwork/participant-sessions", { body: payload, options }); }
+  async fieldworkPlantMemberCandidates(plantId: string, query?: { search?: string; organization_id?: string; cursor?: string; limit?: number }, options?: RequestOptions): Promise<unknown> { return this.request("GET", `/api/v3/fieldwork/plants/${encodePath(plantId)}/member-candidates`, { query, options }); }
+  async fieldworkSummaryGet(query?: { plant_id?: string }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/summary", { query, options }); }
+  async fieldworkTemplatesList(query?: { search?: string; cursor?: string; limit?: number }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/templates", { query, options }); }
+  async fieldworkWorksList(query?: { search?: string; cursor?: string; limit?: number; plant_id?: string; status?: string }, options?: RequestOptions): Promise<unknown> { return this.request("GET", "/api/v3/fieldwork/works", { query, options }); }
+  async fieldworkWorkGet(workId: string, query?: { surface?: string; before?: number }, options?: RequestOptions): Promise<unknown> { return this.request("GET", `/api/v3/fieldwork/works/${encodePath(workId)}`, { query, options }); }
+  async fieldworkResourcesList(workId: string, query?: { kind?: string; cursor?: string; limit?: number }, options?: RequestOptions): Promise<unknown> { return this.request("GET", `/api/v3/fieldwork/works/${encodePath(workId)}/resources`, { query, options }); }
+  async fieldworkMessageGet(workId: string, messageId: string, options?: RequestOptions): Promise<unknown> { return this.request("GET", `/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}`, { options }); }
+  async fieldworkWorkCreate(payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand("/api/v3/fieldwork/works", payload, options); }
+  async fieldworkWorkArchive(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/archive`, payload, options); }
+  async fieldworkWorkClone(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/clone`, payload, options); }
+  async fieldworkWorkClose(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/close`, payload, options); }
+  async fieldworkItemCreate(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items`, payload, options); }
+  async fieldworkItemComplete(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/complete`, payload, options); }
+  async fieldworkItemMapReferenceAdd(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/map-references/add`, payload, options); }
+  async fieldworkItemMapReferencesSync(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/map-references/sync`, payload, options); }
+  async fieldworkItemMapReferenceRemove(workId: string, itemId: string, mapRefId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/map-references/${encodePath(mapRefId)}/remove`, payload, options); }
+  async fieldworkItemMentionsSet(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/mentions/set`, payload, options); }
+  async fieldworkItemMove(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/move`, payload, options); }
+  async fieldworkItemPhotosAdd(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/photos/add`, payload, options); }
+  async fieldworkItemPhotoMove(workId: string, itemId: string, photoId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/photos/${encodePath(photoId)}/move`, payload, options); }
+  async fieldworkItemPhotoRemove(workId: string, itemId: string, photoId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/photos/${encodePath(photoId)}/remove`, payload, options); }
+  async fieldworkItemRemove(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/remove`, payload, options); }
+  async fieldworkItemReopen(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/reopen`, payload, options); }
+  async fieldworkItemUpdate(workId: string, itemId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/items/${encodePath(itemId)}/update`, payload, options); }
+  async fieldworkMessageCreate(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages`, payload, options); }
+  async fieldworkMessagesRead(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/read`, payload, options); }
+  async fieldworkMessageAttachmentRemove(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/attachments/remove`, payload, options); }
+  async fieldworkMessageMapReferenceAdd(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/map-references/add`, payload, options); }
+  async fieldworkMessageMapReferenceRemove(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/map-references/remove`, payload, options); }
+  async fieldworkMessageMapReferencesSync(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/map-references/sync`, payload, options); }
+  async fieldworkMessagePhotosAdd(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/photos/add`, payload, options); }
+  async fieldworkMessagePhotoMove(workId: string, messageId: string, photoId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/photos/${encodePath(photoId)}/move`, payload, options); }
+  async fieldworkMessagePhotoRemove(workId: string, messageId: string, photoId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/photos/${encodePath(photoId)}/remove`, payload, options); }
+  async fieldworkReactionRemove(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/reaction/remove`, payload, options); }
+  async fieldworkReactionSet(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/reaction/set`, payload, options); }
+  async fieldworkMessageRemove(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/remove`, payload, options); }
+  async fieldworkMessageUpdate(workId: string, messageId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/messages/${encodePath(messageId)}/update`, payload, options); }
+  async fieldworkWorkReopen(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/reopen`, payload, options); }
+  async fieldworkScheduleUpdate(workId: string, scheduleId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/schedules/${encodePath(scheduleId)}/update`, payload, options); }
+  async fieldworkSectionCreate(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/sections`, payload, options); }
+  async fieldworkSectionMove(workId: string, sectionId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/sections/${encodePath(sectionId)}/move`, payload, options); }
+  async fieldworkSectionRemove(workId: string, sectionId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/sections/${encodePath(sectionId)}/remove`, payload, options); }
+  async fieldworkSectionRename(workId: string, sectionId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/sections/${encodePath(sectionId)}/rename`, payload, options); }
+  async fieldworkWorkUpdate(workId: string, payload: JsonObject, options: FieldworkCommandOptions): Promise<unknown> { return this.fieldworkCommand(`/api/v3/fieldwork/works/${encodePath(workId)}/update`, payload, options); }
+  async fieldworkMemberInvite(workId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/invite`, { body: payload, options }); }
+  async fieldworkMemberJoin(workId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/self/join`, { body: payload, options }); }
+  async fieldworkMemberLeave(workId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/self/leave`, { body: payload, options }); }
+  async fieldworkMemberRemove(workId: string, memberId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/${encodePath(memberId)}/remove`, { body: payload, options }); }
+  async fieldworkMemberResponsibleAdd(workId: string, memberId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/${encodePath(memberId)}/responsible/add`, { body: payload, options }); }
+  async fieldworkMemberResponsibleRemove(workId: string, memberId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/members/${encodePath(memberId)}/responsible/remove`, { body: payload, options }); }
+  async fieldworkWorkSeen(workId: string, payload: JsonObject, options?: RequestOptions): Promise<unknown> { return this.request("POST", `/api/v3/fieldwork/works/${encodePath(workId)}/seen`, { body: payload, options }); }
+
+  private async fieldworkCommand(path: string, body: JsonObject, options: FieldworkCommandOptions): Promise<unknown> {
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("fieldwork command body must be a JSON object");
+    if (!options || typeof options !== "object") throw new Error("fieldwork command options are required");
+    const supplied = options.idempotencyKey ?? findHeader(options.headers, "idempotency-key");
+    if (!isIdempotencyKey(supplied)) throw new Error("Idempotency-Key must be 8-128 ASCII characters of A-Z, a-z, 0-9, '.', '_', ':', or '-'");
+    return this.request("POST", path, { body, options: { ...options, headers: { ...options.headers, "Idempotency-Key": supplied } } });
+  }
+
+  private async requestForm<T>(method: string, path: string, form: FormData, options?: RequestOptions): Promise<T> {
+    return this.requestRaw(method, path, form, options);
+  }
+
+  private async stream(path: string, query: object, options?: RequestOptions): Promise<ReadableResponseBody> {
+    const url = this.buildUrl(path, query);
+    const headers = mergeHeadersCaseInsensitive({ Accept: "text/event-stream" }, this.defaultHeaders, this.authHeaders(options), options?.headers);
+    applyRequestHeaderOverrides(headers, options);
+    deleteHeaderCaseInsensitive(headers, "accept");
+    headers.Accept = "text/event-stream";
+    const { signal, cleanupConnection, cleanupStream, timeoutSupported } = createStreamSignal(options?.signal, streamTimeoutMs(options?.timeoutMs));
+    try {
+      if (!timeoutSupported) throw new Error("SSE streaming requires AbortController support in this runtime");
+      const response = await this.fetchFn(url.toString(), { method: "GET", headers, redirect: "manual", ...(signal ? { signal } : {}) });
+      if (!response.ok) throw new PatchClientError(response.status, await parseResponse(response, this.maxResponseBytes), undefined, { method: "GET", url: url.toString() });
+      if (!response.body) throw new PatchClientError(0, null, "PATCH API stream response has no body", { method: "GET", url: url.toString() });
+      if (mediaType(response.headers.get("content-type")) !== "text/event-stream") {
+        await cancelResponseBody(response);
+        throw new PatchClientError(response.status, null, "PATCH API stream response must use text/event-stream", { method: "GET", url: url.toString() });
+      }
+      cleanupConnection();
+      return wrapStream(response.body, cleanupStream);
+    } catch (err) {
+      cleanupStream();
+      if (err instanceof PatchClientError) throw err;
+      const error = new PatchClientError(0, null, `PATCH API request failed: GET ${url.toString()}`, { method: "GET", url: url.toString() });
+      (error as Error & { cause?: unknown }).cause = err;
+      throw error;
+    }
+  }
+
+  private async requestRaw<T>(method: string, path: string, body: unknown, options?: RequestOptions): Promise<T> {
+    const url = this.buildUrl(path);
+    const headers = mergeHeadersCaseInsensitive({ Accept: "application/json" }, this.defaultHeaders, this.authHeaders(options), options?.headers);
+    applyRequestHeaderOverrides(headers, options);
+    deleteHeaderCaseInsensitive(headers, "content-type");
+    deleteHeaderCaseInsensitive(headers, "content-length");
+    const { signal, cleanup, timeoutSupported } = createRequestSignal(options?.signal, options?.timeoutMs);
+    try {
+      if (hasRequestedTimeout(options) && !timeoutSupported) throw new Error("timeoutMs requires AbortController support in this runtime");
+      const response = await this.fetchFn(url.toString(), { method, headers, body, redirect: "manual", ...(signal ? { signal } : {}) });
+      const payload = await parseResponse(response, this.maxResponseBytes);
+      if (!response.ok) throw new PatchClientError(response.status, payload, undefined, { method, url: url.toString() });
+      return payload as T;
+    } catch (err) {
+      if (err instanceof PatchClientError) throw err;
+      const error = new PatchClientError(0, null, `PATCH API request failed: ${method} ${url.toString()}`, { method, url: url.toString() });
+      (error as Error & { cause?: unknown }).cause = err;
+      throw error;
+    } finally { cleanup(); }
+  }
+
+  private async requestBytes(path: string, query: object, options?: RequestOptions, publicUrl = false): Promise<Uint8Array> {
+    const url = this.buildUrl(path, query);
+    const headers = mergeHeadersCaseInsensitive({ Accept: "application/octet-stream" }, this.defaultHeaders, publicUrl ? {} : this.authHeaders(options), options?.headers);
+    applyRequestHeaderOverrides(headers, options);
+    if (publicUrl) {
+      deleteHeaderCaseInsensitive(headers, "authorization");
+      deleteHeaderCaseInsensitive(headers, "account-type");
+    }
+    const { signal, cleanup, timeoutSupported } = createRequestSignal(options?.signal, options?.timeoutMs);
+    try {
+      if (hasRequestedTimeout(options) && !timeoutSupported) throw new Error("timeoutMs requires AbortController support in this runtime");
+      const response = await this.fetchFn(url.toString(), { method: "GET", headers, redirect: "manual", ...(signal ? { signal } : {}) });
+      if (!response.ok) throw new PatchClientError(response.status, await parseResponse(response, this.maxResponseBytes), undefined, { method: "GET", url: url.toString() });
+      return await readResponseBytesWithLimit(response, this.maxResponseBytes);
+    } catch (err) {
+      if (err instanceof PatchClientError) throw err;
+      const error = new PatchClientError(0, null, `PATCH API request failed: GET ${url.toString()}`, { method: "GET", url: url.toString() });
+      (error as Error & { cause?: unknown }).cause = err;
+      throw error;
+    } finally { cleanup(); }
+  }
+
   private async request<T>(method: string, path: string, input: RequestInput = {}): Promise<T> {
     const url = this.buildUrl(path, input.query);
     const headers = mergeHeadersCaseInsensitive(
@@ -1256,6 +1425,7 @@ export class PatchClientV3 {
       this.authHeaders(input.options),
       input.options?.headers
     );
+    applyRequestHeaderOverrides(headers, input.options);
 
     const init: FetchInit = { method, headers };
 
@@ -1346,11 +1516,8 @@ export class PatchClientV3 {
         continue;
       }
       if (Array.isArray(value)) {
-        for (const item of value) {
-          if (item !== undefined && item !== null) {
-            url.searchParams.append(key, String(item));
-          }
-        }
+        const items = value.filter((item): item is string | number | boolean => item !== undefined && item !== null);
+        if (items.length) url.searchParams.set(key, items.join(","));
       } else {
         url.searchParams.set(key, String(value));
       }
@@ -1361,7 +1528,7 @@ export class PatchClientV3 {
   private authHeaders(options?: RequestOptions): Record<string, string> {
     const headers: Record<string, string> = {};
     const token = options?.accessToken ?? this.accessToken;
-    const accountType = options?.accountType ?? this.accountType;
+    const accountType = options && "accountType" in options ? options.accountType : this.accountType;
 
     if (token) {
       const normalizedToken = token.trim();
@@ -1386,6 +1553,44 @@ function encodePath(value: string): string {
     throw new Error("path segment must not be '.' or '..'");
   }
   return encodeURIComponent(value);
+}
+
+function findHeader(headers: Record<string, string> | undefined, name: string): string | undefined {
+  if (!headers) return undefined;
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === name.toLowerCase());
+  return entry?.[1];
+}
+
+function applyRequestHeaderOverrides(headers: Record<string, string>, options?: RequestOptions): void {
+  if (options && Object.prototype.hasOwnProperty.call(options, "accountType") && options.accountType === null) {
+    deleteHeaderCaseInsensitive(headers, "account-type");
+  }
+}
+
+function isIdempotencyKey(value: unknown): value is string {
+  if (typeof value !== "string" || value.length < 8 || value.length > 128) return false;
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (!((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 46 || code === 58 || code === 95 || code === 45)) return false;
+  }
+  return true;
+}
+
+function mediaType(contentType: string | null): string {
+  return (contentType ?? "").split(";", 1)[0].trim().toLowerCase();
+}
+
+function streamTimeoutMs(timeoutMs: number | undefined): number {
+  return typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0
+    ? timeoutMs
+    : DEFAULT_STREAM_TIMEOUT_MS;
+}
+
+function plantForm(input: PlantUploadInput): FormData {
+  const form = new FormData();
+  form.append("filename", input.file, input.filename);
+  if (input.name !== undefined) form.append("name", input.name);
+  return form;
 }
 
 async function parseResponse(response: FetchResponse, maxResponseBytes: number): Promise<unknown> {
@@ -1528,6 +1733,13 @@ async function cancelResponseBody(response: FetchResponse, reason?: Error): Prom
   if (!body) {
     return;
   }
+  await cancelBody(body, reason);
+}
+
+async function cancelBody(
+  body: NonNullable<FetchResponse["body"]>,
+  reason?: Error
+): Promise<void> {
   try {
     if (typeof body.cancel === "function") {
       await body.cancel();
@@ -1684,4 +1896,116 @@ function createRequestSignal(
       }
     },
   };
+}
+
+function createStreamSignal(
+  externalSignal?: AbortSignalLike,
+  timeoutMs?: number
+): { signal?: AbortSignalLike; cleanupConnection: () => void; cleanupStream: () => void; timeoutSupported: boolean } {
+  const hasTimeout = typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0;
+  if (!hasTimeout) return { signal: externalSignal, cleanupConnection: () => {}, cleanupStream: () => {}, timeoutSupported: true };
+  const AbortControllerCtor = (globalThis as { AbortController?: new () => { signal: AbortSignalLike; abort(): void } }).AbortController;
+  if (!AbortControllerCtor) return { signal: externalSignal, cleanupConnection: () => {}, cleanupStream: () => {}, timeoutSupported: false };
+  const controller = new AbortControllerCtor();
+  let onExternalAbort: (() => void) | undefined;
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else {
+      onExternalAbort = () => controller.abort();
+      externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+    }
+  }
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const cleanupConnection = () => clearTimeout(timeoutId);
+  let cleaned = false;
+  return {
+    signal: controller.signal,
+    timeoutSupported: true,
+    cleanupConnection,
+    cleanupStream: () => {
+      if (cleaned) return;
+      cleaned = true;
+      cleanupConnection();
+      if (externalSignal && onExternalAbort) externalSignal.removeEventListener("abort", onExternalAbort);
+    },
+  };
+}
+
+function wrapStream(body: ReadableResponseBody, cleanup: () => void): ReadableResponseBody {
+  if (body.getReader) {
+    const reader = body.getReader();
+    return new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            cleanup();
+            controller.close();
+          } else if (value) controller.enqueue(value);
+        } catch (err) {
+          await safeCancelReader(reader);
+          cleanup();
+          controller.error(err);
+        }
+      },
+      async cancel() {
+        try { await reader.cancel?.(); } finally { cleanup(); }
+      },
+    }) as unknown as ReadableResponseBody;
+  }
+  const asyncIterator = body[Symbol.asyncIterator];
+  if (asyncIterator) {
+    const iterator = asyncIterator.call(body);
+    let closed = false;
+    const close = () => {
+      if (!closed) {
+        closed = true;
+        cleanup();
+      }
+    };
+    const returnIterator = () => {
+      void Promise.resolve().then(() => iterator.return?.()).catch(() => {});
+    };
+    return {
+      async cancel() {
+        try {
+          await cancelBody(body);
+        } finally {
+          returnIterator();
+          close();
+        }
+      },
+      [Symbol.asyncIterator](): AsyncIterator<Uint8Array> {
+        return {
+          async next() {
+            try {
+              const result = await iterator.next();
+              if (result.done) close();
+              return result.done
+                ? { done: true, value: undefined }
+                : { done: false, value: toUint8Array(result.value) };
+            } catch (err) {
+              await cancelBody(body, err instanceof Error ? err : undefined);
+              returnIterator();
+              close();
+              throw err;
+            }
+          },
+          async return() {
+            try {
+              await cancelBody(body);
+              return { done: true, value: undefined };
+            } finally {
+              returnIterator();
+              close();
+            }
+          },
+        };
+      },
+    } as ReadableResponseBody;
+  }
+  {
+    cleanup();
+    throw new Error("PATCH API stream response has no readable body");
+  }
 }

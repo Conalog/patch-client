@@ -1,5 +1,10 @@
 import ast
+import json
+from email.parser import BytesParser
+from email import policy
 from pathlib import Path
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 import unittest
 from io import BytesIO
 from unittest.mock import patch
@@ -10,6 +15,9 @@ from patch_client.client import (
     PatchClientV3,
     _SafeRedirectHandler,
     _decode_response,
+    _encode_multipart,
+    _encode_path,
+    _validate_headers,
 )
 
 
@@ -105,14 +113,14 @@ class ClientSafetyTests(unittest.TestCase):
             (
                 lambda client: client.assign_plant_permission("org/1", "plant 1", payload),
                 "POST",
-                "/api/v3/organizations/org%2F1/plants/plant%201/permissions/grant",
+                "/api/v3/orgs/org%2F1/plants/plant%201/permissions/grant",
                 None,
                 payload,
             ),
             (
                 lambda client: client.remove_plant_permission("org", "plant", payload),
                 "POST",
-                "/api/v3/organizations/org/plants/plant/permissions/revoke",
+                "/api/v3/orgs/org/plants/plant/permissions/revoke",
                 None,
                 payload,
             ),
@@ -469,6 +477,272 @@ class ClientSafetyTests(unittest.TestCase):
                 client.get_account_info()
         self.assertEqual(ctx.exception.status_code, 302)
         self.assertEqual(ctx.exception.payload, {"detail": "redirected"})
+
+    def test_all_openapi_operations_have_a_python_method(self) -> None:
+        spec_path = Path(__file__).resolve().parents[3] / "openapi" / "openapi-v3.json"
+        spec = __import__("json").loads(spec_path.read_text(encoding="utf-8"))
+        methods = {"get", "put", "post", "delete", "patch", "head", "options", "trace"}
+        operation_ids = {
+            operation["operationId"]
+            for path_item in spec["paths"].values()
+            for method, operation in path_item.items()
+            if method in methods
+        }
+        self.assertEqual(
+            {operation_id for operation_id in operation_ids if not hasattr(PatchClientV3, operation_id)},
+            set(),
+        )
+
+    def test_fieldwork_commands_require_valid_idempotency_key_before_request(self) -> None:
+        client = PatchClientV3(base_url="https://example.com", access_token="token")
+        with self.assertRaises(ValueError):
+            client.fieldwork_work_create(payload={})
+        with self.assertRaises(ValueError):
+            client.fieldwork_work_create(payload={}, idempotency_key="bad key")
+
+    def test_participant_session_requires_bearer_authentication(self) -> None:
+        client = PatchClientV3(base_url="https://example.com")
+        with self.assertRaises(ValueError):
+            client.fieldwork_participant_session_create(payload={})
+
+    def test_fieldwork_auth_guard_accepts_default_authorization(self) -> None:
+        class StubClient(PatchClientV3):
+            def _request(self, *_args, **_kwargs):  # type: ignore[override]
+                return None
+
+        client = StubClient(
+            base_url="https://example.com",
+            default_headers={"Authorization": "Bearer configured-token"},
+        )
+        self.assertIsNone(client.fieldwork_participant_session_create(payload={}))
+
+    def test_fieldwork_command_uses_json_and_idempotency_header(self) -> None:
+        class StubClient(PatchClientV3):
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.call = method, path, kwargs
+                return None
+
+        client = StubClient(base_url="https://example.com", access_token="token")
+        client.fieldwork_work_create(payload={"title": "x"}, idempotency_key="valid-key")
+        method, path, kwargs = client.call
+        self.assertEqual((method, path), ("POST", "/api/v3/fieldwork/works"))
+        self.assertEqual(kwargs["json_body"], {"title": "x"})
+        self.assertEqual(kwargs["headers"]["Idempotency-Key"], "valid-key")
+
+    def test_idempotency_header_is_case_insensitive_and_canonical_on_wire(self) -> None:
+        class StubClient(PatchClientV3):
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.headers = kwargs["headers"]
+                return None
+
+        client = StubClient(base_url="https://example.com", access_token="token")
+        client.fieldwork_work_create(
+            payload={}, headers={"idempotency-key": "valid-key"}
+        )
+        self.assertEqual(client.headers, {"Authorization": "Bearer token", "Idempotency-Key": "valid-key"})
+
+    def test_multipart_encoder_uses_file_and_form_fields(self) -> None:
+        body, content_type = _encode_multipart(
+            {"work_id": "work", "quoted": 'a"b'}, {"file": b"data"}
+        )
+        message = BytesParser(policy=policy.default).parsebytes(
+            b"Content-Type: " + content_type.encode() + b"\r\n\r\n" + body
+        )
+        parts = list(message.iter_parts())
+        self.assertEqual(parts[0].get_payload(decode=True), b"work")
+        self.assertEqual(parts[1].get_payload(decode=True), b'a"b')
+        self.assertEqual(parts[2].get_filename(), "file")
+        self.assertEqual(parts[2].get_payload(decode=True), b"data")
+
+    def test_multipart_encoder_bounds_file_read_and_wire_buffer(self) -> None:
+        class TooLargeFile:
+            def read(self, limit):
+                self.limit = limit
+                return b"x" * limit
+
+        file = TooLargeFile()
+        with self.assertRaises(ValueError):
+            _encode_multipart({}, {"file": file}, max_bytes=4)
+        self.assertEqual(file.limit, 5)
+
+    def test_multipart_encoder_reads_short_chunks_until_eof(self) -> None:
+        class ShortChunkFile:
+            name = "chunked"
+
+            def __init__(self):
+                self.data = b"abcdef"
+
+            def read(self, _limit):
+                chunk, self.data = self.data[:2], self.data[2:]
+                return chunk
+
+        body, _ = _encode_multipart({}, {"file": ShortChunkFile()}, max_bytes=1000)
+        self.assertIn(b"abcdef", body)
+
+    def test_headers_and_multipart_filename_reject_newlines(self) -> None:
+        with self.assertRaises(ValueError):
+            _validate_headers({"X-Test": "safe\r\ninjected"})
+
+        class UnsafeFile:
+            name = "unsafe\r\nfilename"
+            def read(self, _limit):
+                return b"data"
+
+        with self.assertRaises(ValueError):
+            _encode_multipart({}, {"file": UnsafeFile()})
+
+    def test_path_encoder_rejects_dot_segments(self) -> None:
+        for value in (".", ".."):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    _encode_path(value)
+
+    def test_unread_stream_rejects_work_scope_and_omits_account_type(self) -> None:
+        client = PatchClientV3(base_url="https://example.com", access_token="participant")
+        with self.assertRaises(ValueError):
+            client.fieldwork_events(watch="unread", work_id="work")
+
+        class Response:
+            status = 200
+            headers = {"Content-Type": "text/event-stream"}
+            def close(self):
+                pass
+            def __iter__(self):
+                return iter(())
+
+        with patch.object(client._opener, "open", return_value=Response()) as open_mock:
+            with client.fieldwork_events(watch="unread"):
+                pass
+        headers = open_mock.call_args.args[0].headers
+        self.assertNotIn("Account-type", headers)
+        self.assertEqual(headers["Authorization"], "Bearer participant")
+
+    def test_attachment_download_suppresses_client_credentials_and_returns_bytes(self) -> None:
+        class StubClient(PatchClientV3):
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.call = method, path, kwargs
+                return b'{"still":"bytes"}'
+
+        client = StubClient(
+            base_url="https://example.com", access_token="token", account_type="manager"
+        )
+        result = client.fieldwork_attachment_download("work", "key", "1", "signature")
+        self.assertEqual(result, b'{"still":"bytes"}')
+        method, path, kwargs = client.call
+        self.assertEqual((method, path), ("GET", "/api/v3/fieldwork/attachments/download"))
+        self.assertTrue(kwargs["raw_response"])
+        self.assertTrue(kwargs["no_redirect"])
+        self.assertTrue(kwargs["suppress_credentials"])
+        self.assertNotIn("Authorization", kwargs["headers"])
+        self.assertNotIn("Account-Type", kwargs["headers"])
+
+    def test_attachment_content_returns_bytes_without_content_type_decoding(self) -> None:
+        class StubClient(PatchClientV3):
+            def _request(self, method, path, **kwargs):  # type: ignore[override]
+                self.call = method, path, kwargs
+                return b'{"still":"bytes"}'
+
+        client = StubClient(base_url="https://example.com", access_token="token")
+        self.assertEqual(
+            client.fieldwork_attachment_content("work", "key"), b'{"still":"bytes"}'
+        )
+        self.assertTrue(client.call[2]["raw_response"])
+
+    def test_urllib_multipart_and_signed_download_wire_behavior(self) -> None:
+        received = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *_args):
+                pass
+
+            def do_POST(self):
+                received.append((self.path, dict(self.headers), self.rfile.read(int(self.headers["Content-Length"]))))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"{}")
+
+            def do_GET(self):
+                received.append((self.path, dict(self.headers), b""))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"\xffraw")
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = Thread(target=lambda: [server.handle_request() for _ in range(3)])
+        thread.start()
+        try:
+            client = PatchClientV3(
+                base_url=f"http://127.0.0.1:{server.server_port}",
+                allow_insecure_http=True,
+                access_token="token",
+                account_type="manager",
+                default_headers={"Content-Length": "1", "Content-Type": "text/plain",
+                                 "Authorization": "Bearer default", "Account-Type": "manager"},
+                timeout=2,
+            )
+            client.upload_plant_files("plant", b"file-data", name="report")
+            self.assertEqual(
+                client.fieldwork_attachment_download("work", "key", "1", "signature"),
+                b"\xffraw",
+            )
+            self.assertEqual(
+                client.call_operation("fieldwork_attachment_download", work_id="work",
+                                      object_key="key", expires="1", signature="signature"),
+                b"\xffraw",
+            )
+        finally:
+            thread.join(2)
+            server.server_close()
+        self.assertFalse(thread.is_alive())
+        upload_path, upload_headers, upload_body = received[0]
+        self.assertEqual(upload_path, "/api/v3/plants/plant/files")
+        self.assertNotEqual(upload_headers["Content-Length"], "1")
+        self.assertTrue(upload_headers["Content-Type"].startswith("multipart/form-data;"))
+        multipart = BytesParser(policy=policy.default).parsebytes(
+            b"Content-Type: " + upload_headers["Content-Type"].encode() + b"\r\n\r\n" + upload_body
+        )
+        parts = list(multipart.iter_parts())
+        self.assertEqual(parts[0].get_payload(decode=True), b"report")
+        self.assertEqual(parts[1].get_payload(decode=True), b"file-data")
+        for _, download_headers, _ in received[1:]:
+            self.assertNotIn("Authorization", download_headers)
+            self.assertNotIn("Account-Type", download_headers)
+
+    def test_participant_stream_removes_inherited_account_type(self) -> None:
+        received = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *_args):
+                pass
+
+            def do_GET(self):
+                received.append(dict(self.headers))
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.end_headers()
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = Thread(target=server.handle_request)
+        thread.start()
+        try:
+            client = PatchClientV3(
+                base_url=f"http://127.0.0.1:{server.server_port}",
+                allow_insecure_http=True,
+                access_token="participant",
+                account_type="manager",
+                default_headers={"Account-Type": "manager"},
+                timeout=2,
+            )
+            with client.fieldwork_events(watch="unread", account_type=""):
+                pass
+        finally:
+            thread.join(2)
+            server.server_close()
+        self.assertFalse(thread.is_alive())
+        self.assertNotIn("Account-Type", received[0])
+        self.assertEqual(received[0]["Authorization"], "Bearer participant")
 
 
 if __name__ == "__main__":
