@@ -2767,6 +2767,33 @@
         ],
         "type": "object"
       },
+      "List": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/List.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "ListOutputCombinerItemBody": {
         "additionalProperties": false,
         "properties": {
@@ -2851,6 +2878,29 @@
         ],
         "type": "object"
       },
+      "MapRef": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string"
+          },
+          "plant_external_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_external_id",
+          "type",
+          "id"
+        ],
+        "type": "object"
+      },
       "MapRefRemoval": {
         "additionalProperties": false,
         "properties": {
@@ -2866,6 +2916,26 @@
         "required": [
           "map_ref_id",
           "expected_revision"
+        ],
+        "type": "object"
+      },
+      "Member": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/Mirror"
+          },
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "actor"
         ],
         "type": "object"
       },
@@ -2931,6 +3001,31 @@
             "type": "string"
           },
           "reaction_type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Mirror": {
+        "additionalProperties": false,
+        "properties": {
+          "external_id": {
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MirrorSnapshotStruct"
+          }
+        },
+        "required": [
+          "external_id",
+          "snapshot"
+        ],
+        "type": "object"
+      },
+      "MirrorSnapshotStruct": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
             "type": "string"
           }
         },
@@ -3675,6 +3770,18 @@
         ],
         "type": "object"
       },
+      "PlantLink": {
+        "additionalProperties": false,
+        "properties": {
+          "plant": {
+            "$ref": "#/components/schemas/Mirror"
+          }
+        },
+        "required": [
+          "plant"
+        ],
+        "type": "object"
+      },
       "PlantsListV3OutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -3847,13 +3954,13 @@
           },
           "message_map_references": {
             "items": {
-              "$ref": "#/components/schemas/PublicMapReference"
+              "$ref": "#/components/schemas/PublicMessageMapReference"
             },
             "type": "array"
           },
           "message_photos": {
             "items": {
-              "$ref": "#/components/schemas/PublicPhoto"
+              "$ref": "#/components/schemas/PublicMessagePhoto"
             },
             "type": "array"
           },
@@ -3888,6 +3995,12 @@
                 "created_at": {
                   "type": "string"
                 },
+                "edited_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "event": {
                   "oneOf": [
                     {
@@ -3921,7 +4034,7 @@
                 },
                 "map_references": {
                   "items": {
-                    "$ref": "#/components/schemas/PublicMapReference"
+                    "$ref": "#/components/schemas/PublicMessageMapReference"
                   },
                   "type": [
                     "array",
@@ -3942,10 +4055,6 @@
                     "string",
                     "null"
                   ]
-                },
-                "revision": {
-                  "format": "int64",
-                  "type": "integer"
                 },
                 "sequence": {
                   "format": "int64",
@@ -3968,7 +4077,6 @@
                 "author_member_id",
                 "author_label",
                 "content",
-                "revision",
                 "reply_to_message_id",
                 "links",
                 "mentions",
@@ -3977,7 +4085,8 @@
                 "event",
                 "capabilities",
                 "created_at",
-                "updated_at"
+                "updated_at",
+                "edited_at"
               ],
               "type": "object"
             },
@@ -4032,6 +4141,12 @@
                 "created_at": {
                   "type": "string"
                 },
+                "edited_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "event": {
                   "oneOf": [
                     {
@@ -4065,7 +4180,7 @@
                 },
                 "map_references": {
                   "items": {
-                    "$ref": "#/components/schemas/PublicMapReference"
+                    "$ref": "#/components/schemas/PublicMessageMapReference"
                   },
                   "type": [
                     "array",
@@ -4086,10 +4201,6 @@
                     "string",
                     "null"
                   ]
-                },
-                "revision": {
-                  "format": "int64",
-                  "type": "integer"
                 },
                 "sequence": {
                   "format": "int64",
@@ -4112,7 +4223,6 @@
                 "author_member_id",
                 "author_label",
                 "content",
-                "revision",
                 "reply_to_message_id",
                 "links",
                 "mentions",
@@ -4121,7 +4231,8 @@
                 "event",
                 "capabilities",
                 "created_at",
-                "updated_at"
+                "updated_at",
+                "edited_at"
               ],
               "type": "object"
             },
@@ -4152,7 +4263,51 @@
             ]
           },
           "viewer": {
-            "$ref": "#/components/schemas/PublicViewer"
+            "additionalProperties": false,
+            "properties": {
+              "capabilities": {
+                "$ref": "#/components/schemas/PublicCapabilities"
+              },
+              "is_responsible": {
+                "type": "boolean"
+              },
+              "member_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "membership_state": {
+                "type": "string"
+              },
+              "message_read_state": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublicMessageReadState"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unread_message_count": {
+                "format": "int64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "message_read_state",
+              "unread_message_count",
+              "member_id",
+              "membership_state",
+              "is_responsible",
+              "capabilities"
+            ],
+            "type": "object"
           },
           "work": {
             "$ref": "#/components/schemas/PublicWork"
@@ -4260,6 +4415,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "thumbnail_url": {
+            "description": "Optional 512px aspect-preserving preview URL. The original remains available at url.",
+            "format": "uri",
+            "type": "string"
+          },
           "url": {
             "description": "Absolute HTTPS download URL. The URL is signed and works without an Authorization header until expires_at.",
             "format": "uri",
@@ -4288,19 +4448,13 @@
             "readOnly": true,
             "type": "string"
           },
-          "expected_revision": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
           "object_key": {
             "minLength": 1,
             "type": "string"
           }
         },
         "required": [
-          "object_key",
-          "expected_revision"
+          "object_key"
         ],
         "type": "object"
       },
@@ -4535,7 +4689,72 @@
                       "$ref": "#/components/schemas/PublicPhoto"
                     },
                     {
-                      "$ref": "#/components/schemas/PublicMapReference"
+                      "$ref": "#/components/schemas/PublicMessagePhoto"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_member_id": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "label_snapshot": {
+                          "type": "string"
+                        },
+                        "parent_id": {
+                          "type": "string"
+                        },
+                        "parent_kind": {
+                          "enum": [
+                            "item"
+                          ],
+                          "type": "string"
+                        },
+                        "ref_id": {
+                          "type": "string"
+                        },
+                        "ref_type": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "source": {
+                          "enum": [
+                            "inline",
+                            "record"
+                          ],
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "work_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "work_id",
+                        "parent_kind",
+                        "parent_id",
+                        "ref_type",
+                        "ref_id",
+                        "label_snapshot",
+                        "created_by_member_id",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PublicMessageMapReference"
                     },
                     {
                       "additionalProperties": false,
@@ -4566,6 +4785,12 @@
                         },
                         "created_at": {
                           "type": "string"
+                        },
+                        "edited_at": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "event": {
                           "oneOf": [
@@ -4600,7 +4825,7 @@
                         },
                         "map_references": {
                           "items": {
-                            "$ref": "#/components/schemas/PublicMapReference"
+                            "$ref": "#/components/schemas/PublicMessageMapReference"
                           },
                           "type": [
                             "array",
@@ -4621,10 +4846,6 @@
                             "string",
                             "null"
                           ]
-                        },
-                        "revision": {
-                          "format": "int64",
-                          "type": "integer"
                         },
                         "sequence": {
                           "format": "int64",
@@ -4647,7 +4868,6 @@
                         "author_member_id",
                         "author_label",
                         "content",
-                        "revision",
                         "reply_to_message_id",
                         "links",
                         "mentions",
@@ -4656,7 +4876,8 @@
                         "event",
                         "capabilities",
                         "created_at",
-                        "updated_at"
+                        "updated_at",
+                        "edited_at"
                       ],
                       "type": "object"
                     },
@@ -4756,10 +4977,6 @@
           },
           "message_read_state": {
             "$ref": "#/components/schemas/PublicMessageReadState"
-          },
-          "message_revision": {
-            "format": "int64",
-            "type": "integer"
           },
           "needs_resync": {
             "type": "boolean"
@@ -4960,6 +5177,12 @@
                         "created_at": {
                           "type": "string"
                         },
+                        "edited_at": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
                         "event": {
                           "oneOf": [
                             {
@@ -4993,7 +5216,7 @@
                         },
                         "map_references": {
                           "items": {
-                            "$ref": "#/components/schemas/PublicMapReference"
+                            "$ref": "#/components/schemas/PublicMessageMapReference"
                           },
                           "type": [
                             "array",
@@ -5014,10 +5237,6 @@
                             "string",
                             "null"
                           ]
-                        },
-                        "revision": {
-                          "format": "int64",
-                          "type": "integer"
                         },
                         "sequence": {
                           "format": "int64",
@@ -5040,7 +5259,6 @@
                         "author_member_id",
                         "author_label",
                         "content",
-                        "revision",
                         "reply_to_message_id",
                         "links",
                         "mentions",
@@ -5049,7 +5267,8 @@
                         "event",
                         "capabilities",
                         "created_at",
-                        "updated_at"
+                        "updated_at",
+                        "edited_at"
                       ],
                       "type": "object"
                     },
@@ -5114,6 +5333,27 @@
         ],
         "type": "object"
       },
+      "PublicDataOutputPublicLatestStateBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicDataOutputPublicLatestStateBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicLatestState"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "PublicDataOutputPublicMessageDetailBody": {
         "additionalProperties": false,
         "properties": {
@@ -5131,7 +5371,7 @@
             "properties": {
               "map_references": {
                 "items": {
-                  "$ref": "#/components/schemas/PublicMapReference"
+                  "$ref": "#/components/schemas/PublicMessageMapReference"
                 },
                 "type": [
                   "array",
@@ -5168,6 +5408,12 @@
                   "created_at": {
                     "type": "string"
                   },
+                  "edited_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "event": {
                     "oneOf": [
                       {
@@ -5201,7 +5447,7 @@
                   },
                   "map_references": {
                     "items": {
-                      "$ref": "#/components/schemas/PublicMapReference"
+                      "$ref": "#/components/schemas/PublicMessageMapReference"
                     },
                     "type": [
                       "array",
@@ -5222,10 +5468,6 @@
                       "string",
                       "null"
                     ]
-                  },
-                  "revision": {
-                    "format": "int64",
-                    "type": "integer"
                   },
                   "sequence": {
                     "format": "int64",
@@ -5248,7 +5490,6 @@
                   "author_member_id",
                   "author_label",
                   "content",
-                  "revision",
                   "reply_to_message_id",
                   "links",
                   "mentions",
@@ -5257,13 +5498,14 @@
                   "event",
                   "capabilities",
                   "created_at",
-                  "updated_at"
+                  "updated_at",
+                  "edited_at"
                 ],
                 "type": "object"
               },
               "photos": {
                 "items": {
-                  "$ref": "#/components/schemas/PublicPhoto"
+                  "$ref": "#/components/schemas/PublicMessagePhoto"
                 },
                 "type": [
                   "array",
@@ -5311,6 +5553,12 @@
                       "created_at": {
                         "type": "string"
                       },
+                      "edited_at": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "event": {
                         "oneOf": [
                           {
@@ -5344,7 +5592,7 @@
                       },
                       "map_references": {
                         "items": {
-                          "$ref": "#/components/schemas/PublicMapReference"
+                          "$ref": "#/components/schemas/PublicMessageMapReference"
                         },
                         "type": [
                           "array",
@@ -5365,10 +5613,6 @@
                           "string",
                           "null"
                         ]
-                      },
-                      "revision": {
-                        "format": "int64",
-                        "type": "integer"
                       },
                       "sequence": {
                         "format": "int64",
@@ -5391,7 +5635,6 @@
                       "author_member_id",
                       "author_label",
                       "content",
-                      "revision",
                       "reply_to_message_id",
                       "links",
                       "mentions",
@@ -5400,7 +5643,8 @@
                       "event",
                       "capabilities",
                       "created_at",
-                      "updated_at"
+                      "updated_at",
+                      "edited_at"
                     ],
                     "type": "object"
                   },
@@ -5623,6 +5867,21 @@
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
               "https://patch-api.conalog.com/schemas/PublicEmptyBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicEmptyMessageBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicEmptyMessageBody.json"
             ],
             "format": "uri",
             "readOnly": true,
@@ -6117,6 +6376,72 @@
         ],
         "type": "object"
       },
+      "PublicLatestState": {
+        "additionalProperties": false,
+        "properties": {
+          "item_lanes": {
+            "items": {
+              "$ref": "#/components/schemas/PublicItemLane"
+            },
+            "type": "array"
+          },
+          "item_map_references": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMapReference"
+            },
+            "type": "array"
+          },
+          "item_photos": {
+            "items": {
+              "$ref": "#/components/schemas/PublicPhoto"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicItem"
+            },
+            "type": "array"
+          },
+          "needs_resync": {
+            "type": "boolean"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/PublicSchedule"
+          },
+          "scope": {
+            "enum": [
+              "work",
+              "item",
+              "items",
+              "section",
+              "schedule"
+            ],
+            "type": "string"
+          },
+          "section_orders": {
+            "items": {
+              "$ref": "#/components/schemas/PublicSectionOrder"
+            },
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PublicSection"
+            },
+            "type": "array"
+          },
+          "work": {
+            "$ref": "#/components/schemas/PublicWork"
+          }
+        },
+        "required": [
+          "scope",
+          "work",
+          "needs_resync"
+        ],
+        "type": "object"
+      },
       "PublicListOutputPublicNotificationBody": {
         "additionalProperties": false,
         "properties": {
@@ -6132,37 +6457,6 @@
           "data": {
             "items": {
               "$ref": "#/components/schemas/PublicNotification"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "page": {
-            "$ref": "#/components/schemas/PublicPage"
-          }
-        },
-        "required": [
-          "data",
-          "page"
-        ],
-        "type": "object"
-      },
-      "PublicListOutputPublicTemplateBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicListOutputPublicTemplateBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/PublicTemplate"
             },
             "type": [
               "array",
@@ -6255,6 +6549,15 @@
                       ],
                       "type": "object"
                     },
+                    "responsible_members": {
+                      "items": {
+                        "$ref": "#/components/schemas/ResponsibleMember"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
                     "schedule": {
                       "oneOf": [
                         {
@@ -6266,13 +6569,58 @@
                       ]
                     },
                     "viewer": {
-                      "$ref": "#/components/schemas/PublicViewer"
+                      "additionalProperties": false,
+                      "properties": {
+                        "capabilities": {
+                          "$ref": "#/components/schemas/PublicCapabilities"
+                        },
+                        "is_responsible": {
+                          "type": "boolean"
+                        },
+                        "member_id": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "membership_state": {
+                          "type": "string"
+                        },
+                        "message_read_state": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/PublicMessageReadState"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "unread_message_count": {
+                          "format": "int64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message_read_state",
+                        "unread_message_count",
+                        "member_id",
+                        "membership_state",
+                        "is_responsible",
+                        "capabilities"
+                      ],
+                      "type": "object"
                     },
                     "work": {
                       "$ref": "#/components/schemas/PublicWork"
                     }
                   },
                   "required": [
+                    "responsible_members",
                     "kind",
                     "work",
                     "plant",
@@ -6319,6 +6667,37 @@
           "data": {
             "items": {
               "$ref": "#/components/schemas/PublicWorkResource"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "$ref": "#/components/schemas/PublicPage"
+          }
+        },
+        "required": [
+          "data",
+          "page"
+        ],
+        "type": "object"
+      },
+      "PublicListOutputWorkItemsTemplateBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicListOutputWorkItemsTemplateBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItemsTemplate"
             },
             "type": [
               "array",
@@ -6664,6 +7043,76 @@
         },
         "type": "object"
       },
+      "PublicMessageMapReference": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by_member_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label_snapshot": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "parent_kind": {
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          },
+          "ref_id": {
+            "type": "string"
+          },
+          "ref_type": {
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "inline",
+              "record"
+            ],
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "work_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "work_id",
+          "parent_kind",
+          "parent_id",
+          "ref_type",
+          "ref_id",
+          "label_snapshot",
+          "created_by_member_id",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "PublicMessageMapRemoval": {
+        "additionalProperties": false,
+        "properties": {
+          "map_ref_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "map_ref_id"
+        ],
+        "type": "object"
+      },
       "PublicMessageMapRemove": {
         "additionalProperties": false,
         "properties": {
@@ -6675,11 +7124,6 @@
             "format": "uri",
             "readOnly": true,
             "type": "string"
-          },
-          "expected_message_revision": {
-            "format": "int64",
-            "minimum": 1,
-            "type": "integer"
           },
           "ref_id": {
             "minLength": 1,
@@ -6697,9 +7141,112 @@
         },
         "required": [
           "ref_type",
-          "ref_id",
-          "expected_message_revision"
+          "ref_id"
         ],
+        "type": "object"
+      },
+      "PublicMessageMapSync": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicMessageMapSync.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "additions": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMapAddition"
+            },
+            "maxItems": 200,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "removals": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMessageMapRemoval"
+            },
+            "maxItems": 200,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "additions",
+          "removals"
+        ],
+        "type": "object"
+      },
+      "PublicMessagePhoto": {
+        "additionalProperties": false,
+        "properties": {
+          "attachment": {
+            "$ref": "#/components/schemas/PublicAttachment"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by_member_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "parent_kind": {
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "work_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "work_id",
+          "parent_kind",
+          "parent_id",
+          "attachment",
+          "caption",
+          "created_by_member_id",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "PublicMessagePhotoMove": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicMessagePhotoMove.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "before_photo_id": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "PublicMessageReadState": {
@@ -6720,11 +7267,6 @@
               "null"
             ]
           },
-          "revision": {
-            "format": "int64",
-            "minimum": 1,
-            "type": "integer"
-          },
           "work_id": {
             "type": "string"
           }
@@ -6733,8 +7275,7 @@
           "id",
           "work_id",
           "last_read_sequence",
-          "read_at",
-          "revision"
+          "read_at"
         ],
         "type": "object"
       },
@@ -6752,11 +7293,6 @@
           },
           "content": {
             "type": "string"
-          },
-          "expected_revision": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
           },
           "links": {
             "items": {
@@ -6778,8 +7314,7 @@
           }
         },
         "required": [
-          "content",
-          "expected_revision"
+          "content"
         ],
         "type": "object"
       },
@@ -7232,10 +7767,6 @@
             ],
             "type": "string"
           },
-          "revision": {
-            "format": "int64",
-            "type": "integer"
-          },
           "updated_at": {
             "type": "string"
           },
@@ -7249,7 +7780,6 @@
           "message_id",
           "member_id",
           "reaction_type",
-          "revision",
           "created_at",
           "updated_at"
         ],
@@ -7267,11 +7797,6 @@
             "readOnly": true,
             "type": "string"
           },
-          "expected_revision": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
           "reaction_type": {
             "enum": [
               "seen",
@@ -7282,8 +7807,7 @@
           }
         },
         "required": [
-          "reaction_type",
-          "expected_revision"
+          "reaction_type"
         ],
         "type": "object"
       },
@@ -7699,79 +8223,6 @@
         ],
         "type": "object"
       },
-      "PublicTemplate": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "item_seeds": {
-            "items": {
-              "$ref": "#/components/schemas/PublicTemplateItemSeed"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "section_seeds": {
-            "items": {
-              "$ref": "#/components/schemas/PublicSectionSeed"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "description",
-          "item_seeds",
-          "section_seeds"
-        ],
-        "type": "object"
-      },
-      "PublicTemplateItemSeed": {
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "date": {
-            "format": "date",
-            "type": "string"
-          },
-          "order": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "photo_required": {
-            "type": "boolean"
-          },
-          "section_seed_id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "date",
-          "title",
-          "content",
-          "order",
-          "photo_required"
-        ],
-        "type": "object"
-      },
       "PublicTemporaryGrant": {
         "additionalProperties": false,
         "properties": {
@@ -7847,43 +8298,6 @@
         },
         "required": [
           "attachment"
-        ],
-        "type": "object"
-      },
-      "PublicViewer": {
-        "additionalProperties": false,
-        "properties": {
-          "capabilities": {
-            "$ref": "#/components/schemas/PublicCapabilities"
-          },
-          "is_responsible": {
-            "type": "boolean"
-          },
-          "member_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "membership_state": {
-            "type": "string"
-          },
-          "message_read_state": {
-            "$ref": "#/components/schemas/PublicMessageReadState"
-          },
-          "unread_message_count": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "message_read_state",
-          "unread_message_count",
-          "member_id",
-          "membership_state",
-          "is_responsible",
-          "capabilities"
         ],
         "type": "object"
       },
@@ -8085,7 +8499,7 @@
             ]
           },
           "schedule": {
-            "$ref": "#/components/schemas/TemplateScheduleSeed"
+            "$ref": "#/components/schemas/WorkScheduleSeed"
           },
           "section_seeds": {
             "items": {
@@ -8143,7 +8557,14 @@
             "$ref": "#/components/schemas/PublicResourceParent"
           },
           "photo": {
-            "$ref": "#/components/schemas/PublicPhoto"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicPhoto"
+              },
+              {
+                "$ref": "#/components/schemas/PublicMessagePhoto"
+              }
+            ]
           }
         },
         "required": [
@@ -8515,6 +8936,22 @@
         ],
         "type": "object"
       },
+      "ResponsibleMember": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "type": "object"
+      },
       "RevisionBody": {
         "additionalProperties": false,
         "properties": {
@@ -8535,6 +8972,39 @@
         },
         "required": [
           "expected_revision"
+        ],
+        "type": "object"
+      },
+      "Schedule": {
+        "additionalProperties": false,
+        "properties": {
+          "ends_at": {
+            "type": "string"
+          },
+          "ends_at_utc": {
+            "type": "string"
+          },
+          "ends_before": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string"
+          },
+          "starts_at_utc": {
+            "type": "string"
+          },
+          "starts_on": {
+            "type": "string"
+          },
+          "time_zone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
         ],
         "type": "object"
       },
@@ -8763,22 +9233,91 @@
         ],
         "type": "object"
       },
-      "TemplateScheduleSeed": {
+      "Task": {
         "additionalProperties": false,
         "properties": {
-          "ends_at": {
-            "description": "UTC PocketBase timestamp or YYYY-MM-DD input; omitted means starts_at.",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z)?$",
+          "archived_at": {
             "type": "string"
           },
-          "starts_at": {
-            "description": "UTC PocketBase timestamp or YYYY-MM-DD input.",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z)?$",
+          "attachment_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "content_md": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Mirror"
+          },
+          "deleted_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "map_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MapRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Mirror"
+          },
+          "plants": {
+            "items": {
+              "$ref": "#/components/schemas/PlantLink"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": "string"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/Schedule"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
             "type": "string"
           }
         },
         "required": [
-          "starts_at"
+          "id",
+          "title",
+          "content_md",
+          "status",
+          "priority",
+          "organization",
+          "created_by",
+          "members",
+          "plants",
+          "map_refs",
+          "attachment_count",
+          "created",
+          "updated"
         ],
         "type": "object"
       },
@@ -9242,6 +9781,118 @@
         "required": [
           "local_date",
           "daily"
+        ],
+        "type": "object"
+      },
+      "WorkItemsTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "item_seeds": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItemsTemplateItemSeed"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "section_seeds": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItemsTemplateSectionSeed"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "section_seeds",
+          "item_seeds"
+        ],
+        "type": "object"
+      },
+      "WorkItemsTemplateItemSeed": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "photo_required": {
+            "type": "boolean"
+          },
+          "section_seed_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content",
+          "section_seed_id",
+          "order",
+          "photo_required"
+        ],
+        "type": "object"
+      },
+      "WorkItemsTemplateSectionSeed": {
+        "additionalProperties": false,
+        "properties": {
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "seed_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seed_id",
+          "title",
+          "order"
+        ],
+        "type": "object"
+      },
+      "WorkScheduleSeed": {
+        "additionalProperties": false,
+        "properties": {
+          "ends_at": {
+            "description": "UTC PocketBase timestamp or YYYY-MM-DD input; omitted means starts_at.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z)?$",
+            "type": "string"
+          },
+          "starts_at": {
+            "description": "UTC PocketBase timestamp or YYYY-MM-DD input.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at"
         ],
         "type": "object"
       }
@@ -9842,6 +10493,19 @@
             "name": "signature",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional bounded aspect-preserving thumbnail.",
+            "explode": false,
+            "in": "query",
+            "name": "thumb",
+            "schema": {
+              "description": "Optional bounded aspect-preserving thumbnail.",
+              "enum": [
+                "512x512f"
+              ],
               "type": "string"
             }
           }
@@ -10670,10 +11334,10 @@
         ]
       }
     },
-    "/api/v3/fieldwork/templates": {
+    "/api/v3/fieldwork/work-items-templates": {
       "get": {
-        "description": "Lists accessible templates as creation seeds.",
-        "operationId": "fieldwork_templates_list",
+        "description": "Lists active work items templates shared with authenticated managers.",
+        "operationId": "fieldwork_work_items_templates_list",
         "parameters": [
           {
             "description": "Required for manager access tokens. Omit for participant session tokens.",
@@ -10721,7 +11385,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicListOutputPublicTemplateBody"
+                  "$ref": "#/components/schemas/PublicListOutputWorkItemsTemplateBody"
                 }
               }
             },
@@ -10750,7 +11414,7 @@
             "bearer": []
           }
         ],
-        "summary": "List templates",
+        "summary": "List work items templates",
         "tags": [
           "v3/fieldwork"
         ]
@@ -10758,7 +11422,7 @@
     },
     "/api/v3/fieldwork/works": {
       "get": {
-        "description": "Lists active memberships and minimal invitations at currently accessible plants. status=all includes active and completed works. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Filters accessible works with scope=all, participating, or invited. Omitted scope preserves active memberships and minimal invitations. status=all excludes archived works. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_works_list",
         "parameters": [
           {
@@ -10799,6 +11463,16 @@
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "all, participating, invited; omitted preserves memberships",
+            "explode": false,
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "description": "all, participating, invited; omitted preserves memberships",
+              "type": "string"
             }
           },
           {
@@ -12614,6 +13288,105 @@
         ]
       }
     },
+    "/api/v3/fieldwork/works/{work_id}/latest": {
+      "get": {
+        "description": "Reads only the requested mutation scope. Requires active membership. Retry a needs_resync response before rebuilding a command; omitted collections must be preserved. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_latest_get",
+        "parameters": [
+          {
+            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work",
+                "item",
+                "items",
+                "section",
+                "schedule"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "target_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "include_children",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDataOutputPublicLatestStateBody"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get latest scoped state",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
     "/api/v3/fieldwork/works/{work_id}/members/invite": {
       "post": {
         "description": "Invites a participant once. No Idempotency-Key or durable result replay. Serialize identical UI actions; an unknown outcome requires a state refresh. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
@@ -13693,7 +14466,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicMapSync"
+                "$ref": "#/components/schemas/PublicMessageMapSync"
               }
             }
           },
@@ -13891,7 +14664,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicPhotoMove"
+                "$ref": "#/components/schemas/PublicMessagePhotoMove"
               }
             }
           },
@@ -13994,7 +14767,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionBody"
+                "$ref": "#/components/schemas/PublicEmptyMessageBody"
               }
             }
           },
@@ -14279,7 +15052,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionBody"
+                "$ref": "#/components/schemas/PublicEmptyMessageBody"
               }
             }
           },
@@ -23099,6 +23872,88 @@
         "summary": "Unregister Asset from Plant",
         "tags": [
           "v3/plants/registry"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/tasks": {
+      "get": {
+        "description": "Returns all non-deleted tasks linked to this plant, including completed, canceled and archived tasks. Reads the direct organization and manager-owned ancestors, follows every upstream page and deduplicates by task ID. Uses the requested plant ID without reference-plant substitution. Requires Tasks Data configuration.",
+        "operationId": "get_plant_tasks",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Determines the access level and available operations. 'viewer' provides read-only access, 'manager' allows administrative operations, and 'temporary' provides scoped plant access.",
+              "enum": [
+                "viewer",
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "maxLength": 15,
+              "minLength": 15,
+              "pattern": "^[a-zA-Z0-9]{15}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve All Plant Tasks",
+        "tags": [
+          "v3/plants/tasks"
         ]
       }
     },
