@@ -419,6 +419,28 @@
         ],
         "type": "object"
       },
+      "ChecklistResumeCreation": {
+        "additionalProperties": false,
+        "properties": {
+          "command_key": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "item.create",
+              "section.create"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "command_key"
+        ],
+        "type": "object"
+      },
       "CombinerItem": {
         "additionalProperties": false,
         "properties": {
@@ -610,13 +632,6 @@
             },
             "type": "array"
           },
-          "related": {
-            "description": "Related plant-data timestamp.",
-            "examples": [
-              "2025-04-11 00:05:00.000Z"
-            ],
-            "type": "string"
-          },
           "text": {
             "description": "Comment text.",
             "examples": [
@@ -659,13 +674,6 @@
               "type": "string"
             },
             "type": "array"
-          },
-          "related": {
-            "description": "Related plant-data timestamp.",
-            "examples": [
-              "2025-04-11 00:05:00.000Z"
-            ],
-            "type": "string"
           },
           "text": {
             "description": "Comment text.",
@@ -730,12 +738,6 @@
           "parent": {
             "type": "string"
           },
-          "related": {
-            "type": "string"
-          },
-          "resolved": {
-            "type": "string"
-          },
           "text": {
             "type": "string"
           },
@@ -795,16 +797,10 @@
           "parent": {
             "type": "string"
           },
-          "related": {
-            "type": "string"
-          },
           "reply_count": {
             "description": "Number of visible replies to this top-level comment.",
             "format": "int64",
             "type": "integer"
-          },
-          "resolved": {
-            "type": "string"
           },
           "text": {
             "type": "string"
@@ -843,13 +839,11 @@
             "enum": [
               "pin",
               "unpin",
-              "resolve",
-              "reopen",
               "archive",
               "restore"
             ],
             "examples": [
-              "resolve"
+              "pin"
             ],
             "type": "string"
           }
@@ -3621,6 +3615,176 @@
         ],
         "type": "object"
       },
+      "PanelFlightPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "aircraft_sn": {
+            "type": "string"
+          },
+          "assumed": {
+            "type": "boolean"
+          },
+          "blueprint_id": {
+            "type": "string"
+          },
+          "gateway_sn": {
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/PanelFlightPoint"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "provenance": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "plant_id",
+          "blueprint_id",
+          "gateway_sn",
+          "aircraft_sn",
+          "assumed",
+          "provenance",
+          "points"
+        ],
+        "type": "object"
+      },
+      "PanelFlightPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "ellipsoid_height": {
+            "format": "double",
+            "type": "number"
+          },
+          "height": {
+            "format": "double",
+            "type": "number"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "map_id": {
+            "type": "string"
+          },
+          "point_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "map_id",
+          "point_id",
+          "latitude",
+          "longitude",
+          "height",
+          "ellipsoid_height"
+        ],
+        "type": "object"
+      },
+      "PanelMissionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PanelMissionRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "map_ids": {
+            "description": "Panel map IDs (<panel group id>.<row>.<col>) in flight order. The deployment limits the count further (default 10).",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Client-generated idempotency key. Retrying with the same key returns the same mission.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "map_ids"
+        ],
+        "type": "object"
+      },
+      "PanelMissionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PanelMissionResult.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/PanelFlightPlan"
+          },
+          "report": {
+            "additionalProperties": {},
+            "type": "object"
+          }
+        },
+        "required": [
+          "plan",
+          "report"
+        ],
+        "type": "object"
+      },
+      "PanelPhoto": {
+        "additionalProperties": false,
+        "properties": {
+          "map_id": {
+            "type": "string"
+          },
+          "point_id": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "map_id",
+          "point_id",
+          "url",
+          "size",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "PlantBody": {
         "additionalProperties": false,
         "properties": {
@@ -4727,6 +4891,103 @@
         ],
         "type": "object"
       },
+      "PublicChecklistAppend": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicChecklistAppend.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PublicChecklistEntry"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "expected_items_revision": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resume_creation": {
+            "$ref": "#/components/schemas/ChecklistResumeCreation"
+          }
+        },
+        "required": [
+          "expected_items_revision",
+          "entries"
+        ],
+        "type": "object"
+      },
+      "PublicChecklistEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "before_item_id": {
+            "type": "string"
+          },
+          "before_root": {
+            "$ref": "#/components/schemas/RootAnchor"
+          },
+          "before_section_id": {
+            "type": "string"
+          },
+          "client_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "section",
+              "item"
+            ],
+            "type": "string"
+          },
+          "map_refs": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMapAddition"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "photo_required": {
+            "type": "boolean"
+          },
+          "section_id": {
+            "type": "string"
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "client_id",
+          "title",
+          "date"
+        ],
+        "type": "object"
+      },
       "PublicCommandOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -5014,9 +5275,6 @@
                       "$ref": "#/components/schemas/PublicSchedule"
                     },
                     {
-                      "$ref": "#/components/schemas/PublicNotification"
-                    },
-                    {
                       "$ref": "#/components/schemas/PublicDeletedResource"
                     }
                   ]
@@ -5039,6 +5297,12 @@
           },
           "command_key": {
             "type": "string"
+          },
+          "created_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
           },
           "created_item_ids": {
             "items": {
@@ -5825,48 +6089,6 @@
         ],
         "type": "object"
       },
-      "PublicDataOutputPublicNotificationMutationBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicDataOutputPublicNotificationMutationBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PublicNotificationMutation"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
-      "PublicDataOutputPublicNotificationSummaryBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicDataOutputPublicNotificationSummaryBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PublicNotificationSummary"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
       "PublicDataOutputPublicParticipantSessionBody": {
         "additionalProperties": false,
         "properties": {
@@ -5923,27 +6145,6 @@
           },
           "data": {
             "$ref": "#/components/schemas/PublicSummary"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
-      "PublicDataOutputSeenResultBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicDataOutputSeenResultBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/SeenResult"
           }
         },
         "required": [
@@ -6246,64 +6447,6 @@
         ],
         "type": "object"
       },
-      "PublicItemCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicItemCreate.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "before_item_id": {
-            "type": "string"
-          },
-          "before_root": {
-            "$ref": "#/components/schemas/RootAnchor"
-          },
-          "content": {
-            "type": "string"
-          },
-          "date": {
-            "format": "date",
-            "minLength": 1,
-            "type": "string"
-          },
-          "expected_items_revision": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "map_refs": {
-            "items": {
-              "$ref": "#/components/schemas/PublicMapAddition"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "photo_required": {
-            "type": "boolean"
-          },
-          "section_id": {
-            "type": "string"
-          },
-          "title": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "date",
-          "title",
-          "expected_items_revision"
-        ],
-        "type": "object"
-      },
       "PublicItemLane": {
         "additionalProperties": false,
         "properties": {
@@ -6594,37 +6737,6 @@
           "scope",
           "work",
           "needs_resync"
-        ],
-        "type": "object"
-      },
-      "PublicListOutputPublicNotificationBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicListOutputPublicNotificationBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/PublicNotification"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "page": {
-            "$ref": "#/components/schemas/PublicPage"
-          }
-        },
-        "required": [
-          "data",
-          "page"
         ],
         "type": "object"
       },
@@ -7489,141 +7601,6 @@
         ],
         "type": "object"
       },
-      "PublicNotification": {
-        "additionalProperties": false,
-        "properties": {
-          "author_label": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "event": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "plant_id": {
-            "type": "string"
-          },
-          "preview": {
-            "type": "string"
-          },
-          "read_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "read_mode": {
-            "enum": [
-              "message-horizon",
-              "target-reached"
-            ],
-            "type": "string"
-          },
-          "target": {
-            "$ref": "#/components/schemas/PublicNotificationTarget"
-          },
-          "work_id": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "work_id",
-          "plant_id",
-          "event",
-          "target",
-          "read_mode",
-          "author_label",
-          "preview",
-          "created_at",
-          "read_at"
-        ],
-        "type": "object"
-      },
-      "PublicNotificationMutation": {
-        "additionalProperties": false,
-        "properties": {
-          "archived_at": {
-            "type": "string"
-          },
-          "needs_resync": {
-            "type": "boolean"
-          },
-          "notification_id": {
-            "type": "string"
-          },
-          "read_at": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status",
-          "notification_id",
-          "needs_resync"
-        ],
-        "type": "object"
-      },
-      "PublicNotificationSummary": {
-        "additionalProperties": false,
-        "properties": {
-          "by_plant": {
-            "items": {
-              "$ref": "#/components/schemas/PublicUnreadPlant"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "by_work": {
-            "items": {
-              "$ref": "#/components/schemas/PublicUnreadWork"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "unread_count": {
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "unread_count",
-          "by_work",
-          "by_plant"
-        ],
-        "type": "object"
-      },
-      "PublicNotificationTarget": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "work",
-              "item",
-              "message"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "id"
-        ],
-        "type": "object"
-      },
       "PublicOrganization": {
         "additionalProperties": false,
         "properties": {
@@ -8179,46 +8156,6 @@
         ],
         "type": "object"
       },
-      "PublicSectionCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicSectionCreate.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "before_root": {
-            "$ref": "#/components/schemas/RootAnchor"
-          },
-          "before_section_id": {
-            "type": "string"
-          },
-          "date": {
-            "format": "date",
-            "minLength": 1,
-            "type": "string"
-          },
-          "expected_items_revision": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "title": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "date",
-          "title",
-          "expected_items_revision"
-        ],
-        "type": "object"
-      },
       "PublicSectionMove": {
         "additionalProperties": false,
         "properties": {
@@ -8439,40 +8376,6 @@
           "label",
           "state",
           "expires_at"
-        ],
-        "type": "object"
-      },
-      "PublicUnreadPlant": {
-        "additionalProperties": false,
-        "properties": {
-          "plant_id": {
-            "type": "string"
-          },
-          "unread_count": {
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "plant_id",
-          "unread_count"
-        ],
-        "type": "object"
-      },
-      "PublicUnreadWork": {
-        "additionalProperties": false,
-        "properties": {
-          "unread_count": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "work_id": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "work_id",
-          "unread_count"
         ],
         "type": "object"
       },
@@ -9201,57 +9104,6 @@
         },
         "required": [
           "kind"
-        ],
-        "type": "object"
-      },
-      "SeenInputBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/SeenInputBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "through_message_id": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "through_message_id"
-        ],
-        "type": "object"
-      },
-      "SeenResult": {
-        "additionalProperties": false,
-        "properties": {
-          "last_seen_timeline_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "read_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "read_notification_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "through_message_id": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "read_notification_ids",
-          "through_message_id",
-          "read_at",
-          "last_seen_timeline_at"
         ],
         "type": "object"
       },
@@ -11088,7 +10940,7 @@
     },
     "/api/v3/fieldwork/events": {
       "get": {
-        "description": "Streams authorized changes and resynchronization signals. watch=unread is standalone and delivers FW-UNREAD-SSE-v1 ready followed by complete unread.snapshot frames with connection-local event_sequence. It cannot be combined with work_id, surface or another watch. Existing list/inbox/work modes require snapshot refresh after ready. No Last-Event-ID replay or global order guarantee. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Streams authorized changes and resynchronization signals. watch=unread is standalone and delivers FW-UNREAD-SSE-v1 ready followed by complete unread.snapshot frames with connection-local event_sequence. It cannot be combined with work_id, surface or another watch. Existing list/work modes require snapshot refresh after ready. No Last-Event-ID replay or global order guarantee. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_events",
         "parameters": [
           {
@@ -11142,7 +10994,7 @@
                 }
               }
             },
-            "description": "Server-sent events: ready, unread.snapshot (watch=unread), change, list.changed, inbox.changed, resync.required, access.ended; heartbeat comments."
+            "description": "Server-sent events: ready, unread.snapshot (watch=unread), change, list.changed, resync.required, access.ended; heartbeat comments."
           },
           "default": {
             "content": {
@@ -11241,327 +11093,6 @@
         ]
       }
     },
-    "/api/v3/fieldwork/notifications": {
-      "get": {
-        "description": "Returns only the current actor's visible notification events. Read state comes from each notification row. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_notifications_list",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "plant_id",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "work_id",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "unread_only",
-            "schema": {
-              "default": false,
-              "type": "boolean"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "cursor",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 50,
-              "format": "int64",
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicListOutputPublicNotificationBody"
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List notifications",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
-    "/api/v3/fieldwork/notifications/summary": {
-      "get": {
-        "description": "Counts exactly the unread events included by the notification list. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_notifications_summary",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "plant_id",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDataOutputPublicNotificationSummaryBody"
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get notification summary",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
-    "/api/v3/fieldwork/notifications/{notification_id}/archive": {
-      "post": {
-        "description": "Updates the caller's notification state. On uncertain writes refresh state before retrying. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_notification_archive",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "notification_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDataOutputPublicNotificationMutationBody"
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "notification.archive",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
-    "/api/v3/fieldwork/notifications/{notification_id}/read": {
-      "post": {
-        "description": "Updates the caller's notification state. On uncertain writes refresh state before retrying. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_notification_read",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "notification_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDataOutputPublicNotificationMutationBody"
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "notification.read",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
     "/api/v3/fieldwork/participant-sessions": {
       "post": {
         "description": "Exchanges a validated temporary grant for an independent participant session. This does not join a work.",
@@ -11618,7 +11149,7 @@
     },
     "/api/v3/fieldwork/plants/{plant_id}/member-candidates": {
       "get": {
-        "description": "Lists shared-organization users with plant access. The first page also includes live plant grants. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Lists users with plant access across the plant organization and its ancestors. The first page also includes live plant grants. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_plant_member_candidates",
         "parameters": [
           {
@@ -12279,6 +11810,110 @@
         ]
       }
     },
+    "/api/v3/fieldwork/works/{work_id}/checklist/entries": {
+      "post": {
+        "description": "Executes checklist.create using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_checklist_create",
+        "parameters": [
+          {
+            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicChecklistAppend"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommandOutputBody"
+                }
+              }
+            },
+            "description": "Previously applied command replayed without executing the mutation again.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommandOutputBody"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "checklist.create",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
     "/api/v3/fieldwork/works/{work_id}/clone": {
       "post": {
         "description": "Executes work.clone using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
@@ -12465,110 +12100,6 @@
           }
         ],
         "summary": "work.close",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
-    "/api/v3/fieldwork/works/{work_id}/items": {
-      "post": {
-        "description": "Executes item.create using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_item_create",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "Idempotency-Key",
-            "required": true,
-            "schema": {
-              "maxLength": 128,
-              "minLength": 8,
-              "pattern": "^[A-Za-z0-9._:-]+$",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "work_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicItemCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicCommandOutputBody"
-                }
-              }
-            },
-            "description": "Previously applied command replayed without executing the mutation again.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicCommandOutputBody"
-                }
-              }
-            },
-            "description": "Created",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "item.create",
         "tags": [
           "v3/fieldwork"
         ]
@@ -16002,110 +15533,6 @@
         ]
       }
     },
-    "/api/v3/fieldwork/works/{work_id}/sections": {
-      "post": {
-        "description": "Executes section.create using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_section_create",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "Idempotency-Key",
-            "required": true,
-            "schema": {
-              "maxLength": 128,
-              "minLength": 8,
-              "pattern": "^[A-Za-z0-9._:-]+$",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "work_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublicSectionCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicCommandOutputBody"
-                }
-              }
-            },
-            "description": "Previously applied command replayed without executing the mutation again.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicCommandOutputBody"
-                }
-              }
-            },
-            "description": "Created",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "section.create",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
     "/api/v3/fieldwork/works/{work_id}/sections/{section_id}/move": {
       "post": {
         "description": "Executes section.move using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
@@ -16386,82 +15813,6 @@
           }
         ],
         "summary": "section.rename",
-        "tags": [
-          "v3/fieldwork"
-        ]
-      }
-    },
-    "/api/v3/fieldwork/works/{work_id}/seen": {
-      "post": {
-        "description": "Sequentially updates unread message-horizon notifications, then the auxiliary member timestamp. No atomicity or cross-session monotonic cursor guarantee. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
-        "operationId": "fieldwork_work_seen",
-        "parameters": [
-          {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
-            "in": "header",
-            "name": "Account-Type",
-            "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
-              "enum": [
-                "manager"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "work_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SeenInputBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDataOutputSeenResultBody"
-                }
-              }
-            },
-            "description": "OK",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Mark seen",
         "tags": [
           "v3/fieldwork"
         ]
@@ -18991,7 +18342,7 @@
     },
     "/api/v3/plants/{plant_id}/comments/{comment_id}/state": {
       "post": {
-        "description": "Applies pin, unpin, resolve, reopen, archive, or restore. Pinning requires an active top-level memo and changes only its pin state.",
+        "description": "Applies pin, unpin, archive, or restore. Pinning requires an active top-level memo and changes only its pin state.",
         "operationId": "change_plant_comment_state",
         "parameters": [
           {
@@ -19093,6 +18444,267 @@
         "summary": "Change Plant Comment State",
         "tags": [
           "v3/plants/comments"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/drone-inspection/panel-missions": {
+      "post": {
+        "description": "Flies the plant's dock drone to the listed panel map IDs and takes one nadir photo per panel. Panel coordinates come from the deployed coordinate table; unknown map IDs are rejected. Retrying with the same request_id returns the same mission. Manager accounts only.",
+        "operationId": "create_panel_photo_mission",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID.",
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PanelMissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelMissionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request Drone Photos Of Panels",
+        "tags": [
+          "v3/plants/drone-inspection"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/drone-inspection/panel-missions/{mission_id}": {
+      "get": {
+        "description": "Returns mission status, flight task progress and photo verification state. Photos that failed position verification are included with their URLs so an operator can still inspect them. Manager accounts only.",
+        "operationId": "get_panel_photo_mission",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID.",
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Mission ID returned by the create request (64 lowercase hex characters).",
+            "in": "path",
+            "name": "mission_id",
+            "required": true,
+            "schema": {
+              "description": "Mission ID returned by the create request (64 lowercase hex characters).",
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Drone Panel Photo Mission",
+        "tags": [
+          "v3/plants/drone-inspection"
+        ]
+      }
+    },
+    "/api/v3/plants/{plant_id}/drone-inspection/panel-missions/{mission_id}/photos": {
+      "get": {
+        "description": "Returns position-verified photos with their panel map IDs and expiring download URLs. map_id is empty when the panel is no longer in the coordinate table. Manager accounts only.",
+        "operationId": "get_panel_photo_results",
+        "parameters": [
+          {
+            "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "description": "Authorization header containing the Bearer token used for user authentication and access control. Format: 'Bearer <token>'",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "description": "Specifies the type of user account making the request. Drone panel photo routes are available to manager accounts with access to the plant only.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID.",
+              "maxLength": 15,
+              "minLength": 15,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Mission ID returned by the create request (64 lowercase hex characters).",
+            "in": "path",
+            "name": "mission_id",
+            "required": true,
+            "schema": {
+              "description": "Mission ID returned by the create request (64 lowercase hex characters).",
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PanelPhoto"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Drone Panel Photos",
+        "tags": [
+          "v3/plants/drone-inspection"
         ]
       }
     },
@@ -21962,7 +21574,7 @@
     },
     "/api/v3/plants/{plant_id}/memos/{comment_id}/state": {
       "post": {
-        "description": "Applies pin, unpin, resolve, reopen, archive, or restore. Pinning requires an active top-level memo and changes only its pin state.",
+        "description": "Applies pin, unpin, archive, or restore. Pinning requires an active top-level memo and changes only its pin state.",
         "operationId": "change_plant_memo_state",
         "parameters": [
           {
