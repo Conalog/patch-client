@@ -5402,6 +5402,9 @@
           "placement": {
             "$ref": "#/components/schemas/PublicPlacement"
           },
+          "read_all": {
+            "$ref": "#/components/schemas/PublicReadAllSnapshot"
+          },
           "ref_id": {
             "type": "string"
           },
@@ -7959,6 +7962,49 @@
         ],
         "type": "object"
       },
+      "PublicReadAllInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicReadAllInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicReadAllSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "unread_message_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unread_work_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "works": {
+            "items": {
+              "$ref": "#/components/schemas/PublicUnreadWork"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "works",
+          "unread_message_count",
+          "unread_work_count"
+        ],
+        "type": "object"
+      },
       "PublicReadMessages": {
         "additionalProperties": false,
         "properties": {
@@ -7976,9 +8022,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "through_message_id"
-        ],
         "type": "object"
       },
       "PublicReceipt": {
@@ -8376,6 +8419,36 @@
           "label",
           "state",
           "expires_at"
+        ],
+        "type": "object"
+      },
+      "PublicUnreadWork": {
+        "additionalProperties": false,
+        "properties": {
+          "last_message_sequence": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "message_read_state": {
+            "$ref": "#/components/schemas/PublicMessageReadState"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "unread_message_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "work_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "plant_id",
+          "last_message_sequence",
+          "message_read_state",
+          "unread_message_count"
         ],
         "type": "object"
       },
@@ -11088,6 +11161,85 @@
           }
         ],
         "summary": "List message previews",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
+    "/api/v3/fieldwork/messages/read-all": {
+      "post": {
+        "description": "현재 사용자가 참여 중인 예정·진행·완료 채팅을 한 트랜잭션의 경계까지 읽음 처리합니다. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_messages_read_all",
+        "parameters": [
+          {
+            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "enum": [
+                "manager"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicReadAllInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommandOutputBody"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "모든 채팅 읽음 처리",
         "tags": [
           "v3/fieldwork"
         ]
@@ -14030,7 +14182,7 @@
     },
     "/api/v3/fieldwork/works/{work_id}/messages/read": {
       "post": {
-        "description": "Advances the current actor's read position through the specified message. Does not change notification read state. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "An empty object advances the current actor to the latest eligible message within the server transaction. An explicit through_message_id selects a boundary. Does not change notification read state. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_messages_read",
         "parameters": [
           {
