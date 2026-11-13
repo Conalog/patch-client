@@ -104,17 +104,16 @@ impl Client {
         }
     }
 
-    /// POST /api/v3/fieldwork/attachments
-    pub async fn fieldwork_upload_attachment_v3(
-        &self,
-        form: reqwest::multipart::Form,
-    ) -> Result<serde_json::Value> {
-        let url = self.url("api/v3/fieldwork/attachments")?;
-        let req = self
-            .v3_request(Method::POST, url, true, false)
-            .await?
-            .multipart(form);
-        Self::v3_json_response(req.send().await?).await
+    async fn v3_head_response(res: reqwest::Response) -> Result<reqwest::Response> {
+        let status = res.status();
+        if matches!(
+            status,
+            StatusCode::OK | StatusCode::PARTIAL_CONTENT | StatusCode::RANGE_NOT_SATISFIABLE
+        ) {
+            Ok(res)
+        } else {
+            Self::v3_error(res).await
+        }
     }
 
     /// GET /api/v3/fieldwork/attachments/content
@@ -239,60 +238,6 @@ impl Client {
         Self::v3_json_response(req.send().await?).await
     }
 
-    /// GET /api/v3/fieldwork/notifications
-    pub async fn fieldwork_notifications_list_v3(
-        &self,
-        query: &[(&str, &str)],
-    ) -> Result<serde_json::Value> {
-        let mut url = self.url("api/v3/fieldwork/notifications")?;
-        url.query_pairs_mut().extend_pairs(query.iter().copied());
-        let req = self.v3_request(Method::GET, url, true, false).await?;
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// GET /api/v3/fieldwork/notifications/summary
-    pub async fn fieldwork_notifications_summary_v3(
-        &self,
-        query: &[(&str, &str)],
-    ) -> Result<serde_json::Value> {
-        let mut url = self.url("api/v3/fieldwork/notifications/summary")?;
-        url.query_pairs_mut().extend_pairs(query.iter().copied());
-        let req = self.v3_request(Method::GET, url, true, false).await?;
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// POST /api/v3/fieldwork/notifications/{notification_id}/archive
-    pub async fn fieldwork_notification_archive_v3(
-        &self,
-        notification_id: &str,
-        body: &serde_json::Value,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v3/fieldwork/notifications/{}/archive",
-            Self::encode_path_segment(notification_id)
-        );
-        let url = self.url(&path)?;
-        let mut req = self.v3_request(Method::POST, url, true, false).await?;
-        req = req.json(body);
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// POST /api/v3/fieldwork/notifications/{notification_id}/read
-    pub async fn fieldwork_notification_read_v3(
-        &self,
-        notification_id: &str,
-        body: &serde_json::Value,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v3/fieldwork/notifications/{}/read",
-            Self::encode_path_segment(notification_id)
-        );
-        let url = self.url(&path)?;
-        let mut req = self.v3_request(Method::POST, url, true, false).await?;
-        req = req.json(body);
-        Self::v3_json_response(req.send().await?).await
-    }
-
     /// POST /api/v3/fieldwork/participant-sessions
     pub async fn fieldwork_participant_session_create_v3(
         &self,
@@ -326,17 +271,6 @@ impl Client {
         query: &[(&str, &str)],
     ) -> Result<serde_json::Value> {
         let mut url = self.url("api/v3/fieldwork/summary")?;
-        url.query_pairs_mut().extend_pairs(query.iter().copied());
-        let req = self.v3_request(Method::GET, url, true, false).await?;
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// GET /api/v3/fieldwork/templates
-    pub async fn fieldwork_templates_list_v3(
-        &self,
-        query: &[(&str, &str)],
-    ) -> Result<serde_json::Value> {
-        let mut url = self.url("api/v3/fieldwork/templates")?;
         url.query_pairs_mut().extend_pairs(query.iter().copied());
         let req = self.v3_request(Method::GET, url, true, false).await?;
         Self::v3_json_response(req.send().await?).await
@@ -430,25 +364,6 @@ impl Client {
     ) -> Result<serde_json::Value> {
         let path = format!(
             "api/v3/fieldwork/works/{}/close",
-            Self::encode_path_segment(work_id)
-        );
-        let url = self.url(&path)?;
-        let mut req = self.v3_request(Method::POST, url, true, false).await?;
-        Self::validate_command_key(command_key)?;
-        req = req.header("Idempotency-Key", command_key);
-        req = req.json(body);
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// POST /api/v3/fieldwork/works/{work_id}/items
-    pub async fn fieldwork_item_create_v3(
-        &self,
-        work_id: &str,
-        body: &serde_json::Value,
-        command_key: &str,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v3/fieldwork/works/{}/items",
             Self::encode_path_segment(work_id)
         );
         let url = self.url(&path)?;
@@ -1164,25 +1079,6 @@ impl Client {
         Self::v3_json_response(req.send().await?).await
     }
 
-    /// POST /api/v3/fieldwork/works/{work_id}/sections
-    pub async fn fieldwork_section_create_v3(
-        &self,
-        work_id: &str,
-        body: &serde_json::Value,
-        command_key: &str,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v3/fieldwork/works/{}/sections",
-            Self::encode_path_segment(work_id)
-        );
-        let url = self.url(&path)?;
-        let mut req = self.v3_request(Method::POST, url, true, false).await?;
-        Self::validate_command_key(command_key)?;
-        req = req.header("Idempotency-Key", command_key);
-        req = req.json(body);
-        Self::v3_json_response(req.send().await?).await
-    }
-
     /// POST /api/v3/fieldwork/works/{work_id}/sections/{section_id}/move
     pub async fn fieldwork_section_move_v3(
         &self,
@@ -1242,22 +1138,6 @@ impl Client {
         let mut req = self.v3_request(Method::POST, url, true, false).await?;
         Self::validate_command_key(command_key)?;
         req = req.header("Idempotency-Key", command_key);
-        req = req.json(body);
-        Self::v3_json_response(req.send().await?).await
-    }
-
-    /// POST /api/v3/fieldwork/works/{work_id}/seen
-    pub async fn fieldwork_work_seen_v3(
-        &self,
-        work_id: &str,
-        body: &serde_json::Value,
-    ) -> Result<serde_json::Value> {
-        let path = format!(
-            "api/v3/fieldwork/works/{}/seen",
-            Self::encode_path_segment(work_id)
-        );
-        let url = self.url(&path)?;
-        let mut req = self.v3_request(Method::POST, url, true, false).await?;
         req = req.json(body);
         Self::v3_json_response(req.send().await?).await
     }
@@ -1526,5 +1406,333 @@ impl Client {
         url.query_pairs_mut().extend_pairs(query.iter().copied());
         let req = self.v3_request(Method::GET, url, true, false).await?;
         Self::v3_json_response(req.send().await?).await
+    }
+
+    /// HEAD /api/v3/fieldwork/attachments/content
+    pub async fn fieldwork_attachment_content_head_v3(
+        &self,
+        query: &[(&str, &str)],
+        headers: &[(&str, &str)],
+    ) -> Result<reqwest::Response> {
+        for required in ["work_id", "object_key"] {
+            if !query.iter().any(|(k, v)| *k == required && !v.is_empty()) {
+                return Err(Error::InvalidPath(format!("missing {required}")));
+            }
+        }
+        let mut url = self.url("api/v3/fieldwork/attachments/content")?;
+        url.query_pairs_mut().extend_pairs(query.iter().copied());
+        let mut req = self.v3_request(Method::HEAD, url, true, false).await?;
+        for (name, value) in headers {
+            ensure_allowed(name, &["Range", "If-Range"], "header")?;
+            req = req.header(*name, *value);
+        }
+        Self::v3_head_response(req.send().await?).await
+    }
+
+    /// HEAD /api/v3/fieldwork/attachments/download
+    pub async fn fieldwork_attachment_download_head_v3(
+        &self,
+        query: &[(&str, &str)],
+        headers: &[(&str, &str)],
+    ) -> Result<reqwest::Response> {
+        for required in ["work_id", "object_key", "expires", "signature"] {
+            if !query.iter().any(|(k, v)| *k == required && !v.is_empty()) {
+                return Err(Error::InvalidPath(format!("missing {required}")));
+            }
+        }
+        let mut url = self.url("api/v3/fieldwork/attachments/download")?;
+        url.query_pairs_mut().extend_pairs(query.iter().copied());
+        let mut req = self.v3_request(Method::HEAD, url, false, false).await?;
+        for (name, value) in headers {
+            ensure_allowed(name, &["Range", "If-Range"], "header")?;
+            req = req.header(*name, *value);
+        }
+        Self::v3_head_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/fieldwork/messages/read-all
+    pub async fn fieldwork_messages_read_all_v3(
+        &self,
+        body: &serde_json::Value,
+        command_key: &str,
+    ) -> Result<serde_json::Value> {
+        Self::validate_command_key(command_key)?;
+        let url = self.url("api/v3/fieldwork/messages/read-all")?;
+        let req = self
+            .v3_request(Method::POST, url, true, false)
+            .await?
+            .header("Idempotency-Key", command_key)
+            .json(body);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/fieldwork/work-items-templates
+    pub async fn fieldwork_work_items_templates_list_v3(
+        &self,
+        query: &[(&str, &str)],
+    ) -> Result<serde_json::Value> {
+        let mut url = self.url("api/v3/fieldwork/work-items-templates")?;
+        url.query_pairs_mut().extend_pairs(query.iter().copied());
+        let req = self.v3_request(Method::GET, url, true, false).await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/fieldwork/works/{work_id}/checklist/entries
+    pub async fn fieldwork_checklist_create_v3(
+        &self,
+        work_id: &str,
+        body: &serde_json::Value,
+        command_key: &str,
+    ) -> Result<serde_json::Value> {
+        Self::validate_command_key(command_key)?;
+        let path = format!(
+            "api/v3/fieldwork/works/{}/checklist/entries",
+            Self::encode_path_segment(work_id)
+        );
+        let req = self
+            .v3_request(Method::POST, self.url(&path)?, true, false)
+            .await?
+            .header("Idempotency-Key", command_key)
+            .json(body);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/fieldwork/works/{work_id}/latest
+    pub async fn fieldwork_latest_get_v3(
+        &self,
+        work_id: &str,
+        scope: &str,
+        target_id: Option<&str>,
+        include_children: Option<bool>,
+    ) -> Result<serde_json::Value> {
+        if scope.is_empty() {
+            return Err(Error::InvalidPath("missing scope".into()));
+        }
+        let path = format!(
+            "api/v3/fieldwork/works/{}/latest",
+            Self::encode_path_segment(work_id)
+        );
+        let mut query = vec![("scope", scope.to_string())];
+        if let Some(value) = target_id.filter(|value| !value.is_empty()) {
+            query.push(("target_id", value.to_string()));
+        }
+        if let Some(value) = include_children {
+            query.push(("include_children", value.to_string()));
+        }
+        let url = self.url_with_query(&path, &query)?;
+        let req = self.v3_request(Method::GET, url, true, false).await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/fieldwork/works/{work_id}/members/self/decline
+    pub async fn fieldwork_member_decline_v3(
+        &self,
+        work_id: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/fieldwork/works/{}/members/self/decline",
+            Self::encode_path_segment(work_id)
+        );
+        let req = self
+            .v3_request(Method::POST, self.url(&path)?, true, false)
+            .await?
+            .json(body);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/files
+    pub async fn file_upload_v3(
+        &self,
+        command_key: &str,
+        form: reqwest::multipart::Form,
+    ) -> Result<serde_json::Value> {
+        Self::validate_command_key(command_key)?;
+        let req = self
+            .v3_request(Method::POST, self.url("api/v3/files")?, true, false)
+            .await?
+            .header("Idempotency-Key", command_key)
+            .multipart(form);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/files/upload-sessions
+    pub async fn file_upload_start_v3(
+        &self,
+        body: &serde_json::Value,
+        command_key: &str,
+    ) -> Result<serde_json::Value> {
+        Self::validate_command_key(command_key)?;
+        let req = self
+            .v3_request(
+                Method::POST,
+                self.url("api/v3/files/upload-sessions")?,
+                true,
+                false,
+            )
+            .await?
+            .header("Idempotency-Key", command_key)
+            .json(body);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// PATCH /api/v3/files/upload-sessions/{session_id}/bytes
+    pub async fn file_upload_bytes_v3(
+        &self,
+        session_id: &str,
+        upload_context: &str,
+        upload_offset: u64,
+        bytes: &[u8],
+    ) -> Result<serde_json::Value> {
+        if upload_context.is_empty() {
+            return Err(Error::InvalidPath("missing Upload-Context".into()));
+        }
+        let path = format!(
+            "api/v3/files/upload-sessions/{}/bytes",
+            Self::encode_path_segment(session_id)
+        );
+        let req = self
+            .v3_request(Method::PATCH, self.url(&path)?, true, false)
+            .await?
+            .header("Upload-Context", upload_context)
+            .header("Upload-Offset", upload_offset.to_string())
+            .header("Content-Length", bytes.len().to_string())
+            .header("Content-Type", "application/offset+octet-stream")
+            .body(bytes.to_vec());
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// POST /api/v3/plants/{plant_id}/drone-inspection/panel-missions
+    pub async fn create_panel_photo_mission_v3(
+        &self,
+        plant_id: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/drone-inspection/panel-missions",
+            Self::encode_path_segment(plant_id)
+        );
+        let req = self
+            .v3_request(Method::POST, self.url(&path)?, true, false)
+            .await?
+            .json(body);
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/plants/{plant_id}/drone-inspection/panel-missions/{mission_id}
+    pub async fn get_panel_photo_mission_v3(
+        &self,
+        plant_id: &str,
+        mission_id: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/drone-inspection/panel-missions/{}",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(mission_id)
+        );
+        let req = self
+            .v3_request(Method::GET, self.url(&path)?, true, false)
+            .await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/plants/{plant_id}/drone-inspection/panel-missions/{mission_id}/photos
+    pub async fn get_panel_photo_results_v3(
+        &self,
+        plant_id: &str,
+        mission_id: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/drone-inspection/panel-missions/{}/photos",
+            Self::encode_path_segment(plant_id),
+            Self::encode_path_segment(mission_id)
+        );
+        let req = self
+            .v3_request(Method::GET, self.url(&path)?, true, false)
+            .await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/plants/{plant_id}/metrics/equip/latest
+    pub async fn get_latest_equip_metrics_v3(&self, plant_id: &str) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/metrics/equip/latest",
+            Self::encode_path_segment(plant_id)
+        );
+        let req = self
+            .v3_request(Method::GET, self.url(&path)?, true, false)
+            .await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v3/plants/{plant_id}/tasks
+    pub async fn get_plant_tasks_v3(&self, plant_id: &str) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/v3/plants/{}/tasks",
+            Self::encode_path_segment(plant_id)
+        );
+        let req = self
+            .v3_request(Method::GET, self.url(&path)?, true, false)
+            .await?;
+        Self::v3_json_response(req.send().await?).await
+    }
+
+    /// GET /api/v4/plants/{plant_id}/blueprint
+    pub async fn get_v4_plant_blueprint(
+        &self,
+        plant_id: &str,
+        date: &str,
+        conditional_headers: &[(&str, &str)],
+    ) -> Result<BlueprintV4Response> {
+        if date.is_empty() {
+            return Err(Error::InvalidPath("missing date".into()));
+        }
+        let path = format!(
+            "api/v4/plants/{}/blueprint",
+            Self::encode_path_segment(plant_id)
+        );
+        let url = self.url_with_query(&path, &[("date", date.to_string())])?;
+        let mut req = self.v3_request(Method::GET, url, true, false).await?;
+        for (name, value) in conditional_headers {
+            ensure_allowed(
+                name,
+                &[
+                    "If-Match",
+                    "If-None-Match",
+                    "If-Modified-Since",
+                    "If-Unmodified-Since",
+                ],
+                "header",
+            )?;
+            req = req.header(*name, *value);
+        }
+        let res = req.send().await?;
+        let status = res.status();
+        let etag = res
+            .headers()
+            .get("ETag")
+            .and_then(|value| value.to_str().ok())
+            .map(ToOwned::to_owned);
+        if status == StatusCode::NOT_MODIFIED {
+            return Ok(BlueprintV4Response {
+                status: 304,
+                etag,
+                body: None,
+            });
+        }
+        if !status.is_success() {
+            return Self::v3_error(res).await;
+        }
+        let body = Self::read_body_limited(res).await?;
+        let body = if body.is_empty() {
+            None
+        } else {
+            Some(serde_json::from_slice(&body)?)
+        };
+        Ok(BlueprintV4Response {
+            status: status.as_u16(),
+            etag,
+            body,
+        })
     }
 }

@@ -110,7 +110,7 @@ fn metrics_body_uses_plant_aggregated_variant_for_plant_day_payload() {
         let data = v.data.unwrap();
         assert_eq!(data[0].id.as_deref(), Some("daily-1"));
         assert_eq!(data[0].date, "2026-01-01");
-        assert_eq!(data[0].energy, 42.0);
+        assert_eq!(data[0].energy, Some(42.0));
     }
 }
 
@@ -203,6 +203,7 @@ fn metrics_body_deserializes_inverter_intraday() {
                 "id": "inv-1",
                 "time": "10:00",
                 "energy": 3.2,
+                "p": 1.5,
                 "timestamp": 1.0
             }
         ]
@@ -219,10 +220,47 @@ fn metrics_body_deserializes_inverter_intraday() {
             assert_eq!(data.len(), 1);
             assert_eq!(data[0].id, "inv-1");
             assert_eq!(data[0].time, "10:00");
-            assert_eq!(data[0].energy, 3.2);
+            assert_eq!(data[0].energy, Some(3.2));
+            assert_eq!(data[0].p, Some(1.5));
             assert_eq!(data[0].timestamp, 1.0);
         }
         _ => panic!("expected InverterIntraday"),
+    }
+}
+
+#[test]
+fn metrics_body_deserializes_ess_points() {
+    let json = r#"{
+        "plant_id": "p1",
+        "unit": "point",
+        "source": "ess",
+        "date": "2026-01-01",
+        "interval": "5m",
+        "data": [
+            {
+                "timestamp": 1767225600,
+                "date": "10:05:00",
+                "source_pid": 7,
+                "source_tag": "soc",
+                "source_station": "BMS1",
+                "unit": "%",
+                "sample_count": 30,
+                "avg": 51.2,
+                "min": 50.0,
+                "max": 52.0,
+                "last": 51.5
+            }
+        ]
+    }"#;
+
+    let body: MetricsBody = serde_json::from_str(json).unwrap();
+    match body {
+        MetricsBody::ESSPoints(v) => {
+            assert_eq!(v.unit, "point");
+            assert_eq!(v.source, "ess");
+            assert_eq!(v.data.unwrap().len(), 1);
+        }
+        _ => panic!("expected ESSPoints"),
     }
 }
 
@@ -254,7 +292,7 @@ fn metrics_body_deserializes_inverter_daily() {
             assert_eq!(data.len(), 1);
             assert_eq!(data[0].id, "inv-1");
             assert_eq!(data[0].date, "2026-01-01");
-            assert_eq!(data[0].energy, 9.8);
+            assert_eq!(data[0].energy, Some(9.8));
         }
         _ => panic!("expected InverterDaily"),
     }
@@ -288,7 +326,7 @@ fn metrics_body_deserializes_plant_intraday() {
             let data = v.data.unwrap();
             assert_eq!(data.len(), 1);
             assert_eq!(data[0].date, "2026-01-01");
-            assert_eq!(data[0].energy, 4.4);
+            assert_eq!(data[0].energy, Some(4.4));
             assert_eq!(data[0].cumulative_energy, 8.8);
             assert_eq!(data[0].timestamp, 1);
         }
@@ -959,8 +997,7 @@ fn comment_output_accepts_nullable_image_and_map_arrays() {
         "images": ["img-1"],
         "map_ids": ["map-1"]
     }"#;
-    let model: CommentOutput =
-        serde_json::from_str(array_json).expect("arrays should deserialize");
+    let model: CommentOutput = serde_json::from_str(array_json).expect("arrays should deserialize");
     assert_eq!(model.images.as_ref().unwrap()[0], "img-1");
     assert_eq!(model.map_ids.as_ref().unwrap()[0], "map-1");
 }

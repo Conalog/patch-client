@@ -1,4 +1,4 @@
-name: Sync OpenAPI v3
+name: Sync OpenAPI v3+v4
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq
 
-      - name: Sync v3 OpenAPI snapshot
+      - name: Sync v3+v4 OpenAPI snapshot
         run: ./scripts/update-openapi-v3.sh
 
       - name: Detect snapshot changes
@@ -45,7 +45,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add openapi/openapi-v3.json
-          git commit -m "chore: sync openapi v3 snapshot"
+          git commit -m "chore: sync openapi v3+v4 snapshot"
 
       - name: Push to main
         if: steps.changes.outputs.changed == 'true'

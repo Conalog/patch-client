@@ -1367,6 +1367,625 @@
         ],
         "type": "object"
       },
+      "ESSPointsBatteryData": {
+        "additionalProperties": false,
+        "properties": {
+          "cell_temp_avg": {
+            "description": "Mean of the average cell temperature, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_temp_max": {
+            "description": "Maximum cell temperature, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_temp_min": {
+            "description": "Minimum cell temperature, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_temp_spread_max": {
+            "description": "Largest max−min cell temperature seen at one poll, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_voltage_avg": {
+            "description": "Mean of the average cell voltage, in the site's unit",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_voltage_max": {
+            "description": "Maximum cell voltage, in the site's unit (mV at PowerScene sites)",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_voltage_min": {
+            "description": "Minimum cell voltage, in the site's unit",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_voltage_spread_max": {
+            "description": "Largest max−min cell voltage seen at one poll",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Bucket end local time (Asia/Seoul), HH:MM:SS",
+            "type": "string"
+          },
+          "dc_current": {
+            "description": "Mean system current, A",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "dc_power": {
+            "description": "Mean system power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "dc_voltage": {
+            "description": "Mean system voltage, V",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "BMS number within the plant",
+            "format": "int64",
+            "type": "integer"
+          },
+          "remain_energy": {
+            "description": "Remaining energy at the last poll, in the site's unit",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sample_count": {
+            "description": "Polls in the bucket. At a 10s poll: 5m=30, 15m=90, 1h=360",
+            "format": "int64",
+            "type": "integer"
+          },
+          "soc": {
+            "description": "State of charge at the last poll, %",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "soc_max": {
+            "description": "Maximum state of charge, %",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "soc_min": {
+            "description": "Minimum state of charge, %",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "soh": {
+            "description": "State of health at the last poll, %",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "station": {
+            "description": "Source station name, e.g. BMS1",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "description": "Bucket end, Unix epoch seconds",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "station",
+          "timestamp",
+          "date",
+          "soc",
+          "soc_max",
+          "soc_min",
+          "soh",
+          "remain_energy",
+          "dc_voltage",
+          "dc_current",
+          "dc_power",
+          "cell_voltage_max",
+          "cell_voltage_min",
+          "cell_voltage_avg",
+          "cell_voltage_spread_max",
+          "cell_temp_max",
+          "cell_temp_min",
+          "cell_temp_avg",
+          "cell_temp_spread_max",
+          "sample_count"
+        ],
+        "type": "object"
+      },
+      "ESSPointsPCSDailyData": {
+        "additionalProperties": false,
+        "properties": {
+          "charge_energy": {
+            "description": "Charged energy, kWh. Equals the sum of the day's 5m charge_energy",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "charge_power_max": {
+            "description": "Maximum charging power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Local date the data belongs to (Asia/Seoul), YYYY-MM-DD",
+            "type": "string"
+          },
+          "discharge_energy": {
+            "description": "Discharged energy, kWh. Equals the sum of the day's 5m discharge_energy",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "discharge_power_max": {
+            "description": "Maximum discharging power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "PCS number within the plant",
+            "format": "int64",
+            "type": "integer"
+          },
+          "sample_count": {
+            "description": "Polls in the day. At a 10s poll a full day is 8640",
+            "format": "int64",
+            "type": "integer"
+          },
+          "station": {
+            "description": "Source station name, e.g. PCS1",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "description": "End of the day (next local midnight), Unix epoch seconds",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "station",
+          "timestamp",
+          "date",
+          "charge_energy",
+          "discharge_energy",
+          "charge_power_max",
+          "discharge_power_max",
+          "sample_count"
+        ],
+        "type": "object"
+      },
+      "ESSPointsPCSIntradayData": {
+        "additionalProperties": false,
+        "properties": {
+          "a_current": {
+            "description": "Mean grid current, phase A, A",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "a_voltage": {
+            "description": "Mean grid voltage, phase A, V",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "active_power": {
+            "description": "Mean active power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "active_power_max": {
+            "description": "Maximum active power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "active_power_min": {
+            "description": "Minimum active power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "b_current": {
+            "description": "Mean grid current, phase B, A",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "b_voltage": {
+            "description": "Mean grid voltage, phase B, V",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "c_current": {
+            "description": "Mean grid current, phase C, A",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "c_voltage": {
+            "description": "Mean grid voltage, phase C, V",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "charge_energy": {
+            "description": "Charged energy integrated from per-minute mean charging power, kWh",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "charge_power": {
+            "description": "Mean charging power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Bucket end local time (Asia/Seoul), HH:MM:SS",
+            "type": "string"
+          },
+          "dc_current": {
+            "description": "Mean DC input current, A",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "dc_voltage": {
+            "description": "Mean DC input voltage, V",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "discharge_energy": {
+            "description": "Discharged energy integrated from per-minute mean discharging power, kWh",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "discharge_power": {
+            "description": "Mean discharging power, kW",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "grid_frequency": {
+            "description": "Mean grid frequency, Hz",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "grid_frequency_max": {
+            "description": "Maximum grid frequency, Hz",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "grid_frequency_min": {
+            "description": "Minimum grid frequency, Hz",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "PCS number within the plant",
+            "format": "int64",
+            "type": "integer"
+          },
+          "power_factor": {
+            "description": "Mean power factor",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reactive_power": {
+            "description": "Mean reactive power, kVAR",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sample_count": {
+            "description": "Polls in the bucket. At a 10s poll: 5m=30, 15m=90, 1h=360",
+            "format": "int64",
+            "type": "integer"
+          },
+          "stack_temp_max": {
+            "description": "Maximum stack temperature, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "station": {
+            "description": "Source station name, e.g. PCS1",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "description": "Bucket end, Unix epoch seconds",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "station",
+          "timestamp",
+          "date",
+          "active_power",
+          "active_power_max",
+          "active_power_min",
+          "charge_power",
+          "discharge_power",
+          "charge_energy",
+          "discharge_energy",
+          "reactive_power",
+          "power_factor",
+          "grid_frequency",
+          "grid_frequency_max",
+          "grid_frequency_min",
+          "a_voltage",
+          "b_voltage",
+          "c_voltage",
+          "a_current",
+          "b_current",
+          "c_current",
+          "dc_voltage",
+          "dc_current",
+          "stack_temp_max",
+          "sample_count"
+        ],
+        "type": "object"
+      },
+      "ESSPointsPointData": {
+        "additionalProperties": false,
+        "properties": {
+          "avg": {
+            "description": "Mean value, rounded to two decimal places",
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "description": "Bucket end local time (Asia/Seoul), HH:MM:SS",
+            "type": "string"
+          },
+          "last": {
+            "description": "Value at the last poll, rounded to two decimal places",
+            "format": "double",
+            "type": "number"
+          },
+          "max": {
+            "description": "Maximum value, rounded to two decimal places",
+            "format": "double",
+            "type": "number"
+          },
+          "min": {
+            "description": "Minimum value, rounded to two decimal places",
+            "format": "double",
+            "type": "number"
+          },
+          "sample_count": {
+            "description": "Polls in the bucket that had a value",
+            "format": "int64",
+            "type": "integer"
+          },
+          "source_pid": {
+            "description": "PowerScene point id",
+            "format": "int64",
+            "type": "integer"
+          },
+          "source_station": {
+            "description": "PowerScene station name at the last poll",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_tag": {
+            "description": "PowerScene tag name at the last poll",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Bucket end, Unix epoch seconds",
+            "format": "int64",
+            "type": "integer"
+          },
+          "unit": {
+            "description": "Engineering unit reported by PowerScene at the last poll",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "timestamp",
+          "date",
+          "source_pid",
+          "source_tag",
+          "source_station",
+          "unit",
+          "sample_count",
+          "avg",
+          "min",
+          "max",
+          "last"
+        ],
+        "type": "object"
+      },
+      "ESSPointsRackData": {
+        "additionalProperties": false,
+        "properties": {
+          "cell_temp_max": {
+            "description": "Maximum cell temperature in the rack, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cell_temp_min": {
+            "description": "Minimum cell temperature in the rack, °C",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "date": {
+            "description": "Bucket end local time (Asia/Seoul), HH:MM:SS",
+            "type": "string"
+          },
+          "id": {
+            "description": "Rack number within the BMS",
+            "format": "int64",
+            "type": "integer"
+          },
+          "sample_count": {
+            "description": "Polls in the bucket. At a 10s poll: 5m=30, 15m=90, 1h=360",
+            "format": "int64",
+            "type": "integer"
+          },
+          "station": {
+            "description": "Source station name of the BMS, e.g. BMS1",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "description": "Bucket end, Unix epoch seconds",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "station",
+          "timestamp",
+          "date",
+          "cell_temp_max",
+          "cell_temp_min",
+          "sample_count"
+        ],
+        "type": "object"
+      },
       "ESSReadyBatteryData": {
         "additionalProperties": false,
         "properties": {
@@ -2173,7 +2792,14 @@
           "energy": {
             "description": "Total daily energy production (kWh)",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "energy_estimated": {
+            "description": "Contains estimated energy rather than only measured energy",
+            "type": "boolean"
           },
           "id": {
             "description": "Unique identifier for the inverter",
@@ -2193,11 +2819,26 @@
           "energy": {
             "description": "Energy production for the time interval (kWh)",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "energy_estimated": {
+            "description": "Contains estimated energy rather than only measured energy",
+            "type": "boolean"
           },
           "id": {
             "description": "Unique identifier for the inverter",
             "type": "string"
+          },
+          "p": {
+            "description": "Mean observed output power in the bucket (W); null when unavailable",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "time": {
             "description": "Time of the measurement in ISO 8601 format",
@@ -2210,6 +2851,7 @@
           }
         },
         "required": [
+          "p",
           "id",
           "time",
           "energy",
@@ -3978,7 +4620,14 @@
           "energy": {
             "description": "Total daily energy production (kWh)",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "energy_estimated": {
+            "description": "True when source is inverter and the energy includes estimated generation",
+            "type": "boolean"
           },
           "id": {
             "description": "Plant identifier (optional for plant-level aggregation)",
@@ -4006,7 +4655,14 @@
           "energy": {
             "description": "Total energy production for the time interval (kWh)",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "energy_estimated": {
+            "description": "True when source is inverter and the energy includes estimated generation",
+            "type": "boolean"
           },
           "time": {
             "description": "Time label duplicated from date for device plant intraday compatibility",
@@ -10162,7 +10818,7 @@
     }
   },
   "info": {
-    "title": "patch-client (v3)",
+    "title": "patch-client (v3+v4)",
     "version": "3.0.0"
   },
   "openapi": "3.1.0",
@@ -22206,7 +22862,7 @@
     },
     "/api/v3/plants/{plant_id}/metrics/{source}/{unit}-{interval}": {
       "get": {
-        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, ESS, and plant-level data aggregation across different time intervals. Inverter/string supports 5m, 15m, 1h, and 1d for one date only; intraday rows use registry map_id, local bucket-end time, Unix bucket-end timestamp, A/V/W/Wh measurements, and daily rows use local bucket-end date and Wh energy. ESS supports ess and plant units at 5m, 15m, 1h, and 1d intervals only.",
+        "description": "Retrieves comprehensive time-series metrics data for a specific plant with configurable data source, aggregation unit, and time interval. Supports various combinations of panel, inverter, string, ESS, and plant-level data aggregation across different time intervals. Inverter/string supports 5m, 15m, 1h, and 1d for one date only; intraday rows use registry map_id, local bucket-end time, Unix bucket-end timestamp, A/V/W/Wh measurements, and daily rows use local bucket-end date and Wh energy. ESS supports ess and plant units at 5m, 15m, 1h, and 1d intervals only. ESS ready units are pcs (5m, 15m, 1h, 1d; before ranges only for 1d), battery, rack, and point (5m, 15m, 1h); fields is not selectable. PowerScene plants answer with the ESSPoints* schemas, where a bucket exists only when it has a poll, sample_count is the number of polls in it, and a null measurement had no value; point lists every raw analog point and exists only for PowerScene plants.",
         "operationId": "get_metrics_by_date",
         "parameters": [
           {
@@ -22266,13 +22922,13 @@
             }
           },
           {
-            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', and 'rack'.",
+            "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', 'rack', and 'point'.",
             "in": "path",
             "name": "source",
             "required": true,
             "schema": {
               "default": "device",
-              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', and 'rack'.",
+              "description": "Data source type. Indicates the origin of the data collection system. 'device' refers to panel-level monitoring devices, 'inverter' refers to inverter-level data collection, 'ess' refers to energy storage system data collection, and 'sensor' refers to sensor data collection. For source 'ess', supported units are 'ess', 'plant', 'pcs', 'battery', 'rack', and 'point'.",
               "enum": [
                 "device",
                 "inverter",
@@ -22286,13 +22942,13 @@
             }
           },
           {
-            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', and 'rack' are valid only with source 'ess'.",
+            "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', 'rack', and 'point' are valid only with source 'ess'. For source 'ess', 'pcs' is one row per PCS, 'battery' per BMS system, 'rack' per battery rack, and 'point' per raw analog point; 'point' exists only for PowerScene plants.",
             "in": "path",
             "name": "unit",
             "required": true,
             "schema": {
               "default": "plant",
-              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', and 'rack' are valid only with source 'ess'.",
+              "description": "Data aggregation unit. Specifies the hierarchical level of data aggregation within the solar installation. 'panel' provides individual panel data, 'inverter' aggregates by inverter, 'ess' provides individual ESS data, 'string' aggregates by string configuration, 'plant' provides plant-wide aggregated data, and 'temperature'/'insolation' are sensor-specific units. Units 'ess', 'pcs', 'battery', 'rack', and 'point' are valid only with source 'ess'. For source 'ess', 'pcs' is one row per PCS, 'battery' per BMS system, 'rack' per battery rack, and 'point' per raw analog point; 'point' exists only for PowerScene plants.",
               "enum": [
                 "panel",
                 "inverter",
@@ -22302,6 +22958,7 @@
                 "pcs",
                 "battery",
                 "rack",
+                "point",
                 "temperature",
                 "insolation"
               ],
@@ -23228,6 +23885,261 @@
                         "data"
                       ],
                       "title": "ESS Ready Rack Intraday Metrics",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Per-PCS metrics at 5-minute, 15-minute, and 1-hour intervals for PowerScene ESS plants. Null measurements had no value in the bucket.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPointsPCSIntradayData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS PCS Intraday Metrics (PowerScene)",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Per-PCS daily charge and discharge totals for PowerScene ESS plants.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPointsPCSDailyData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS PCS Daily Metrics (PowerScene)",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Per-BMS system battery metrics at 5-minute, 15-minute, and 1-hour intervals for PowerScene ESS plants.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPointsBatteryData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Battery Intraday Metrics (PowerScene)",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Per-rack cell temperature metrics at 5-minute, 15-minute, and 1-hour intervals for PowerScene ESS plants.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPointsRackData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Rack Intraday Metrics (PowerScene)",
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "description": "Every analog PowerScene point, mapped or not, at 5-minute, 15-minute, and 1-hour intervals.",
+                      "properties": {
+                        "before": {
+                          "description": "Number of historical intervals included in the response",
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "data": {
+                          "description": "Array of time-series data points matching the specified parameters",
+                          "items": {
+                            "$ref": "#/components/schemas/ESSPointsPointData"
+                          },
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "date": {
+                          "description": "Target date for the data retrieval",
+                          "type": "string"
+                        },
+                        "interval": {
+                          "description": "Time interval used for data aggregation",
+                          "type": "string"
+                        },
+                        "plant_id": {
+                          "description": "Plant identifier that was queried",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Data source type that was queried",
+                          "type": "string"
+                        },
+                        "unit": {
+                          "description": "Data aggregation unit that was requested",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "plant_id",
+                        "unit",
+                        "source",
+                        "date",
+                        "interval",
+                        "data"
+                      ],
+                      "title": "ESS Raw Point Intraday Metrics (PowerScene)",
                       "type": "object"
                     },
                     {
@@ -24767,6 +25679,174 @@
         "summary": "Retrieve Plant Observed Weather",
         "tags": [
           "v3/plants/weather"
+        ]
+      }
+    },
+    "/api/v4/plants/{plant_id}/blueprint": {
+      "get": {
+        "description": "Retrieves the dated plant blueprint using the same data representation as v3, together with the selected blueprint record metadata.",
+        "operationId": "get_v4_plant_blueprint",
+        "parameters": [
+          {
+            "description": "Account type associated with the bearer token.",
+            "in": "header",
+            "name": "Account-Type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "manager",
+                "viewer",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+            "in": "path",
+            "name": "plant_id",
+            "required": true,
+            "schema": {
+              "description": "Plant ID. A unique alphanumeric identifier representing the solar plant installation to fetch blueprint data for. Must be exactly 15 characters in length.",
+              "examples": [
+                "unw4id41ud2p0wt"
+              ],
+              "maxLength": 15,
+              "minLength": 15,
+              "patternDescription": "alphanum",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target date for blueprint data retrieval. The date for which you want to retrieve the plant's blueprint configuration. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Target date for blueprint data retrieval. The date for which you want to retrieve the plant's blueprint configuration. Must follow the ISO 8601 date format 'YYYY-MM-DD'.",
+              "examples": [
+                "2024-01-24"
+              ],
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches one of the passed values.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches one of the passed values.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.",
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is more recent than the passed date.",
+            "in": "header",
+            "name": "If-Modified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is more recent than the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+            "in": "header",
+            "name": "If-Unmodified-Since",
+            "schema": {
+              "description": "Succeeds if the server's resource date is older or the same as the passed date.",
+              "format": "date-time-http",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "anyOf": [
+                        {
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        {
+                          "additionalProperties": true,
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Blueprint data in its stored array or object representation."
+                    },
+                    "metadata": {
+                      "additionalProperties": true,
+                      "description": "Metadata stored on the selected blueprint record.",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "metadata"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Blueprint data and metadata.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Blueprint representation has not changed.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve Plant Blueprint",
+        "tags": [
+          "v4/plants/blueprint"
         ]
       }
     }
