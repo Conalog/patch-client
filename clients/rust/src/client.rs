@@ -25,6 +25,13 @@ use url::Url;
 const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_MAX_RESPONSE_BYTES: usize = 10 << 20;
 
+#[derive(Debug, Clone)]
+pub struct BlueprintV4Response {
+    pub status: u16,
+    pub etag: Option<String>,
+    pub body: Option<serde_json::Value>,
+}
+
 fn ensure_allowed(value: &str, allowed: &[&str], field: &str) -> Result<()> {
     if allowed.contains(&value) {
         Ok(())
@@ -790,6 +797,10 @@ impl Client {
                 "plant",
                 "temperature",
                 "insolation",
+                "pcs",
+                "battery",
+                "rack",
+                "point",
             ],
             "unit",
         )?;

@@ -43,7 +43,7 @@ fn server(
     let task = thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
         check(read_request(&mut stream));
-        write!(stream, "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+        write!(stream, "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nETag: \"v1\"\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
     });
     (url, task)
 }
@@ -79,6 +79,66 @@ async fn commands_keep_identity_auth_and_do_not_replay() {
         err,
         Error::Api { status: 401, .. } | Error::ApiProblem { status: 401, .. }
     ));
+    task.join().unwrap();
+}
+
+#[tokio::test]
+async fn v4_blueprint_returns_not_modified_with_etag() {
+    let (url, task) = server(
+        |req| {
+            assert!(req.starts_with("GET /api/v4/plants/plant-1/blueprint?date=2026-01-01 "));
+            let headers = req.to_ascii_lowercase();
+            assert!(headers.contains("authorization: bearer manager-token\r\n"));
+            assert!(headers.contains("account-type: manager\r\n"));
+            assert!(headers.contains("if-none-match: \"v1\"\r\n"));
+        },
+        304,
+        "",
+    );
+    let client = Client::new(&url).unwrap();
+    client
+        .set_access_token("manager-token", Some("manager"))
+        .await
+        .unwrap();
+    let response = client
+        .get_v4_plant_blueprint("plant-1", "2026-01-01", &[("If-None-Match", "\"v1\"")])
+        .await
+        .unwrap();
+    assert_eq!(response.status, 304);
+    assert_eq!(response.etag, Some("\"v1\"".to_string()));
+    assert!(response.body.is_none());
+    task.join().unwrap();
+}
+
+#[tokio::test]
+async fn new_fieldwork_checklist_uses_command_key() {
+    let (url, task) = server(
+        |req| {
+            assert!(req.starts_with("POST /api/v3/fieldwork/works/work-1/checklist/entries "));
+            assert!(req
+                .to_ascii_lowercase()
+                .contains("idempotency-key: checklist-key\r\n"));
+            assert!(req.ends_with("{\"title\":\"Inspect panel\"}"));
+        },
+        201,
+        "{\"id\":\"entry-1\"}",
+    );
+    let client = Client::new(&url).unwrap();
+    client
+        .set_access_token("manager-token", Some("manager"))
+        .await
+        .unwrap();
+    assert_eq!(
+        client
+            .fieldwork_checklist_create_v3(
+                "work-1",
+                &json!({"title":"Inspect panel"}),
+                "checklist-key",
+            )
+            .await
+            .unwrap(),
+        json!({"id":"entry-1"})
+    );
     task.join().unwrap();
 }
 

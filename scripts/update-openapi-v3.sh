@@ -8,9 +8,13 @@ mkdir -p "${ROOT_DIR}/openapi"
 
 curl -fsSL https://patch-api.conalog.com/openapi.json \
   | jq '
-      .paths |= with_entries(select(.key | startswith("/api/v3/")))
-      | .info.title = "patch-client (v3)"
+      .paths |= with_entries(
+        select(.key | startswith("/api/v3/") or startswith("/api/v4/"))
+      )
+      | .info.title = "patch-client (v3+v4)"
     ' > "${OUT_PATH}"
 
 echo "saved: ${OUT_PATH}"
-echo "v3 path count: $(jq '.paths | length' "${OUT_PATH}")"
+echo "v3 path count: $(jq '.paths | keys | map(select(startswith("/api/v3/"))) | length' "${OUT_PATH}")"
+echo "v4 path count: $(jq '.paths | keys | map(select(startswith("/api/v4/"))) | length' "${OUT_PATH}")"
+echo "operation count: $(jq '[.paths[] | keys[] | select(. != "parameters")] | length' "${OUT_PATH}")"

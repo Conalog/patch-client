@@ -1341,7 +1341,10 @@ pub struct RegistryOutputBody {
 #[serde(deny_unknown_fields)]
 pub struct PlantData {
     pub date: String,
-    pub energy: f64,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub energy: Option<f64>,
+    #[serde(default)]
+    pub energy_estimated: Option<bool>,
     pub cumulative_energy: f64,
     pub timestamp: i64,
 }
@@ -1349,7 +1352,10 @@ pub struct PlantData {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct PlantDailyData {
-    pub energy: f64,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub energy: Option<f64>,
+    #[serde(default)]
+    pub energy_estimated: Option<bool>,
     pub date: String,
     #[serde(default, deserialize_with = "deserialize_optional_non_null")]
     pub id: Option<String>,
@@ -1397,7 +1403,12 @@ pub struct PanelDailyData {
 pub struct InverterData {
     pub id: String,
     pub time: String,
-    pub energy: f64,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub energy: Option<f64>,
+    #[serde(default)]
+    pub energy_estimated: Option<bool>,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub p: Option<f64>,
     pub timestamp: f64,
 }
 
@@ -1406,7 +1417,10 @@ pub struct InverterData {
 pub struct InverterDailyData {
     pub id: String,
     pub date: String,
-    pub energy: f64,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub energy: Option<f64>,
+    #[serde(default)]
+    pub energy_estimated: Option<bool>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -1693,6 +1707,20 @@ pub struct StatPoint {
     pub inverter_models: Option<Vec<InverterModelStat>>,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ESSPointsMetricsBody {
+    pub plant_id: String,
+    pub unit: String,
+    pub source: String,
+    pub date: String,
+    pub interval: String,
+    #[serde(deserialize_with = "deserialize_present_option")]
+    pub data: Option<Vec<Value>>,
+    #[serde(default, deserialize_with = "deserialize_optional_non_null")]
+    pub before: Option<i64>,
+}
+
 #[derive(Debug, Clone)]
 pub enum MetricsBody {
     PanelIntraday(BodyPanelData),
@@ -1706,6 +1734,7 @@ pub enum MetricsBody {
     ESSUnitDaily(BodyESSUnitDailyData),
     ESSPlantIntraday(BodyESSPlantIntradayData),
     ESSPlantDaily(BodyESSPlantDailyData),
+    ESSPoints(ESSPointsMetricsBody),
     Unknown(Value),
 }
 
@@ -1766,6 +1795,13 @@ impl<'de> Deserialize<'de> for MetricsBody {
             }
             (Some("ess"), Some("plant"), Some("1d")) => serde_json::from_value(value)
                 .map(MetricsBody::ESSPlantDaily)
+                .map_err(de::Error::custom),
+            (
+                Some("ess"),
+                Some("pcs" | "battery" | "rack" | "point"),
+                Some("5m" | "15m" | "1h"),
+            ) => serde_json::from_value(value)
+                .map(MetricsBody::ESSPoints)
                 .map_err(de::Error::custom),
             _ => Ok(MetricsBody::Unknown(value)),
         }
