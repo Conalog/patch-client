@@ -1,6 +1,76 @@
 {
   "components": {
     "schemas": {
+      "AccountLoginOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AccountLoginOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "The email address of the user. Only available for 'manager' account types.",
+            "examples": [
+              "manager@example.com"
+            ],
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
+          },
+          "name": {
+            "description": "The display name of the user.",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "organizations": {
+            "description": "List of organizations that the user has access to. Each organization represents a separate tenant or business entity within the system.",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationBody"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "temporary_access": {
+            "$ref": "#/components/schemas/TemporaryLinkAccess"
+          },
+          "token": {
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
+            "enum": [
+              "manager",
+              "viewer",
+              "temporary"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "The username of the user. Only available for 'viewer' and 'temporary' account types.",
+            "examples": [
+              "viewer_user"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "type",
+          "name",
+          "organizations"
+        ],
+        "type": "object"
+      },
       "AccountOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -64,6 +134,45 @@
         ],
         "type": "object"
       },
+      "AccountRefreshOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/AccountRefreshOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "The display name of the authenticated user",
+            "examples": [
+              "John Doe"
+            ],
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PublicParticipantSession"
+          },
+          "temporary_access": {
+            "$ref": "#/components/schemas/TemporaryLinkAccess"
+          },
+          "token": {
+            "description": "JWT authentication token issued upon successful login. Use this token in the Authorization header for subsequent API requests.",
+            "examples": [
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "token"
+        ],
+        "type": "object"
+      },
       "AssignOrganizationPermissionRequestBody": {
         "additionalProperties": false,
         "properties": {
@@ -108,39 +217,6 @@
         ],
         "type": "object"
       },
-      "AuthBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/AuthBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "name": {
-            "description": "The display name of the authenticated user",
-            "examples": [
-              "John Doe"
-            ],
-            "type": "string"
-          },
-          "token": {
-            "description": "JWT authentication token issued upon successful login. Use this token in the Authorization header for subsequent API requests.",
-            "examples": [
-              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "token"
-        ],
-        "type": "object"
-      },
       "AuthMethodsBody": {
         "additionalProperties": false,
         "properties": {
@@ -166,74 +242,6 @@
         },
         "required": [
           "authProviders"
-        ],
-        "type": "object"
-      },
-      "AuthOutputV3Body": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/AuthOutputV3Body.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "email": {
-            "description": "The email address of the user. Only available for 'manager' account types.",
-            "examples": [
-              "manager@example.com"
-            ],
-            "type": "string"
-          },
-          "metadata": {
-            "description": "Additional metadata associated with the user account. May include custom fields, preferences, or configuration data. Not available for viewer accounts."
-          },
-          "name": {
-            "description": "The display name of the user.",
-            "examples": [
-              "John Doe"
-            ],
-            "type": "string"
-          },
-          "organizations": {
-            "description": "List of organizations that the user has access to. Each organization represents a separate tenant or business entity within the system.",
-            "items": {
-              "$ref": "#/components/schemas/OrganizationBody"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "token": {
-            "description": "JWT authentication token for the authenticated user. Use this token in the Authorization header for subsequent API requests.",
-            "type": "string"
-          },
-          "type": {
-            "description": "The type of account indicating the user's access level and permissions. Determines available operations and data access.",
-            "enum": [
-              "manager",
-              "viewer",
-              "temporary"
-            ],
-            "type": "string"
-          },
-          "username": {
-            "description": "The username of the user. Only available for 'viewer' and 'temporary' account types.",
-            "examples": [
-              "viewer_user"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "token",
-          "type",
-          "name",
-          "organizations"
         ],
         "type": "object"
       },
@@ -896,19 +904,11 @@
             ],
             "type": "string"
           },
-          "expired": {
-            "description": "Expiration timestamp for temporary accounts.",
-            "type": "string"
-          },
           "id": {
             "description": "Unique identifier for the user within the system.",
             "examples": [
               "user123"
             ],
-            "type": "string"
-          },
-          "link": {
-            "description": "Generated onsite link for temporary accounts.",
             "type": "string"
           },
           "metadata": {
@@ -3569,6 +3569,22 @@
         ],
         "type": "object"
       },
+      "ManagedTemporaryLink": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "path"
+        ],
+        "type": "object"
+      },
       "MapRef": {
         "additionalProperties": false,
         "properties": {
@@ -3627,6 +3643,109 @@
           "id",
           "role",
           "actor"
+        ],
+        "type": "object"
+      },
+      "MemoDetailItem": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "description": "Array of image file URLs attached to the comment.",
+            "examples": [
+              [
+                "https://example.org/api/files/w8l3o9jedinck7g/img123/blob.jpg"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "is_pinned": {
+            "type": "boolean"
+          },
+          "map_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "parent": {
+            "type": "string"
+          },
+          "related": {
+            "description": "Previously attached plant-data timestamp.",
+            "examples": [
+              "2025-04-11 00:05:00.000Z"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "reply_count": {
+            "description": "Number of visible replies to this top-level comment.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CommentUserOutput"
+          }
+        },
+        "required": [
+          "is_pinned",
+          "id",
+          "text",
+          "user",
+          "created",
+          "updated"
+        ],
+        "type": "object"
+      },
+      "MemoThreadReadOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/MemoThreadReadOutput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "comment": {
+            "$ref": "#/components/schemas/MemoDetailItem"
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/MemoDetailItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "comment",
+          "replies"
         ],
         "type": "object"
       },
@@ -4427,6 +4546,22 @@
         ],
         "type": "object"
       },
+      "ParticipantProfileOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/PublicActor"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/TemporaryParticipantProfile"
+          }
+        },
+        "required": [
+          "actor",
+          "profile"
+        ],
+        "type": "object"
+      },
       "PlantBody": {
         "additionalProperties": false,
         "properties": {
@@ -5185,15 +5320,6 @@
             },
             "type": "array"
           },
-          "temporary_grants": {
-            "items": {
-              "$ref": "#/components/schemas/PublicTemporaryGrant"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
           "viewer": {
             "additionalProperties": false,
             "properties": {
@@ -5251,7 +5377,6 @@
           "work",
           "viewer",
           "members",
-          "temporary_grants",
           "photo_orders",
           "needs_resync"
         ],
@@ -5290,8 +5415,7 @@
           },
           "actor_type": {
             "enum": [
-              "user",
-              "temporary"
+              "user"
             ],
             "type": "string"
           }
@@ -5311,8 +5435,7 @@
           },
           "type": {
             "enum": [
-              "user",
-              "temporary"
+              "user"
             ],
             "type": "string"
           }
@@ -5428,15 +5551,6 @@
               "null"
             ]
           },
-          "temporary_grants": {
-            "items": {
-              "$ref": "#/components/schemas/PublicGrantCandidate"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
           "users": {
             "items": {
               "$ref": "#/components/schemas/PublicCandidate"
@@ -5449,8 +5563,7 @@
         },
         "required": [
           "users",
-          "organizations",
-          "temporary_grants"
+          "organizations"
         ],
         "type": "object"
       },
@@ -5513,6 +5626,9 @@
             "type": "boolean"
           },
           "manage_schedules": {
+            "type": "boolean"
+          },
+          "manage_temporary_link": {
             "type": "boolean"
           },
           "manage_work": {
@@ -6109,6 +6225,9 @@
               "null"
             ]
           },
+          "session": {
+            "$ref": "#/components/schemas/PublicParticipantSession"
+          },
           "source_work_id": {
             "type": "string"
           },
@@ -6350,6 +6469,27 @@
               "array",
               "null"
             ]
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicDataOutputParticipantProfileOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicDataOutputParticipantProfileOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ParticipantProfileOutput"
           }
         },
         "required": [
@@ -6748,27 +6888,6 @@
         ],
         "type": "object"
       },
-      "PublicDataOutputPublicParticipantSessionBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicDataOutputPublicParticipantSessionBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PublicParticipantSession"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
       "PublicDataOutputPublicReceiptBody": {
         "additionalProperties": false,
         "properties": {
@@ -6855,21 +6974,6 @@
         ],
         "type": "object"
       },
-      "PublicEmptyBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicEmptyBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "PublicEmptyMessageBody": {
         "additionalProperties": false,
         "properties": {
@@ -6883,22 +6987,6 @@
             "type": "string"
           }
         },
-        "type": "object"
-      },
-      "PublicGrantCandidate": {
-        "additionalProperties": false,
-        "properties": {
-          "actor": {
-            "$ref": "#/components/schemas/PublicActor"
-          },
-          "expires_at": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "actor",
-          "expires_at"
-        ],
         "type": "object"
       },
       "PublicInlineMapReference": {
@@ -7417,6 +7505,58 @@
                 {
                   "additionalProperties": false,
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": [
+                        "choice"
+                      ],
+                      "type": "string"
+                    },
+                    "plant_address": {
+                      "type": "string"
+                    },
+                    "responsible_names": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "schedule": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/TemporaryWorkSchedule"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "time_zone": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "title",
+                    "responsible_names",
+                    "schedule",
+                    "time_zone",
+                    "plant_address"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
                     "item_progress": {
                       "$ref": "#/components/schemas/PublicProgress"
                     },
@@ -7795,12 +7935,6 @@
           "created_at": {
             "type": "string"
           },
-          "grant_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "id": {
             "type": "string"
           },
@@ -7848,10 +7982,41 @@
           "joined_at",
           "left_at",
           "removed_at",
-          "grant_id",
           "created_at",
           "updated_at"
         ],
+        "type": "object"
+      },
+      "PublicMemberSelfBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/PublicMemberSelfBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "expected_actor_ref": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "installation_id": {
+            "description": "Private installation identifier; required for temporary admission.",
+            "type": "string",
+            "writeOnly": true
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "organization_name": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "PublicMentionSet": {
@@ -8307,7 +8472,13 @@
           "expires_at": {
             "type": "string"
           },
+          "profile": {
+            "$ref": "#/components/schemas/TemporaryParticipantProfile"
+          },
           "token_type": {
+            "type": "string"
+          },
+          "work_id": {
             "type": "string"
           }
         },
@@ -8315,43 +8486,8 @@
           "access_token",
           "token_type",
           "expires_at",
+          "work_id",
           "actor"
-        ],
-        "type": "object"
-      },
-      "PublicParticipantSessionInputBody": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://patch-api.conalog.com/schemas/PublicParticipantSessionInputBody.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
-          },
-          "organization_name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
-          },
-          "participant_token": {
-            "maxLength": 128,
-            "minLength": 22,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "participant_token",
-          "organization_name",
-          "name"
         ],
         "type": "object"
       },
@@ -9043,38 +9179,6 @@
         "required": [
           "kind",
           "id"
-        ],
-        "type": "object"
-      },
-      "PublicTemporaryGrant": {
-        "additionalProperties": false,
-        "properties": {
-          "expires_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "state": {
-            "enum": [
-              "active",
-              "expired",
-              "revoked"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "state",
-          "expires_at"
         ],
         "type": "object"
       },
@@ -10135,6 +10239,231 @@
         ],
         "type": "object"
       },
+      "TemporaryDeviceBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TemporaryDeviceBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "fid": {
+            "type": "string"
+          },
+          "package_name": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fid"
+        ],
+        "type": "object"
+      },
+      "TemporaryLinkAccess": {
+        "additionalProperties": false,
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "plant_id": {
+            "type": "string"
+          },
+          "plant_name": {
+            "type": "string"
+          },
+          "work_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "organization_id",
+          "access_token",
+          "plant_id",
+          "plant_name",
+          "work_id"
+        ],
+        "type": "object"
+      },
+      "TemporaryParticipantProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TemporaryParticipantProfile.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "organization_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "organization_name"
+        ],
+        "type": "object"
+      },
+      "TemporaryParticipantRestore": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TemporaryParticipantRestore.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "expected_actor_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "organization_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "work_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "installation_id",
+          "work_id",
+          "expected_actor_ref",
+          "name",
+          "organization_name"
+        ],
+        "type": "object"
+      },
+      "TemporaryPushDispatch": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TemporaryPushDispatch.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "recipient_id": {
+            "maxLength": 64,
+            "minLength": 15,
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipient_id",
+          "work_id",
+          "event",
+          "title",
+          "body"
+        ],
+        "type": "object"
+      },
+      "TemporaryPushResultBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://patch-api.conalog.com/schemas/TemporaryPushResultBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "notification_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "TemporaryWorkSchedule": {
+        "additionalProperties": false,
+        "properties": {
+          "ends_at": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at"
+        ],
+        "type": "object"
+      },
       "ThreadReadOutput": {
         "additionalProperties": false,
         "properties": {
@@ -11009,7 +11338,7 @@
     },
     "/api/v3/account/auth-with-password": {
       "post": {
-        "description": "Authenticates users using email or username for managers, and username for viewers and temporary accounts, with password. The response includes an authentication token for subsequent API calls. Users with OIDC accounts (e.g., Google) can also use this endpoint after setting a password through the web service's 'Forgot password' feature. This endpoint does not require the Authorization header.",
+        "description": "Authenticates with account credentials. Temporary accounts also receive access information derived from their stored link; authentication does not create a participant.",
         "operationId": "authenticate_user",
         "requestBody": {
           "content": {
@@ -11027,12 +11356,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthOutputV3Body",
-                  "description": "Response body containing complete account information and authentication token"
+                  "$ref": "#/components/schemas/AccountLoginOutputBody"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "default": {
             "content": {
@@ -11046,7 +11381,7 @@
           }
         },
         "security": [],
-        "summary": "Authentication",
+        "summary": "Authenticate account",
         "tags": [
           "v3/account"
         ]
@@ -11117,7 +11452,7 @@
     },
     "/api/v3/account/refresh-token": {
       "post": {
-        "description": "Refreshes the authentication token for the user. Requires a valid existing token in the Authorization header. Returns a new JWT token for subsequent API calls.",
+        "description": "Refreshes an account or restores an active work participant without joining or changing the entry link.",
         "operationId": "refresh_user_token",
         "parameters": [
           {
@@ -11146,17 +11481,32 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryParticipantRestore"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthBody",
-                  "description": "Response body containing authentication details"
+                  "$ref": "#/components/schemas/AccountRefreshOutputBody"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "default": {
             "content": {
@@ -11174,7 +11524,7 @@
             "bearer": []
           }
         ],
-        "summary": "Refresh Authentication Token",
+        "summary": "Refresh authentication token",
         "tags": [
           "v3/account"
         ]
@@ -11186,13 +11536,14 @@
         "operationId": "fieldwork_attachment_content",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11275,13 +11626,14 @@
         "operationId": "fieldwork_attachment_content_head",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11578,13 +11930,14 @@
         "operationId": "fieldwork_receipt_get",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11673,13 +12026,14 @@
         "operationId": "fieldwork_events",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11753,13 +12107,14 @@
         "operationId": "fieldwork_message_previews",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11828,13 +12183,14 @@
         "operationId": "fieldwork_messages_read_all",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -11901,37 +12257,23 @@
         ]
       }
     },
-    "/api/v3/fieldwork/participant-sessions": {
+    "/api/v3/fieldwork/notification-devices": {
       "post": {
-        "description": "Exchanges a validated temporary grant for an independent participant session. This does not join a work.",
-        "operationId": "fieldwork_participant_session_create",
+        "description": "Register only after participant admission Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_push_device_create",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicParticipantSessionInputBody"
+                "$ref": "#/components/schemas/TemporaryDeviceBody"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDataOutputPublicParticipantSessionBody"
-                }
-              }
-            },
-            "description": "Created",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+          "200": {
+            "description": "OK"
           },
           "default": {
             "content": {
@@ -11949,7 +12291,203 @@
             "bearer": []
           }
         ],
-        "summary": "Create participant session",
+        "summary": "Register participant device",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
+    "/api/v3/fieldwork/notification-devices/{device_id}": {
+      "delete": {
+        "description": "Use the verified participant identity Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_push_device_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryDeviceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update participant device",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      },
+      "post": {
+        "description": "Use the verified participant identity Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_push_device_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryDeviceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update participant device",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      },
+      "put": {
+        "description": "Use the verified participant identity Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_push_device_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryDeviceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update participant device",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
+    "/api/v3/fieldwork/notifications/temporary-dispatch": {
+      "post": {
+        "description": "Server-only live authorization and push relay Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_temporary_push_dispatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryPushDispatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPushResultBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dispatch participant push",
         "tags": [
           "v3/fieldwork"
         ]
@@ -11961,13 +12499,14 @@
         "operationId": "fieldwork_plant_member_candidates",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12063,13 +12602,14 @@
         "operationId": "fieldwork_summary_get",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12129,13 +12669,14 @@
         "operationId": "fieldwork_work_items_templates_list",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12215,13 +12756,14 @@
         "operationId": "fieldwork_works_list",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12332,13 +12874,14 @@
         "operationId": "fieldwork_work_create",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12428,13 +12971,14 @@
         "operationId": "fieldwork_work_get",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12537,13 +13081,14 @@
         "operationId": "fieldwork_work_archive",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12624,13 +13169,14 @@
         "operationId": "fieldwork_checklist_create",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12728,13 +13274,14 @@
         "operationId": "fieldwork_work_clone",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12832,13 +13379,14 @@
         "operationId": "fieldwork_work_close",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -12919,13 +13467,14 @@
         "operationId": "fieldwork_item_complete",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13014,13 +13563,14 @@
         "operationId": "fieldwork_item_map_reference_add",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13109,13 +13659,14 @@
         "operationId": "fieldwork_item_map_references_sync",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13204,13 +13755,14 @@
         "operationId": "fieldwork_item_map_reference_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13307,13 +13859,14 @@
         "operationId": "fieldwork_item_mentions_set",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13402,13 +13955,14 @@
         "operationId": "fieldwork_item_move",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13497,13 +14051,14 @@
         "operationId": "fieldwork_item_photos_add",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13592,13 +14147,14 @@
         "operationId": "fieldwork_item_photo_move",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13695,13 +14251,14 @@
         "operationId": "fieldwork_item_photo_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13798,13 +14355,14 @@
         "operationId": "fieldwork_item_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13893,13 +14451,14 @@
         "operationId": "fieldwork_item_reopen",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -13988,13 +14547,14 @@
         "operationId": "fieldwork_item_update",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14083,13 +14643,14 @@
         "operationId": "fieldwork_latest_get",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14182,13 +14743,14 @@
         "operationId": "fieldwork_member_invite",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14258,13 +14820,14 @@
         "operationId": "fieldwork_member_decline",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14282,7 +14845,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14334,13 +14897,14 @@
         "operationId": "fieldwork_member_join",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14358,7 +14922,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14406,17 +14970,18 @@
     },
     "/api/v3/fieldwork/works/{work_id}/members/self/leave": {
       "post": {
-        "description": "Calls the upstream member command once. No durable receipt or automatic retry. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "description": "Calls the upstream member command once. No durable receipt or automatic retry. Scoped app participants may leave their own work; a repeated leave confirms the already-left state without deleting history. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_member_leave",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14434,7 +14999,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14486,13 +15051,14 @@
         "operationId": "fieldwork_member_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14518,7 +15084,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14570,13 +15136,14 @@
         "operationId": "fieldwork_member_responsible_add",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14602,7 +15169,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14654,13 +15221,14 @@
         "operationId": "fieldwork_member_responsible_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14686,7 +15254,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublicEmptyBody"
+                "$ref": "#/components/schemas/PublicMemberSelfBody"
               }
             }
           },
@@ -14738,13 +15306,14 @@
         "operationId": "fieldwork_message_create",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14842,13 +15411,14 @@
         "operationId": "fieldwork_messages_read",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -14929,13 +15499,14 @@
         "operationId": "fieldwork_message_get",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15003,13 +15574,14 @@
         "operationId": "fieldwork_message_attachment_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15098,13 +15670,14 @@
         "operationId": "fieldwork_message_map_reference_add",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15193,13 +15766,14 @@
         "operationId": "fieldwork_message_map_reference_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15288,13 +15862,14 @@
         "operationId": "fieldwork_message_map_references_sync",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15383,13 +15958,14 @@
         "operationId": "fieldwork_message_photos_add",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15478,13 +16054,14 @@
         "operationId": "fieldwork_message_photo_move",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15581,13 +16158,14 @@
         "operationId": "fieldwork_message_photo_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15684,13 +16262,14 @@
         "operationId": "fieldwork_reaction_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15779,13 +16358,14 @@
         "operationId": "fieldwork_reaction_set",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15874,13 +16454,14 @@
         "operationId": "fieldwork_message_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -15969,13 +16550,14 @@
         "operationId": "fieldwork_message_update",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16058,19 +16640,97 @@
         ]
       }
     },
+    "/api/v3/fieldwork/works/{work_id}/participant-profile": {
+      "patch": {
+        "description": "Updates the authenticated app participant's display name and organization without changing identity or work history. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_participant_profile_update",
+        "parameters": [
+          {
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+              "enum": [
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryParticipantProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDataOutputParticipantProfileOutputBody"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update own temporary participant profile",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
     "/api/v3/fieldwork/works/{work_id}/reopen": {
       "post": {
         "description": "Executes work.reopen using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_work_reopen",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16151,13 +16811,14 @@
         "operationId": "fieldwork_resources_list",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16252,13 +16913,14 @@
         "operationId": "fieldwork_schedule_update",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16347,13 +17009,14 @@
         "operationId": "fieldwork_section_move",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16442,13 +17105,14 @@
         "operationId": "fieldwork_section_remove",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16537,13 +17201,14 @@
         "operationId": "fieldwork_section_rename",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -16626,19 +17291,246 @@
         ]
       }
     },
+    "/api/v3/fieldwork/works/{work_id}/temporary-link": {
+      "delete": {
+        "description": "Checks the displayed link ID before deletion. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_temporary_link_delete",
+        "parameters": [
+          {
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+              "enum": [
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9]{15}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete work temporary link",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      },
+      "get": {
+        "description": "Returns the current valid link or null. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_temporary_link_get",
+        "parameters": [
+          {
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+              "enum": [
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/ManagedTemporaryLink"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get work temporary link",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      },
+      "post": {
+        "description": "Reuses the current valid link when present. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
+        "operationId": "fieldwork_temporary_link_post",
+        "parameters": [
+          {
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+            "in": "header",
+            "name": "Account-Type",
+            "schema": {
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
+              "enum": [
+                "manager",
+                "temporary"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/ManagedTemporaryLink"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Issue a work temporary link",
+        "tags": [
+          "v3/fieldwork"
+        ]
+      }
+    },
     "/api/v3/fieldwork/works/{work_id}/update": {
       "post": {
         "description": "Executes work.update using the supplied revision and Idempotency-Key. Uncertain results are not automatically retried. Manager access to the relevant plant is checked using the Patch API plant permission rule.",
         "operationId": "fieldwork_work_update",
         "parameters": [
           {
-            "description": "Required for manager access tokens. Omit for participant session tokens.",
+            "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
             "in": "header",
             "name": "Account-Type",
             "schema": {
-              "description": "Required for manager access tokens. Omit for participant session tokens.",
+              "description": "Manager access, or temporary credentials only for work selection and self-join. Omit for participant session tokens.",
               "enum": [
-                "manager"
+                "manager",
+                "temporary"
               ],
               "type": "string"
             }
@@ -22130,8 +23022,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ThreadReadOutput",
-                  "description": "Plant comment thread detail."
+                  "$ref": "#/components/schemas/MemoThreadReadOutput",
+                  "description": "Plant memo thread detail."
                 }
               }
             },
